@@ -3,6 +3,8 @@ import { StartSessionButton } from "@/components/StartSessionButton";
 import { ActivityRow } from "@/components/ActivityRow";
 import { isRun } from "@/lib/running";
 import type { Activity } from "@/lib/types";
+import { loadPlans } from "@/lib/coach/planData";
+import { PlanItemCard } from "@/components/PlanItemCard";
 import { requireUser } from "@/lib/supabase/server";
 import { WEEKDAYS_SHORT, formatKg, formatTime, isoDay, weekNumber, weekRange } from "@/lib/dates";
 
@@ -38,6 +40,10 @@ export default async function Overview() {
     .filter((a) => days.includes(a.day));
   const runKm = activities.filter((a) => isRun(a.sport_type)).reduce((s, a) => s + (a.distance_m ?? 0) / 1000, 0);
 
+  const { plans } = await loadPlans(supabase);
+  const todayItems = plans.flatMap((p) => p.items).filter((i) => i.date === today);
+  const nextItem = plans.flatMap((p) => p.items).find((i) => i.date > today && i.kind !== "rest");
+
   const sessions = ((data ?? []) as Row[])
     .map((s) => ({ ...s, day: isoDay(new Date(s.started_at)) }))
     .filter((s) => days.includes(s.day));
@@ -62,6 +68,22 @@ export default async function Overview() {
           <span className="text-accent">Fortsätt →</span>
         </Link>
       )}
+
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-medium text-muted">Idag enligt planen</h2>
+          <Link href="/plan" className="text-sm text-accent">Hela veckan →</Link>
+        </div>
+        {todayItems.length > 0 ? (
+          todayItems.map((it) => <PlanItemCard key={it.id} item={it} status={it.status} showDate={false} />)
+        ) : plans.length ? (
+          <p className="card text-sm text-muted">
+            Inget planerat idag.{nextItem ? ` Nästa: ${nextItem.title}.` : ""}
+          </p>
+        ) : (
+          <Link href="/coach" className="card block text-sm text-muted">Ingen plan än – gör en veckoavstämning med coachen →</Link>
+        )}
+      </section>
 
       <section className="card">
         <ol className="grid grid-cols-7 gap-1 text-center">
