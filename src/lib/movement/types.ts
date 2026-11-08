@@ -31,6 +31,8 @@ export type RuleOutput<S> = {
   phase?: string;
   /** Fel i just den här rutan (används för hållövningar som saknar reps). */
   frameFaults?: string[];
+  /** Mätvärden för felsökning/kalibrering (visas med 📊 i kameravyn). */
+  debug?: Record<string, string | number>;
 };
 
 export type MovementKey = "squat" | "lunge" | "plank";

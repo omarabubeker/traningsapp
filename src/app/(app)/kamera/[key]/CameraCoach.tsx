@@ -23,9 +23,15 @@ type Live = {
   fps: number;
   countdown: number | null; // 3, 2, 1 före start
   waiting: string | null; // instruktion innan räkningen startat
+  debug: Record<string, string | number> | null;
 };
-const EMPTY_LIVE: Live = { reps: 0, good: 0, holdS: 0, phase: "", cue: null, hidden: false, fps: 0, countdown: null, waiting: null };
+const EMPTY_LIVE: Live = { reps: 0, good: 0, holdS: 0, phase: "", cue: null, hidden: false, fps: 0, countdown: null, waiting: null, debug: null };
 const COUNTDOWN_MS = 3000;
+// Kalibrering: vilka punkter som spelas in (huvud, axlar, höfter, ben, fötter) och hur länge.
+const REC_LANDMARKS = [0, 7, 8, 11, 12, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
+const REC_MS = 30000;
+type RecFrame = { t: number; w: number[][]; i: number[][] };
+const r3 = (n: number) => Math.round(n * 1000) / 1000;
 
 const NOT_VISIBLE = "Vi ser dig inte helt – backa lite";
 // Skelettets linjer (MediaPipe-index), utan ansiktet.
@@ -57,12 +63,15 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
     mode: "waiting" | "countdown" | "active";
     countdownStart: number;
     lastCount: number | null;
+    rec: { start: number; frames: RecFrame[] } | null;
   } | null>(null);
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [weight, setWeight] = useState("0");
   const [live, setLive] = useState<Live>(EMPTY_LIVE);
   const [voiceOn, setVoiceOn] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
+  const [recStatus, setRecStatus] = useState<null | "recording" | "saving" | "saved" | "error">(null);
   const [summary, setSummary] = useState<TechniqueSummary | null>(null);
   const [saved, setSaved] = useState<{ ok: boolean; sessionId?: string; error?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -153,6 +162,7 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
         mode: resume && prev?.mode === "active" ? "active" : "waiting",
         countdownStart: 0,
         lastCount: null,
+        rec: null,
       };
       const video = videoRef.current!;
       video.srcObject = stream;
@@ -201,10 +211,20 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
     let phaseLabel = "";
     let countdown: number | null = null;
     let waiting: string | null = null;
+    let debug: Record<string, string | number> | null = null;
     if (!image || !worldRaw) {
       hidden = !r.gate.update(false, now);
     } else {
       const world = r.filter.apply(worldRaw, now);
+      // Kalibreringsinspelning: varannan ruta, bara siffror.
+      if (r.rec && r.frames.length % 2 === 0) {
+        r.rec.frames.push({
+          t: Math.round(now - r.rec.start),
+          w: REC_LANDMARKS.map((k) => [r3(worldRaw[k].x), r3(worldRaw[k].y), r3(worldRaw[k].z)]),
+          i: REC_LANDMARKS.map((k) => [r3(image[k].x), r3(image[k].y), Math.round((image[k].visibility ?? 0) * 100) / 100]),
+        });
+        if (now - r.rec.start > REC_MS) saveRecording();
+      }
       const visible = bodyVisible(image, rule.required);
       hidden = !r.gate.update(visible, now);
       const frame: PoseFrame = { t: now, world, image };
@@ -236,6 +256,7 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
       } else if (visible) {
         const out = rule.update(frame, r.state as never);
         r.state = out.state;
+        debug = out.debug ?? null;
         r.session.add(out, now);
         phaseLabel = out.phase ?? "";
         const cue = r.cues.pick(out.cues, now);
@@ -265,6 +286,7 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
         fps,
         countdown,
         waiting,
+        debug: debug ?? l.debug,
       }));
       if (now - (r.frames[0] ?? now) > 900) setSlow(fps < 15 ? r.model : null);
     }
@@ -297,6 +319,29 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
       ctx.arc(p.x * c.width, p.y * c.height, 5, 0, Math.PI * 2);
       ctx.fill();
     }
+  }
+
+  function startRecording() {
+    if (!run.current) return;
+    run.current.rec = { start: performance.now(), frames: [] };
+    setRecStatus("recording");
+  }
+
+  async function saveRecording() {
+    const r = run.current;
+    if (!r?.rec) return;
+    const { frames, start } = r.rec;
+    r.rec = null;
+    setRecStatus("saving");
+    const secs = (frames.at(-1)?.t ?? 1) / 1000;
+    const { error } = await supabaseBrowser().from("pose_recordings").insert({
+      movement_key: movementKey,
+      fps: Math.round((frames.length / secs) * 10) / 10,
+      landmarks: REC_LANDMARKS,
+      frames,
+      note: `${r.model}, ${new Date(Date.now() - (performance.now() - start)).toISOString()}`,
+    });
+    setRecStatus(error ? "error" : "saved");
   }
 
   function toggleVoice() {
@@ -393,6 +438,13 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
               <p>{live.fps} fps</p>
             </div>
             <button
+              onClick={() => setShowDebug((d) => !d)}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-black/50 text-xl"
+              aria-label="Visa mätvärden"
+            >
+              📊
+            </button>
+            <button
               onClick={toggleVoice}
               className="flex h-11 w-11 items-center justify-center rounded-full bg-black/50 text-xl"
               aria-label={voiceOn ? "Stäng av ljud" : "Slå på ljud"}
@@ -401,6 +453,27 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
             </button>
           </div>
         </div>
+
+        {showDebug && (
+          <div className="absolute left-4 top-36 space-y-2 rounded-xl bg-black/70 p-3 text-xs text-white tabular-nums">
+            {live.debug ? (
+              Object.entries(live.debug).map(([k, v]) => (
+                <p key={k} className="flex justify-between gap-4"><span className="text-white/60">{k}</span><span>{v}</span></p>
+              ))
+            ) : (
+              <p className="text-white/60">Mätvärden visas när räkningen startat.</p>
+            )}
+            <button
+              onClick={recStatus === "recording" ? saveRecording : startRecording}
+              disabled={recStatus === "saving"}
+              className="mt-1 w-full rounded-lg bg-white/15 px-3 py-2 text-sm"
+            >
+              {recStatus === "recording" ? "⏹ Stoppa och spara" : recStatus === "saving" ? "Sparar…" : "⏺ Spela in mätdata (30 s)"}
+            </button>
+            {recStatus === "saved" && <p className="text-accent">✓ Inspelning sparad</p>}
+            {recStatus === "error" && <p className="text-danger">Kunde inte spara</p>}
+          </div>
+        )}
 
         {phase === "loading" && (
           <p className="absolute inset-x-0 top-1/2 text-center text-white/80">Startar kamera och modell…</p>

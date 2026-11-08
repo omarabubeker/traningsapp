@@ -1,5 +1,5 @@
 import { angle, angleFromVertical, mid } from "../geometry";
-import { P, type Cue, type MovementRule, type PoseFrame } from "../types";
+import { P, type Cue, type MovementRule, type PoseFrame, type RuleOutput } from "../types";
 import { sideVisibility } from "../visibility";
 
 // Knäböj. Fungerar framifrån, snett framifrån och från sidan.
@@ -93,72 +93,87 @@ export const squat: MovementRule<State> = {
   },
   init: () => fresh(0),
   ready: (f) => measure(f).knee > TOP_KNEE,
-  update(f: PoseFrame, s: State) {
+  update(f: PoseFrame, s0: State) {
+    const out = updateSquat(f, s0);
     const m = measure(f);
-    const cues: Cue[] = [];
-
-    if (s.phase === "top") {
-      // Kalibrera stående läge medan personen står rak.
-      if (m.knee > TOP_KNEE && (s.baseHeight === null || m.height > s.baseHeight * 0.9)) {
-        s = { ...s, baseHeight: ema(s.baseHeight, m.height), baseHeel: ema(s.baseHeel, m.heel) };
-      }
-      const drop = s.baseHeight ? m.height / s.baseHeight : 1;
-      const leaving = m.knee < TOP_KNEE || drop < TOP_DROP;
-      const leftTop = leaving ? (s.leftTop ?? f.t) : null;
-      if (m.knee < DOWN_KNEE || drop < DOWN_DROP) s = { ...fresh(leftTop ?? f.t, s), phase: "down" };
-      else return { state: { ...s, leftTop }, cues, phase: "Upp" };
-    }
-
-    const drop = s.baseHeight ? m.height / s.baseHeight : 1;
-    const deep = m.knee < 125 || drop < 0.85;
-    const heelLift = s.baseHeel === null ? 0 : m.heel - s.baseHeel;
-    s = {
-      ...s,
-      minKnee: Math.min(s.minKnee, m.knee),
-      minDrop: Math.min(s.minDrop, drop),
-      maxLean: m.front ? s.maxLean : Math.max(s.maxLean, m.lean),
-      minKneeRatio: deep && m.front ? Math.min(s.minKneeRatio, m.ratio) : s.minKneeRatio,
-      maxAsym: deep && m.both ? Math.max(s.maxAsym, m.asym) : s.maxAsym,
-      heelLift: Math.max(s.heelLift, heelLift),
+    const st = out.state;
+    out.debug = {
+      vy: m.front ? "fram" : m.both ? "snett" : "sida",
+      knä: Math.round(m.knee),
+      sänkning: st.baseHeight ? Math.round((m.height / st.baseHeight) * 100) / 100 : "–",
+      häl: st.baseHeel === null ? "–" : Math.round((m.heel - st.baseHeel) * 1000) / 10 + " cm",
+      lutning: Math.round(m.lean),
+      knäkvot: m.both ? Math.round(m.ratio * 100) / 100 : "–",
     };
-    // Fel räknas bara i den vy där de går att se, och först när de varat 300 ms.
-    s = track(s, "knees_in", deep && m.front && m.ratio < VALGUS_RATIO, f.t);
-    s = track(s, "lean", !m.front && m.lean > LEAN_MAX, f.t);
-    s = track(s, "heels_up", heelLift > HEEL_LIFT, f.t);
-    if (s.faults.includes("knees_in") && s.faultSince.knees_in !== undefined) cues.push({ id: "knees_in", text: "Tryck ut knäna", priority: 1 });
-    if (s.faults.includes("lean") && s.faultSince.lean !== undefined) cues.push({ id: "lean", text: "Bröstet upp", priority: 1 });
-    if (s.faults.includes("heels_up") && s.faultSince.heels_up !== undefined) cues.push({ id: "heels_up", text: "Tyngden på hälarna", priority: 2 });
-
-    if (f.t - s.started > MAX_REP_MS) return { state: fresh(f.t, s), cues, phase: "Upp" };
-
-    if (m.knee > TOP_KNEE && drop > TOP_DROP) {
-      // Halv rörelse eller för snabbt (brus): ingen rep.
-      const real = (s.minKnee < REP_MIN_KNEE || s.minDrop < REP_MIN_DROP) && f.t - s.started >= MIN_REP_MS;
-      if (!real) return { state: fresh(f.t, s), cues, phase: "Upp" };
-      const faults: string[] = [...s.faults];
-      if (s.minKnee > DEPTH_KNEE && s.minDrop > DEPTH_DROP) faults.unshift("shallow");
-      if (s.maxAsym > ASYM_MAX) faults.push("asymmetry");
-      if (faults.includes("shallow")) cues.push({ id: "shallow", text: "Gå lite djupare", priority: 2 });
-      else if (!faults.length) cues.push({ id: "good", text: "Snyggt!", priority: 3 });
-      return {
-        state: fresh(f.t, s),
-        cues,
-        phase: "Upp",
-        rep: {
-          good: faults.length === 0,
-          faults,
-          metrics: {
-            depth: Math.round(s.minKnee),
-            drop: Math.round(s.minDrop * 100) / 100,
-            lean: Math.round(s.maxLean),
-            ...(s.minKneeRatio < 9 ? { kneeRatio: Math.round(s.minKneeRatio * 100) / 100 } : {}),
-          },
-        },
-      };
-    }
-    return { state: s, cues, phase: "Ner" };
+    return out;
   },
 };
+
+function updateSquat(f: PoseFrame, s: State): RuleOutput<State> {
+  const m = measure(f);
+  const cues: Cue[] = [];
+
+  if (s.phase === "top") {
+    // Kalibrera stående läge medan personen står rak.
+    if (m.knee > TOP_KNEE && (s.baseHeight === null || m.height > s.baseHeight * 0.9)) {
+      s = { ...s, baseHeight: ema(s.baseHeight, m.height), baseHeel: ema(s.baseHeel, m.heel) };
+    }
+    const drop = s.baseHeight ? m.height / s.baseHeight : 1;
+    const leaving = m.knee < TOP_KNEE || drop < TOP_DROP;
+    const leftTop = leaving ? (s.leftTop ?? f.t) : null;
+    if (m.knee < DOWN_KNEE || drop < DOWN_DROP) s = { ...fresh(leftTop ?? f.t, s), phase: "down" };
+    else return { state: { ...s, leftTop }, cues, phase: "Upp" };
+  }
+
+  const drop = s.baseHeight ? m.height / s.baseHeight : 1;
+  const deep = m.knee < 125 || drop < 0.85;
+  const heelLift = s.baseHeel === null ? 0 : m.heel - s.baseHeel;
+  s = {
+    ...s,
+    minKnee: Math.min(s.minKnee, m.knee),
+    minDrop: Math.min(s.minDrop, drop),
+    maxLean: m.front ? s.maxLean : Math.max(s.maxLean, m.lean),
+    minKneeRatio: deep && m.front ? Math.min(s.minKneeRatio, m.ratio) : s.minKneeRatio,
+    maxAsym: deep && m.both ? Math.max(s.maxAsym, m.asym) : s.maxAsym,
+    heelLift: Math.max(s.heelLift, heelLift),
+  };
+  // Fel räknas bara i den vy där de går att se, och först när de varat 300 ms.
+  s = track(s, "knees_in", deep && m.front && m.ratio < VALGUS_RATIO, f.t);
+  s = track(s, "lean", !m.front && m.lean > LEAN_MAX, f.t);
+  s = track(s, "heels_up", heelLift > HEEL_LIFT, f.t);
+  if (s.faults.includes("knees_in") && s.faultSince.knees_in !== undefined) cues.push({ id: "knees_in", text: "Tryck ut knäna", priority: 1 });
+  if (s.faults.includes("lean") && s.faultSince.lean !== undefined) cues.push({ id: "lean", text: "Bröstet upp", priority: 1 });
+  if (s.faults.includes("heels_up") && s.faultSince.heels_up !== undefined) cues.push({ id: "heels_up", text: "Tyngden på hälarna", priority: 2 });
+
+  if (f.t - s.started > MAX_REP_MS) return { state: fresh(f.t, s), cues, phase: "Upp" };
+
+  if (m.knee > TOP_KNEE && drop > TOP_DROP) {
+    // Halv rörelse eller för snabbt (brus): ingen rep.
+    const real = (s.minKnee < REP_MIN_KNEE || s.minDrop < REP_MIN_DROP) && f.t - s.started >= MIN_REP_MS;
+    if (!real) return { state: fresh(f.t, s), cues, phase: "Upp" };
+    const faults: string[] = [...s.faults];
+    if (s.minKnee > DEPTH_KNEE && s.minDrop > DEPTH_DROP) faults.unshift("shallow");
+    if (s.maxAsym > ASYM_MAX) faults.push("asymmetry");
+    if (faults.includes("shallow")) cues.push({ id: "shallow", text: "Gå lite djupare", priority: 2 });
+    else if (!faults.length) cues.push({ id: "good", text: "Snyggt!", priority: 3 });
+    return {
+      state: fresh(f.t, s),
+      cues,
+      phase: "Upp",
+      rep: {
+        good: faults.length === 0,
+        faults,
+        metrics: {
+          depth: Math.round(s.minKnee),
+          drop: Math.round(s.minDrop * 100) / 100,
+          lean: Math.round(s.maxLean),
+          ...(s.minKneeRatio < 9 ? { kneeRatio: Math.round(s.minKneeRatio * 100) / 100 } : {}),
+        },
+      },
+    };
+  }
+  return { state: s, cues, phase: "Ner" };
+}
 
 /** Mått för en ruta, från den sida som syns bäst (eller båda om båda syns bra). */
 function measure(f: PoseFrame) {
