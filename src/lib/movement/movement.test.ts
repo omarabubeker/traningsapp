@@ -165,6 +165,23 @@ describe("från sidan och startposition", () => {
     expect(reps[0].faults).not.toContain("knees_in");
     expect(reps[0].faults).not.toContain("asymmetry");
   });
+  it("räknar knäböj rakt framifrån när djupled (z) är osäker", () => {
+    // Framifrån skattar MediaPipe djupled dåligt: tryck ihop z så att knävinkeln ser rakare ut.
+    const { reps } = run(
+      squat,
+      repAngles(90).map((a) => squatPose({ kneeAngle: a }).map((p) => ({ ...p, z: p.z * 0.2 }))),
+    );
+    expect(reps).toHaveLength(1);
+    expect(reps[0].faults).not.toContain("shallow");
+  });
+  it("larmar inte om hälar när tån alltid ligger lägre än hälen", () => {
+    const { reps } = run(squat, repAngles(90).map((a) => squatPose({ kneeAngle: a, heelLift: -0.05 })));
+    expect(reps[0].faults).not.toContain("heels_up");
+  });
+  it("larmar när hälarna lyfter jämfört med stående", () => {
+    const { reps } = run(squat, repAngles(90).map((a) => squatPose({ kneeAngle: a, heelLift: a < 120 ? 0.06 : 0 })));
+    expect(reps[0].faults).toContain("heels_up");
+  });
   it("känner igen startposition", () => {
     expect(squat.ready(frame(0, squatPose({ kneeAngle: 175 })))).toBe(true);
     expect(squat.ready(frame(0, squatPose({ kneeAngle: 120 })))).toBe(false);

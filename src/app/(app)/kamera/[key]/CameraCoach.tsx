@@ -210,7 +210,8 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
       const frame: PoseFrame = { t: now, world, image };
       if (r.mode !== "active") {
         // Nedräkning 3–2–1 när hela kroppen syns och personen står (ligger) redo.
-        if (visible && rule.ready(frame)) {
+        // När nedräkningen väl startat fortsätter den så länge kroppen syns.
+        if (visible && (r.mode === "countdown" || rule.ready(frame))) {
           if (r.mode === "waiting") {
             r.mode = "countdown";
             r.countdownStart = now;
