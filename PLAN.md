@@ -238,7 +238,7 @@ Koppling till vald källa, krypterad lagring av nycklar och tokens (med förnyel
 **Etapp 4 – Karta och finputs** (`etapp-4-karta-grafer`)
 Leaflet-karta per löppass, grafer (veckovolym, tempo och puls över tid, e1RM och toppset per övning), finputs på design, laddtillstånd, haptik och animationer, Lighthouse-genomgång för PWA och prestanda.
 
-**Etapp 5 – Rörelsecoach med kamera** (`etapp-5-rorelsecoach`). *Tillägg 2026-11-08, väntar på godkännande.*
+**Etapp 5 – Rörelsecoach med kamera** (`etapp-5-rorelsecoach`). *Tillägg 2026-11-08, godkänt.*
 
 *Teknik*
 - `@mediapipe/tasks-vision`, Pose Landmarker i läget `VIDEO` med GPU-delegat. Allt körs i webbläsaren. Ingen bild eller video sparas eller skickas, bara siffror (reps, fel, vinklar) sparas.
@@ -306,5 +306,5 @@ Mindre ändringar i befintlig kod:
 
 **Status och nästa steg**
 1. Etapp 1 är klar för test: PR https://github.com/omarabubeker/traningsapp/pull/1
-2. Etapp 5 ovan väntar på ditt godkännande. Den byggs efter etapp 4 om du inte vill ändra ordningen.
+2. Etapp 5 är godkänd och byggs efter etapp 4.
 3. Coach-instruktioner behövs först i etapp 3. Annars skriver jag ett utkast.
