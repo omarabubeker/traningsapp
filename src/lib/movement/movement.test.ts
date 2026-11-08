@@ -48,7 +48,7 @@ describe("knäböj", () => {
     expect(cues).toContain("knees_in");
   });
   it("flaggar för mycket framåtlutning från sidan", () => {
-    const { reps } = run(squat, repAngles(90).map((a) => squatPose({ kneeAngle: a, lean: a < 120 ? 60 : 15, shoulderX: 0.03 })));
+    const { reps } = run(squat, repAngles(90).map((a) => squatPose({ kneeAngle: a, lean: a < 120 ? 70 : 15, shoulderX: 0.03 })));
     expect(reps[0].faults).toContain("lean");
   });
   it("bedömer inte framåtlutning framifrån (djupled osäker)", () => {
@@ -191,9 +191,9 @@ describe("från sidan och startposition", () => {
     const { reps } = run(squat, repAngles(90).map((a) => squatPose({ kneeAngle: a, heelLift: -0.05 })));
     expect(reps[0].faults).not.toContain("heels_up");
   });
-  it("larmar när hälarna lyfter jämfört med stående", () => {
+  it("bedömer inte hälar (osäker mätning)", () => {
     const { reps } = run(squat, repAngles(90).map((a) => squatPose({ kneeAngle: a, heelLift: a < 120 ? 0.06 : 0 })));
-    expect(reps[0].faults).toContain("heels_up");
+    expect(reps[0].faults).not.toContain("heels_up");
   });
   it("känner igen startposition", () => {
     expect(squat.ready(frame(0, squatPose({ kneeAngle: 175 })))).toBe(true);

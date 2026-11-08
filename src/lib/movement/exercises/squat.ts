@@ -21,10 +21,11 @@ const DEPTH_DROP = 0.72; // … eller höftens sänkning (kompromiss: din tidiga
 const MIN_REP_MS = 800; // kortare = brus
 const FAULT_MS = 300; // ett fel måste hålla i sig så här länge för att räknas
 const FRONT_VIEW = 0.6; // axelbredd / bållängd över detta = framifrån
-const LEAN_MAX = 50;
+const LEAN_MAX = 60; // bållutning från lodlinjen (från sidan); viss lutning är normal och individuell
 const VALGUS_RATIO = 0.8;
 const ASYM_MAX = 15;
-const HEEL_LIFT = 0.035; // m över fotens egen nivå i stående
+// Hälar bedöms inte: ovanligt fel och fotpunkterna är MediaPipes mest osäkra.
+// Hällyftet visas bara som mätvärde (📊) för kalibrering.
 const MAX_REP_MS = 8000;
 
 type State = {
@@ -88,7 +89,6 @@ export const squat: MovementRule<State> = {
     shallow: "För grunt",
     knees_in: "Knäna faller inåt",
     lean: "För mycket framåtlutning",
-    heels_up: "Hälarna lyfter",
     asymmetry: "Ojämn belastning höger/vänster",
   },
   init: () => fresh(0),
@@ -140,10 +140,8 @@ function updateSquat(f: PoseFrame, s: State): RuleOutput<State> {
   // Fel räknas bara i den vy där de går att se, och först när de varat 300 ms.
   s = track(s, "knees_in", deep && m.front && m.ratio < VALGUS_RATIO, f.t);
   s = track(s, "lean", !m.front && m.lean > LEAN_MAX, f.t);
-  s = track(s, "heels_up", heelLift > HEEL_LIFT, f.t);
   if (s.faults.includes("knees_in") && s.faultSince.knees_in !== undefined) cues.push({ id: "knees_in", text: "Tryck ut knäna", priority: 1 });
   if (s.faults.includes("lean") && s.faultSince.lean !== undefined) cues.push({ id: "lean", text: "Bröstet upp", priority: 1 });
-  if (s.faults.includes("heels_up") && s.faultSince.heels_up !== undefined) cues.push({ id: "heels_up", text: "Tyngden på hälarna", priority: 2 });
 
   if (f.t - s.started > MAX_REP_MS) return { state: fresh(f.t, s), cues, phase: "Upp" };
 
