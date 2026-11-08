@@ -104,3 +104,14 @@ returns void language sql security invoker as $$
     ('Vadpress','Vader',false), ('Plankan (sek)','Bål',true), ('Dips','Bröst',true)
   on conflict do nothing;
 $$;
+
+-- Uttryckliga rättigheter (behövs om "Automatically expose new tables" är avslaget).
+-- Raderna skyddas fortfarande av RLS ovan.
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on
+  public.profile, public.weight_entries, public.exercises, public.gym_sessions, public.gym_sets
+  to authenticated;
+grant execute on function public.previous_sets(uuid, uuid), public.seed_exercises() to authenticated;
+revoke all on
+  public.profile, public.weight_entries, public.exercises, public.gym_sessions, public.gym_sets
+  from anon;
