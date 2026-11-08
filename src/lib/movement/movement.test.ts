@@ -47,9 +47,22 @@ describe("knäböj", () => {
     expect(reps[0].faults).toContain("knees_in");
     expect(cues).toContain("knees_in");
   });
-  it("flaggar för mycket framåtlutning", () => {
-    const { reps } = run(squat, repAngles(90).map((a) => squatPose({ kneeAngle: a, lean: a < 120 ? 60 : 15 })));
+  it("flaggar för mycket framåtlutning från sidan", () => {
+    const { reps } = run(squat, repAngles(90).map((a) => squatPose({ kneeAngle: a, lean: a < 120 ? 60 : 15, shoulderX: 0.03 })));
     expect(reps[0].faults).toContain("lean");
+  });
+  it("bedömer inte framåtlutning framifrån (djupled osäker)", () => {
+    const { reps } = run(squat, repAngles(90).map((a) => squatPose({ kneeAngle: a, lean: a < 120 ? 60 : 15 })));
+    expect(reps[0].faults).not.toContain("lean");
+  });
+  it("räknar inte för snabba ryck som rep", () => {
+    const { reps } = run(squat, repAngles(90, 5).map((a) => squatPose({ kneeAngle: a })));
+    expect(reps).toHaveLength(0);
+  });
+  it("ignorerar fel som bara syns ett ögonblick", () => {
+    const seq = repAngles(90);
+    const { reps } = run(squat, seq.map((a, i) => squatPose({ kneeAngle: a, heelLift: i === 20 ? 0.08 : 0 })));
+    expect(reps[0].faults).not.toContain("heels_up");
   });
   it("räknar inte en halv rörelse", () => {
     const { reps } = run(squat, repAngles(150).map((a) => squatPose({ kneeAngle: a })));

@@ -11,11 +11,16 @@ import { sideVisibility } from "../visibility";
 // Stående läge och fotens normala lutning kalibreras medan personen står still.
 
 const DOWN_KNEE = 140;
-const TOP_KNEE = 158;
-const DOWN_DROP = 0.85; // höft–fotled-höjd / stående
-const TOP_DROP = 0.94;
-const DEPTH_KNEE = 105;
-const DEPTH_DROP = 0.66;
+const TOP_KNEE = 155;
+const DOWN_DROP = 0.9; // höft–fotled-höjd / stående: repen börjar under detta
+const TOP_DROP = 0.93; // …och slutar när den är tillbaka över detta
+const REP_MIN_KNEE = 130; // annars var det bara en halv rörelse – ingen rep
+const REP_MIN_DROP = 0.85;
+const DEPTH_KNEE = 105; // godkänt djup: knävinkel …
+const DEPTH_DROP = 0.72; // … eller höftens sänkning (kompromiss: din tidigare version 0,76, min 0,66)
+const MIN_REP_MS = 800; // kortare = brus
+const FAULT_MS = 300; // ett fel måste hålla i sig så här länge för att räknas
+const FRONT_VIEW = 0.6; // axelbredd / bållängd över detta = framifrån
 const LEAN_MAX = 50;
 const VALGUS_RATIO = 0.8;
 const ASYM_MAX = 15;
@@ -27,12 +32,16 @@ type State = {
   started: number;
   baseHeight: number | null; // höft→fotled i lodled när man står
   baseHeel: number | null; // tå–häl-skillnad när man står (personlig nolla)
+  leftTop: number | null; // när personen började lämna stående läge (repens start)
   minKnee: number;
   minDrop: number;
   maxLean: number;
   minKneeRatio: number;
   maxAsym: number;
   heelLift: number;
+  /** När varje fel började synas (ms) och om det hållit i sig länge nog. */
+  faultSince: Record<string, number>;
+  faults: string[];
 };
 
 const fresh = (t: number, keep?: State): State => ({
@@ -40,13 +49,29 @@ const fresh = (t: number, keep?: State): State => ({
   started: t,
   baseHeight: keep?.baseHeight ?? null,
   baseHeel: keep?.baseHeel ?? null,
+  leftTop: null,
   minKnee: 180,
   minDrop: 1,
   maxLean: 0,
   minKneeRatio: 9,
   maxAsym: 0,
   heelLift: 0,
+  faultSince: {},
+  faults: [],
 });
+
+/** Registrerar ett fel först när det varat minst FAULT_MS. */
+function track(s: State, key: string, active: boolean, t: number): State {
+  if (!active) {
+    if (!(key in s.faultSince)) return s;
+    const rest = { ...s.faultSince };
+    delete rest[key];
+    return { ...s, faultSince: rest };
+  }
+  const since = s.faultSince[key] ?? t;
+  const faults = t - since >= FAULT_MS && !s.faults.includes(key) ? [...s.faults, key] : s.faults;
+  return { ...s, faultSince: { ...s.faultSince, [key]: since }, faults };
+}
 
 const ema = (prev: number | null, x: number, a = 0.1) => (prev === null ? x : prev + a * (x - prev));
 
@@ -78,34 +103,40 @@ export const squat: MovementRule<State> = {
         s = { ...s, baseHeight: ema(s.baseHeight, m.height), baseHeel: ema(s.baseHeel, m.heel) };
       }
       const drop = s.baseHeight ? m.height / s.baseHeight : 1;
-      if (m.knee < DOWN_KNEE || drop < DOWN_DROP) s = { ...fresh(f.t, s), phase: "down" };
-      else return { state: s, cues, phase: "Upp" };
+      const leaving = m.knee < TOP_KNEE || drop < TOP_DROP;
+      const leftTop = leaving ? (s.leftTop ?? f.t) : null;
+      if (m.knee < DOWN_KNEE || drop < DOWN_DROP) s = { ...fresh(leftTop ?? f.t, s), phase: "down" };
+      else return { state: { ...s, leftTop }, cues, phase: "Upp" };
     }
 
     const drop = s.baseHeight ? m.height / s.baseHeight : 1;
-    const deep = m.knee < 125 || drop < 0.75;
+    const deep = m.knee < 125 || drop < 0.85;
     const heelLift = s.baseHeel === null ? 0 : m.heel - s.baseHeel;
     s = {
       ...s,
       minKnee: Math.min(s.minKnee, m.knee),
       minDrop: Math.min(s.minDrop, drop),
-      maxLean: Math.max(s.maxLean, m.lean),
-      minKneeRatio: deep ? Math.min(s.minKneeRatio, m.ratio) : s.minKneeRatio,
+      maxLean: m.front ? s.maxLean : Math.max(s.maxLean, m.lean),
+      minKneeRatio: deep && m.front ? Math.min(s.minKneeRatio, m.ratio) : s.minKneeRatio,
       maxAsym: deep && m.both ? Math.max(s.maxAsym, m.asym) : s.maxAsym,
       heelLift: Math.max(s.heelLift, heelLift),
     };
-    if (deep && m.ratio < VALGUS_RATIO) cues.push({ id: "knees_in", text: "Tryck ut knäna", priority: 1 });
-    if (m.lean > LEAN_MAX + 5) cues.push({ id: "lean", text: "Bröstet upp", priority: 1 });
-    if (heelLift > HEEL_LIFT) cues.push({ id: "heels_up", text: "Tyngden på hälarna", priority: 2 });
+    // Fel räknas bara i den vy där de går att se, och först när de varat 300 ms.
+    s = track(s, "knees_in", deep && m.front && m.ratio < VALGUS_RATIO, f.t);
+    s = track(s, "lean", !m.front && m.lean > LEAN_MAX, f.t);
+    s = track(s, "heels_up", heelLift > HEEL_LIFT, f.t);
+    if (s.faults.includes("knees_in") && s.faultSince.knees_in !== undefined) cues.push({ id: "knees_in", text: "Tryck ut knäna", priority: 1 });
+    if (s.faults.includes("lean") && s.faultSince.lean !== undefined) cues.push({ id: "lean", text: "Bröstet upp", priority: 1 });
+    if (s.faults.includes("heels_up") && s.faultSince.heels_up !== undefined) cues.push({ id: "heels_up", text: "Tyngden på hälarna", priority: 2 });
 
     if (f.t - s.started > MAX_REP_MS) return { state: fresh(f.t, s), cues, phase: "Upp" };
 
     if (m.knee > TOP_KNEE && drop > TOP_DROP) {
-      const faults: string[] = [];
-      if (s.minKnee > DEPTH_KNEE && s.minDrop > DEPTH_DROP) faults.push("shallow");
-      if (s.minKneeRatio < VALGUS_RATIO) faults.push("knees_in");
-      if (s.maxLean > LEAN_MAX) faults.push("lean");
-      if (s.heelLift > HEEL_LIFT) faults.push("heels_up");
+      // Halv rörelse eller för snabbt (brus): ingen rep.
+      const real = (s.minKnee < REP_MIN_KNEE || s.minDrop < REP_MIN_DROP) && f.t - s.started >= MIN_REP_MS;
+      if (!real) return { state: fresh(f.t, s), cues, phase: "Upp" };
+      const faults: string[] = [...s.faults];
+      if (s.minKnee > DEPTH_KNEE && s.minDrop > DEPTH_DROP) faults.unshift("shallow");
       if (s.maxAsym > ASYM_MAX) faults.push("asymmetry");
       if (faults.includes("shallow")) cues.push({ id: "shallow", text: "Gå lite djupare", priority: 2 });
       else if (!faults.length) cues.push({ id: "good", text: "Snyggt!", priority: 3 });
@@ -150,5 +181,9 @@ function measure(f: PoseFrame) {
   const lean = angleFromVertical(mid(w[P.leftHip], w[P.rightHip]), mid(w[P.leftShoulder], w[P.rightShoulder]));
   const kneeW = Math.abs(w[P.leftKnee].x - w[P.rightKnee].x);
   const ankleW = Math.abs(w[P.leftAnkle].x - w[P.rightAnkle].x) || 1e-6;
-  return { knee, height, heel, lean, both, asym: Math.abs(kneeL - kneeR), ratio: both ? kneeW / ankleW : 9 };
+  // Framifrån eller från sidan: axelbredd i bildplanet (x) jämfört med bålens längd.
+  const shoulderW = Math.abs(w[P.leftShoulder].x - w[P.rightShoulder].x);
+  const torso = Math.abs(mid(w[P.leftHip], w[P.rightHip]).y - mid(w[P.leftShoulder], w[P.rightShoulder]).y) || 1e-6;
+  const front = both && shoulderW / torso > FRONT_VIEW;
+  return { knee, height, heel, lean, both, front, asym: Math.abs(kneeL - kneeR), ratio: both ? kneeW / ankleW : 9 };
 }

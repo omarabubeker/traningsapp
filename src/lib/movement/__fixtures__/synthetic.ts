@@ -11,10 +11,10 @@ function visibleImage(): ImageLandmark[] {
   return Array.from({ length: 33 }, () => ({ x: 0.5, y: 0.5, z: 0, visibility: 0.95 }));
 }
 
-type SquatOpts = { kneeAngle: number; lean?: number; kneeInward?: number; heelLift?: number; asym?: number };
+type SquatOpts = { kneeAngle: number; lean?: number; kneeInward?: number; heelLift?: number; asym?: number; shoulderX?: number };
 
 /** Knäböj framifrån/snett: lårets vinkel ger knävinkeln (180 = stående). */
-export function squatPose({ kneeAngle, lean = 15, kneeInward = 0, heelLift = 0, asym = 0 }: SquatOpts): Vec3[] {
+export function squatPose({ kneeAngle, lean = 15, kneeInward = 0, heelLift = 0, asym = 0, shoulderX = 0.18 }: SquatOpts): Vec3[] {
   const w = empty();
   for (const [side, sx] of [["l", -1], ["r", 1]] as const) {
     const ka = kneeAngle + (side === "l" ? asym / 2 : -asym / 2);
@@ -25,7 +25,7 @@ export function squatPose({ kneeAngle, lean = 15, kneeInward = 0, heelLift = 0, 
     const ankle = { x: ankleX, y: knee.y + SHIN, z: knee.z };
     const heel = { x: ankleX, y: ankle.y + 0.05 - heelLift, z: ankle.z - 0.05 };
     const foot = { x: ankleX, y: ankle.y + 0.06, z: ankle.z + 0.15 };
-    const shoulder = { x: sx * 0.18, y: -TORSO * Math.cos(deg(lean)), z: TORSO * Math.sin(deg(lean)) };
+    const shoulder = { x: sx * shoulderX, y: -TORSO * Math.cos(deg(lean)), z: TORSO * Math.sin(deg(lean)) };
     if (side === "l") Object.assign(w, { [P.leftHip]: hip, [P.leftKnee]: knee, [P.leftAnkle]: ankle, [P.leftHeel]: heel, [P.leftFoot]: foot, [P.leftShoulder]: shoulder });
     else Object.assign(w, { [P.rightHip]: hip, [P.rightKnee]: knee, [P.rightAnkle]: ankle, [P.rightHeel]: heel, [P.rightFoot]: foot, [P.rightShoulder]: shoulder });
   }
