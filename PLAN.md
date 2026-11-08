@@ -5,7 +5,7 @@ Status: **godkänd 2026-11-08.**
 Beslut:
 - Datakälla: **A1 via intervals.icu**, med A2 (FIT/GPX-uppladdning) som reserv. Ingen Strava-koppling.
 - Klocka: **Apple Watch Series 11**. Den kan inte synka direkt till intervals.icu, så vägen blir Apple Watch → Apple Hälsa → iOS-appen *Intervals.icu Companion* (gratis att ladda ner, har köp i appen) → intervals.icu → vår app. Reserv: *HealthFit* (engångsköp). Att synken är gratis verifieras innan etapp 2.
-- Inloggning med e-postkod (OTP).
+- Inloggning med e-post + lösenord (Supabase kräver egen SMTP för att ändra mejlmallar; lösenord + Face ID-autofyll fungerar bäst i hemskärmsappen).
 - Coach-instruktioner: Claude skriver ett utkast i etapp 3 om inga egna finns.
 Datum: 2026-11-08
 

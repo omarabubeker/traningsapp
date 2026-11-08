@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* Lugn, mörk palett. Appen är alltid i mörkt läge. */
+@theme {
+  --color-bg: #0e1113;
+  --color-surface: #161a1d;
+  --color-surface-2: #1e2327;
+  --color-line: #2a3035;
+  --color-text: #e8ecee;
+  --color-muted: #8d979e;
+  --color-accent: #7cc4a4;
+  --color-accent-strong: #5fb08d;
+  --color-run: #7aa7e0;
+  --color-gym: #d8a76a;
+  --color-danger: #e07a7a;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum" 1;
+}
+
+/* Inga zoom-hopp i iOS vid fokus i fält (kräver minst 16px). */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+@utility card {
+  @apply rounded-2xl border border-line bg-surface p-4;
+}
+@utility btn {
+  @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 font-medium transition active:scale-[0.98] disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-accent text-[#0b1a13] active:bg-accent-strong;
+}
+@utility btn-ghost {
+  @apply btn border border-line bg-surface-2 text-text;
+}
+@utility field {
+  @apply w-full rounded-xl border border-line bg-surface-2 px-4 py-3 text-text placeholder:text-muted focus:border-accent focus:outline-none;
+}
+@utility label {
+  @apply mb-1 block text-sm text-muted;
+}
+@utility pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+}
+@utility pt-safe {
+  padding-top: max(env(safe-area-inset-top), 0.75rem);
+}
