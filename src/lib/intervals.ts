@@ -120,3 +120,16 @@ export async function getTrack(activityId: string): Promise<TrackPoint[]> {
     };
   });
 }
+
+export type Wellness = { id: string; restingHR: number | null; hrv: number | null; sleepSecs: number | null };
+
+/** Dagliga återhämtningsvärden (vilopuls, HRV, sömn) – om de synkas från klockan. */
+export async function listWellness(oldest: string, newest: string): Promise<Wellness[]> {
+  const raw = await call<Raw[]>(`/athlete/${athleteId()}/wellness?oldest=${oldest}&newest=${newest}`);
+  return raw.map((w) => ({
+    id: String(w.id ?? ""),
+    restingHR: num(w.restingHR),
+    hrv: num(w.hrv) ?? num(w.hrvSDNN),
+    sleepSecs: num(w.sleepSecs),
+  }));
+}

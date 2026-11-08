@@ -3,6 +3,10 @@
 Personlig träningsapp (PWA) med gymlogg, löppass från klockan och AI-coach.
 Se [PLAN.md](PLAN.md) för helheten och etapperna.
 
+**Etapp 3:** AI-coach – chatt (Claude Haiku 5.5), minne, veckoavstämning med plan
+(Claude Sonnet 5.5), plan mot utfört och förbrukning. Instruktionerna finns i
+[`coach/instruktioner.md`](coach/instruktioner.md) – redigera fritt.
+
 **Etapp 2:** löppass från klockan (Apple Watch → Apple Hälsa → Intervals.icu Companion →
 intervals.icu → appen), engångsimport av Apple Hälsa-export, splits och veckovolym.
 
@@ -35,6 +39,11 @@ med "förra gången" och offlinekö, veckoöversikt, PWA (hemskärm, mörkt läg
 2. Vercel → miljövariablerna `INTERVALS_API_KEY` och `INTERVALS_ATHLETE_ID` (med "i").
 3. I appen: **Profil → Inställningar → Synka**, och **Importera export.zip** för historiken.
 
+### Etapp 3: coachen
+1. Supabase → **SQL Editor** → kör `supabase/migrations/0003_etapp3_coach.sql`.
+2. Vercel → `ANTHROPIC_API_KEY` (Production och Preview).
+3. Sätt en månadsgräns i Claude Console (Limits).
+
 ### 3. iPhone
 Öppna adressen i Safari → **Dela** → **Lägg till på hemskärmen**. Logga in i appen
 från hemskärmen (inloggningen i Safari och i hemskärmsappen är separata på iOS);
@@ -54,6 +63,9 @@ npm run dev
 - `src/lib/intervals.ts`, `src/app/api/sync/` – synk mot intervals.icu
 - `src/lib/appleHealth.ts` – strömmande läsning av Apple Hälsa-export i webbläsaren
 - `src/lib/running.ts` – splits, rutt, tempo (testas med `npm test`)
+- `coach/instruktioner.md` – coachens grundinstruktioner
+- `src/lib/coach/` – sammanfattning till coachen, minne, säkerhetsregler, prissättning
+- `src/app/api/coach/` – chatt (strömmande) och veckoavstämning
 - `src/proxy.ts` – sessionsförnyelse och inloggningsskydd
 - `supabase/migrations/` – databas med Row Level Security
 - `public/sw.js`, `src/app/manifest.ts` – PWA

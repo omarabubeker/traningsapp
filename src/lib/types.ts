@@ -61,3 +61,34 @@ export type Activity = {
   splits: Split[] | null;
   route: [number, number][] | null;
 };
+
+export type PlanItem = {
+  id: string;
+  plan_id: string;
+  date: string;
+  kind: "run" | "gym" | "rest" | "other";
+  title: string;
+  description: string | null;
+  target: Record<string, unknown> | null;
+  sort: number;
+};
+
+export type Plan = {
+  id: string;
+  week_start: string;
+  status: "active" | "archived";
+  summary: string | null;
+  focus: string | null;
+  model: string | null;
+  created_at: string;
+};
+
+export type Memory = {
+  id: string;
+  kind: "advice" | "plan_decision" | "feedback" | "injury_note" | "preference" | "goal";
+  content: string;
+  importance: number;
+  valid_until: string | null;
+  archived: boolean;
+  created_at: string;
+};
