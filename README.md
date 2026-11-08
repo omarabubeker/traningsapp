@@ -9,7 +9,7 @@ med "förra gången" och offlinekö, veckoöversikt, PWA (hemskärm, mörkt läg
 ## Kom igång (en gång)
 
 ### 1. Supabase
-1. [supabase.com](https://supabase.com) → **New project**, region *North EU (Stockholm)*.
+1. [supabase.com](https://supabase.com) → **New project**, region *Europe* (projektet ligger i eu-central-1, Frankfurt).
 2. **SQL Editor** → klistra in och kör `supabase/migrations/0001_etapp1_grund.sql`.
 3. **Authentication → Users → Add user → Create new user**: din e-post och ett starkt
    lösenord (spara i lösenordshanteraren), kryssa i **Auto Confirm User**.
