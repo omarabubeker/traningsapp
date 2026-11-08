@@ -26,7 +26,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
       <header className="flex items-center gap-3">
         <Link href="/lopning" className="-ml-2 px-2 py-2 text-muted" aria-label="Tillbaka">←</Link>
         <div>
-          <h1 className="text-lg font-semibold">{a.name ?? SPORT_LABEL[a.sport_type] ?? a.sport_type}</h1>
+          <h1 className="text-lg font-semibold">{displayName(a)}</h1>
           <p className="inline-block text-xs text-muted first-letter:uppercase">
             {formatDate(a.start_time, { weekday: "long", day: "numeric", month: "long" })} · {formatTime(a.start_time)}
             {a.indoor && " · inomhus"}
@@ -88,4 +88,11 @@ function Stat({ label, value }: { label: string; value: string }) {
       <p className="text-lg font-semibold">{value}</p>
     </div>
   );
+}
+
+/** Generiska namn från klockan ("Run", "Indoor Run") visas som svensk passtyp. */
+function displayName(a: Activity) {
+  const label = SPORT_LABEL[a.sport_type] ?? a.sport_type;
+  if (!a.name || /^(indoor |outdoor |morning |afternoon |evening |lunch )?(run|running|walk|walking|ride|cycling|workout)$/i.test(a.name.trim())) return label;
+  return a.name;
 }
