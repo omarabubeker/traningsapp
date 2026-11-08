@@ -87,10 +87,20 @@ describe("utfallssteg", () => {
     expect(reps).toHaveLength(1);
     expect(reps[0]).toMatchObject({ side: "left", good: true });
   });
-  it("flaggar bakre knä som inte går ner", () => {
-    const { reps } = run(lunge, seq("right", 90, 150));
+  it("flaggar bakre knä som inte går ner (från sidan)", () => {
+    const { reps } = run(lunge, seq("right", 80, 150));
     expect(reps[0].side).toBe("right");
     expect(reps[0].faults).toContain("back_knee");
+  });
+  it("tolkar inte knät framåt från sidan som knä inåt", () => {
+    // Från sidan rör sig främre knät framåt i bildens x-led – ingen valgus.
+    const angles = repAngles(85);
+    const worlds = seq("left", 85, 90).map((w, k) => {
+      const bend = (175 - angles[k]) / (175 - 85); // 0 stående … 1 i botten
+      return w.map((p, i) => (i === 25 || i === 26 ? { ...p, x: p.x + 0.35 * bend } : p));
+    });
+    const { reps } = run(lunge, worlds);
+    expect(reps[0].faults).not.toContain("knee_in");
   });
 });
 

@@ -34,7 +34,7 @@ export function squatPose({ kneeAngle, lean = 15, kneeInward = 0, heelLift = 0, 
 }
 
 /** Utfall: främre ben (front) och bakre ben med givna knävinklar. */
-export function lungePose(front: "left" | "right", frontKnee: number, backKnee: number, lean = 5): Vec3[] {
+export function lungePose(front: "left" | "right", frontKnee: number, backKnee: number, lean = 5, shoulderX = 0.03): Vec3[] {
   const w = empty();
   const legs = { front: frontKnee, back: backKnee };
   for (const role of ["front", "back"] as const) {
@@ -48,7 +48,7 @@ export function lungePose(front: "left" | "right", frontKnee: number, backKnee: 
     const knee = { x: sx * 0.1, y: THIGH * Math.cos(thighAngle), z: dir * THIGH * Math.sin(thighAngle) };
     const shinAngle = role === "front" ? 0 : deg(180 - ka) + thighAngle;
     const ankle = { x: sx * 0.1, y: knee.y + SHIN * Math.cos(shinAngle), z: knee.z - SHIN * Math.sin(shinAngle) };
-    const shoulder = { x: sx * 0.18, y: -TORSO * Math.cos(deg(lean)), z: TORSO * Math.sin(deg(lean)) };
+    const shoulder = { x: sx * shoulderX, y: -TORSO * Math.cos(deg(lean)), z: TORSO * Math.sin(deg(lean)) };
     if (left) Object.assign(w, { [P.leftHip]: hip, [P.leftKnee]: knee, [P.leftAnkle]: ankle, [P.leftShoulder]: shoulder });
     else Object.assign(w, { [P.rightHip]: hip, [P.rightKnee]: knee, [P.rightAnkle]: ankle, [P.rightShoulder]: shoulder });
   }
