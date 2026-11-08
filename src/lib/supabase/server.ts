@@ -20,10 +20,11 @@ export async function supabaseServer() {
   });
 }
 
-/** Hämtar inloggad användare eller skickar till /login. */
+/** Hämtar inloggad användare (verifierad JWT) eller skickar till /login. */
 export async function requireUser() {
   const supabase = await supabaseServer();
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) redirect("/login");
-  return { supabase, user: data.user };
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (!claims?.sub) redirect("/login");
+  return { supabase, user: { id: claims.sub, email: (claims.email as string | undefined) ?? "" } };
 }

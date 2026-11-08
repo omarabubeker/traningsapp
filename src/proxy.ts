@@ -21,18 +21,20 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // Förnyar sessionen vid behov (måste ske innan något annat).
-  const { data } = await supabase.auth.getUser();
+  // Förnyar sessionen vid behov och verifierar JWT:n lokalt (inget extra nätanrop
+  // när projektet använder asymmetriska signeringsnycklar).
+  const { data } = await supabase.auth.getClaims();
+  const loggedIn = !!data?.claims?.sub;
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + "/"));
 
-  if (!data.user && !isPublic && !path.startsWith("/api/")) {
+  if (!loggedIn && !isPublic && !path.startsWith("/api/")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";
     return NextResponse.redirect(url);
   }
-  if (data.user && path === "/login") {
+  if (loggedIn && path === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

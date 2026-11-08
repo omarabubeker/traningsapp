@@ -11,12 +11,31 @@ import { ExercisePicker } from "./ExercisePicker";
 
 type Prev = { date: string; sets: GymSet[] };
 
+/** Seten från senaste tidigare pass med samma övning (vanlig tabellfråga, ingen databasfunktion). */
 async function fetchPrev(supabase: ReturnType<typeof supabaseBrowser>, exId: string, sessionId: string): Promise<Prev | null> {
-  const { data } = await supabase.rpc("previous_sets", { p_exercise_id: exId, p_before_session: sessionId });
-  const rows = (data ?? []) as GymSet[];
+  const { data, error } = await supabase
+    .from("gym_sets")
+    .select("*, gym_sessions!inner(started_at)")
+    .eq("exercise_id", exId)
+    .neq("session_id", sessionId)
+    .order("created_at", { ascending: false })
+    .limit(40);
+  if (error) {
+    console.warn("Kunde inte hämta förra gången", error);
+    return null;
+  }
+  const rows = (data ?? []) as (GymSet & { gym_sessions: { started_at: string } })[];
   if (!rows.length) return null;
-  const { data: s } = await supabase.from("gym_sessions").select("started_at").eq("id", rows[0].session_id).maybeSingle();
-  return { date: s?.started_at ?? rows[0].created_at, sets: rows };
+  const last = rows[0].session_id;
+  const sets = rows
+    .filter((r) => r.session_id === last)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
+    .map((r) => {
+      const { gym_sessions, ...set } = r;
+      void gym_sessions;
+      return set as GymSet;
+    });
+  return { date: rows[0].gym_sessions.started_at, sets };
 }
 
 export function SessionLogger({ sessionId }: { sessionId: string }) {
