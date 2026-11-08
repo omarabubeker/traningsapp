@@ -1,9 +1,10 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ageFrom, formatDate, isoDay, weekNumber } from "../dates";
-import { formatDuration, formatPace, isRun, SPORT_LABEL } from "../running";
+import { applyOverride, formatDuration, formatPace, isRun, SPORT_LABEL } from "../running";
 import { intervalsConfigured, listWellness } from "../intervals";
 import { itemStatus } from "./plan";
+import { daysToRace } from "../race";
 import type { Activity, Memory, PlanItem, Profile } from "../types";
 
 // Bygger kompakta textsammanfattningar till coachen. All räkning sker här –
@@ -66,7 +67,7 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
   const [{ data: acts }, { data: gyms }, { data: plans }, { data: mems }] = await Promise.all([
     supabase
       .from("activities")
-      .select("sport_type, start_time, distance_m, moving_time_s, avg_hr, max_hr, avg_pace_s_per_km, elevation_gain_m, training_load, indoor, name")
+      .select("sport_type, start_time, distance_m, distance_override_m, moving_time_s, avg_hr, max_hr, avg_pace_s_per_km, elevation_gain_m, training_load, indoor, name")
       .is("deleted_at", null)
       .gte("start_time", fromIso)
       .order("start_time"),
@@ -90,7 +91,7 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
       .limit(40),
   ]);
 
-  const activities = ((acts ?? []) as Activity[]).map((a) => ({ ...a, day: isoDay(new Date(a.start_time)) }));
+  const activities = ((acts ?? []) as Activity[]).map(applyOverride).map((a) => ({ ...a, day: isoDay(new Date(a.start_time)) }));
   const gymSessions = ((gyms ?? []) as unknown as GymRow[]).map((g) => ({ ...g, day: isoDay(new Date(g.started_at)) }));
   const runs = activities.filter((a) => isRun(a.sport_type));
 
@@ -112,7 +113,7 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
   });
 
   const lines: string[] = [];
-  const raceDays = Math.round((Date.parse("2027-05-29T00:00:00Z") - Date.parse(today + "T00:00:00Z")) / DAY);
+  const raceDays = daysToRace(today);
   lines.push(
     `## Läget idag`,
     `- Idag: ${formatDate(today + "T12:00:00Z", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} (vecka ${weekNumber(today)})`,
@@ -143,7 +144,7 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
   const entries: Entry[] = [];
   for (const a of activities.filter((x) => x.day >= since14)) {
     const label = SPORT_LABEL[a.sport_type] ?? a.sport_type;
-    const parts = [label + (a.indoor ? " inomhus" : "")];
+    const parts = [label + (a.indoor ? " inomhus" : "") + (a.corrected ? " (distans rättad från löpbandet)" : "")];
     if (a.distance_m) parts.push(`${sv(a.distance_m / 1000, 2)} km`);
     if (a.moving_time_s) parts.push(formatDuration(a.moving_time_s));
     if (isRun(a.sport_type) && a.avg_pace_s_per_km) parts.push(`${formatPace(a.avg_pace_s_per_km)}/km`);

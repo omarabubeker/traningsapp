@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { StartSessionButton } from "@/components/StartSessionButton";
 import { ActivityRow } from "@/components/ActivityRow";
-import { isRun } from "@/lib/running";
+import { applyOverride, isRun } from "@/lib/running";
 import type { Activity } from "@/lib/types";
 import { loadPlans } from "@/lib/coach/planData";
+import { daysToRace } from "@/lib/race";
 import { PlanItemCard } from "@/components/PlanItemCard";
 import { requireUser } from "@/lib/supabase/server";
 import { WEEKDAYS_SHORT, formatKg, formatTime, isoDay, weekNumber, weekRange } from "@/lib/dates";
@@ -20,6 +21,7 @@ type Row = {
 export default async function Overview() {
   const { supabase } = await requireUser();
   const { days, today, from, to } = weekRange();
+  const raceDays = daysToRace(today);
 
   const { data } = await supabase
     .from("gym_sessions")
@@ -30,12 +32,13 @@ export default async function Overview() {
 
   const { data: actData } = await supabase
     .from("activities")
-    .select("id, sport_type, name, start_time, distance_m, moving_time_s, avg_hr, avg_pace_s_per_km, indoor, source")
+    .select("id, sport_type, name, start_time, distance_m, distance_override_m, moving_time_s, avg_hr, avg_pace_s_per_km, indoor, source")
     .is("deleted_at", null)
     .gte("start_time", from)
     .lt("start_time", to)
     .order("start_time");
   const activities = ((actData ?? []) as Activity[])
+    .map(applyOverride)
     .map((a) => ({ ...a, day: isoDay(new Date(a.start_time)) }))
     .filter((a) => days.includes(a.day));
   const runKm = activities.filter((a) => isRun(a.sport_type)).reduce((s, a) => s + (a.distance_m ?? 0) / 1000, 0);
@@ -54,9 +57,17 @@ export default async function Overview() {
 
   return (
     <main className="space-y-5 pt-4">
-      <header>
-        <p className="text-sm text-muted">Vecka {weekNumber(today)}</p>
-        <h1 className="text-2xl font-semibold">Översikt</h1>
+      <header className="flex items-end justify-between">
+        <div>
+          <p className="text-sm text-muted">Vecka {weekNumber(today)}</p>
+          <h1 className="text-2xl font-semibold">Översikt</h1>
+        </div>
+        {raceDays > 0 && (
+          <p className="text-right text-sm leading-tight">
+            <span className="block text-xl font-semibold tabular-nums">{raceDays}</span>
+            <span className="text-muted">dagar till maran</span>
+          </p>
+        )}
       </header>
 
       {active && (

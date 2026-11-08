@@ -140,3 +140,26 @@ export const SPORT_LABEL: Record<string, string> = {
 };
 
 export const isRun = (sport: string) => /run/i.test(sport);
+
+type Correctable = {
+  distance_m: number | null;
+  distance_override_m?: number | null;
+  moving_time_s: number | null;
+  avg_pace_s_per_km: number | null;
+};
+
+/**
+ * Använder manuellt rättad distans (t.ex. från löpbandet) i stället för klockans,
+ * och räknar om snittempot. Klockans värde finns kvar i `watch_distance_m`.
+ */
+export function applyOverride<T extends Correctable>(a: T): T & { corrected: boolean; watch_distance_m: number | null } {
+  const override = a.distance_override_m != null ? Number(a.distance_override_m) : null;
+  if (!override) return { ...a, corrected: false, watch_distance_m: a.distance_m };
+  return {
+    ...a,
+    distance_m: override,
+    avg_pace_s_per_km: a.moving_time_s ? Math.round((a.moving_time_s / override) * 1000 * 10) / 10 : a.avg_pace_s_per_km,
+    corrected: true,
+    watch_distance_m: a.distance_m,
+  };
+}

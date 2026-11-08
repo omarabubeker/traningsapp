@@ -48,6 +48,7 @@ export type Activity = {
   name: string | null;
   start_time: string;
   distance_m: number | null;
+  distance_override_m?: number | null;
   moving_time_s: number | null;
   elapsed_time_s: number | null;
   avg_hr: number | null;

@@ -2,9 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
 import { formatDate, formatTime } from "@/lib/dates";
-import { SPORT_LABEL, formatDuration, formatKm, formatPace, isRun } from "@/lib/running";
+import { SPORT_LABEL, applyOverride, formatDuration, formatKm, formatPace, isRun } from "@/lib/running";
 import type { Activity } from "@/lib/types";
-import { RouteSketch } from "./RouteSketch";
+import { DistanceEditor } from "./DistanceEditor";
+import { RouteMapLoader } from "./RouteMapLoader";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +16,18 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
   const { supabase } = await requireUser();
   const { data } = await supabase.from("activities").select("*").eq("id", id).maybeSingle();
   if (!data) notFound();
-  const a = data as Activity;
+  const a = applyOverride(data as Activity);
   const run = isRun(a.sport_type);
-  const splits = a.splits ?? [];
+  // Vid rättad distans skalas splitsen om proportionellt (ungefärligt).
+  const factor = a.corrected && a.watch_distance_m ? Number(a.distance_m) / Number(a.watch_distance_m) : 1;
+  const raw = a.splits ?? [];
+  const ends = raw.map((_, i) => raw.slice(0, i + 1).reduce((t, x) => t + x.dist_m, 0));
+  const splits = raw.map((s, i) =>
+    factor === 1
+      ? { ...s, label: s.dist_m < 990 ? (s.dist_m / 1000).toFixed(2).replace(".", ",") : String(s.km) }
+      : // Visa var i den rättade distansen splitten slutar, t.ex. 1,53 – 3,06 – …
+        { ...s, pace_s: Math.round(s.pace_s / factor), label: ((ends[i] * factor) / 1000).toFixed(2).replace(".", ",") },
+  );
   const full = splits.filter((s) => s.dist_m >= 900);
   const fastest = full.length > 1 && new Set(full.map((s) => s.pace_s)).size > 1 ? Math.min(...full.map((s) => s.pace_s)) : null;
 
@@ -45,8 +55,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
 
       {a.route && a.route.length > 1 && (
         <section className="card p-2">
-          <RouteSketch route={a.route} />
-          <p className="px-2 pb-1 text-xs text-muted">Karta kommer i etapp 4.</p>
+          <RouteMapLoader route={a.route} />
         </section>
       )}
 
@@ -56,7 +65,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
           <table className="w-full text-sm tabular-nums">
             <thead className="text-xs text-muted">
               <tr>
-                <th className="py-1 text-left font-normal">Km</th>
+                <th className="py-1 text-left font-normal">{factor === 1 ? "Km" : "Vid km"}</th>
                 <th className="text-right font-normal">Tempo</th>
                 <th className="text-right font-normal">Puls</th>
                 <th className="text-right font-normal">Höjd</th>
@@ -65,7 +74,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
             <tbody>
               {splits.map((s) => (
                 <tr key={s.km} className="border-t border-line">
-                  <td className="py-2">{s.dist_m < 990 ? `${(s.dist_m / 1000).toFixed(2).replace(".", ",")}` : s.km}</td>
+                  <td className="py-2">{s.label}</td>
                   <td className={`text-right ${s.pace_s === fastest ? "text-accent" : ""}`}>{formatPace(s.pace_s)}</td>
                   <td className="text-right text-muted">{s.hr ?? "–"}</td>
                   <td className="text-right text-muted">{s.elev_m != null ? `+${s.elev_m}` : "–"}</td>
@@ -76,7 +85,13 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
         </section>
       )}
 
-      <p className="text-center text-xs text-muted">Källa: {SOURCE_LABEL[a.source]}</p>
+      {run && (
+        <DistanceEditor id={a.id} watchDistance={a.watch_distance_m} override={a.corrected ? a.distance_m : null} />
+      )}
+      <p className="text-center text-xs text-muted">
+        Källa: {SOURCE_LABEL[a.source]}
+        {a.corrected && ` · distans rättad manuellt (klockan: ${formatKm(a.watch_distance_m)} km), splits omräknade`}
+      </p>
     </main>
   );
 }
