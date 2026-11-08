@@ -31,7 +31,19 @@ export async function POST(req: Request) {
   const text = (message ?? "").trim().slice(0, 4000);
   if (!text) return Response.json({ error: "Tomt meddelande" }, { status: 400 });
 
-  const { data: userMsg } = await supabase.from("coach_messages").insert({ role: "user", content: text }).select("id").single();
+  const { data: userMsg, error: saveError } = await supabase
+    .from("coach_messages")
+    .insert({ role: "user", content: text })
+    .select("id")
+    .single();
+  if (saveError) {
+    console.error("Kunde inte spara meddelande", saveError);
+    const missing = /does not exist|schema cache|relation/i.test(saveError.message);
+    return Response.json(
+      { error: missing ? "Databasen saknar coachens tabeller – kör 0003_etapp3_coach.sql i Supabase → SQL Editor." : `Kunde inte spara meddelandet: ${saveError.message}` },
+      { status: 500 },
+    );
+  }
 
   const [instructions, profile, training, { data: history }] = await Promise.all([
     systemInstructions(),
@@ -56,6 +68,8 @@ export async function POST(req: Request) {
     if (last && last.role === m.role) last.content += "\n\n" + m.content;
     else merged.push({ ...m });
   }
+  // Frågan som just ställdes ska alltid vara sist, även om historiken inte gick att läsa.
+  if (merged.at(-1)?.role !== "user" || !merged.at(-1)!.content.endsWith(text)) merged.push({ role: "user", content: text });
 
   const stream = anthropic().messages.stream({
     model: CHAT_MODEL,
