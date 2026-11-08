@@ -236,7 +236,7 @@ Koppling till vald källa, krypterad lagring av nycklar och tokens (med förnyel
 `coach/instruktioner.md` + säkerhetsregler, sammanfattningsmotor, chatt med streaming (Haiku), minnesextraktion och minnesvy där du kan ta bort och redigera, snabbknappar för återkoppling ("Trött i dag", "Knät ok"…), veckoavstämning (Sonnet) som skriver en strukturerad plan till `plans` och `plan_items`, plan mot utfört och belastningsflaggor, planvy, förbrukning per månad i Inställningar.
 
 **Etapp 4 – Karta och finputs** (`etapp-4-karta-grafer`)
-Leaflet-karta per löppass, grafer (veckovolym, tempo och puls över tid, e1RM och toppset per övning), finputs på design, laddtillstånd, haptik och animationer, Lighthouse-genomgång för PWA och prestanda.
+Leaflet-karta per löppass, grafer (veckovolym, tempo och puls över tid, e1RM och toppset per övning), finputs på design, laddtillstånd, haptik och animationer, Lighthouse-genomgång för PWA och prestanda. **Tillägg:** rätta distans på löpbandspass (t.ex. det löpbandet visade), sparas separat så att synken inte skriver över; tempo, veckovolym och coachens underlag använder den rättade distansen.
 
 **Etapp 5 – Rörelsecoach med kamera** (`etapp-5-rorelsecoach`). *Tillägg 2026-11-08, godkänt.*
 
