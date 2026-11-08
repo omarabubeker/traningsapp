@@ -49,13 +49,20 @@ export async function POST(req: Request) {
     .reverse()
     .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
   while (msgs.length && msgs[0].role !== "user") msgs.shift();
+  // Slå ihop meddelanden i rad från samma avsändare (t.ex. efter ett misslyckat svar).
+  const merged: { role: "user" | "assistant"; content: string }[] = [];
+  for (const m of msgs as { role: "user" | "assistant"; content: string }[]) {
+    const last = merged.at(-1);
+    if (last && last.role === m.role) last.content += "\n\n" + m.content;
+    else merged.push({ ...m });
+  }
 
   const stream = anthropic().messages.stream({
     model: CHAT_MODEL,
     max_tokens: CHAT_MAX_TOKENS,
     output_config: { effort: "low" },
     system: buildSystem(instructions, profile, training.text, STYLE),
-    messages: msgs,
+    messages: merged,
   });
 
   // Det som ska göras när svaret är klart (förbrukning, minne) körs efter svaret

@@ -65,6 +65,12 @@ export function friendlyError(e: unknown) {
   if (e instanceof Anthropic.RateLimitError) return "För många anrop just nu – försök igen om en stund.";
   if (e instanceof Anthropic.BadRequestError && /credit|billing|balance/i.test(e.message))
     return "Claude-kontot saknar krediter eller har nått sin månadsgräns.";
+  if (e instanceof Anthropic.BadRequestError) {
+    // Visa Claudes egen förklaring – appen har bara en användare och det underlättar felsökning.
+    const detail = (e.error as { error?: { message?: string } } | undefined)?.error?.message ?? e.message;
+    return `Claude avvisade anropet (400): ${detail}`;
+  }
+  if (e instanceof Anthropic.NotFoundError) return "Claude-modellen hittades inte för ditt konto (404).";
   if (e instanceof Anthropic.APIError) return `Claude svarade med fel (${e.status}). Försök igen.`;
   return "Något gick fel. Försök igen.";
 }
