@@ -1,6 +1,11 @@
 # Implementationsplan – personlig träningsapp med AI-coach
 
-Status: **utkast, väntar på godkännande.** Ingen kod skrivs förrän du sagt ja.
+Status: **godkänd 2026-11-08.**
+
+Beslut:
+- Datakälla: **A1, klockan synkar direkt till intervals.icu**, med A2 (FIT/GPX-uppladdning) som reserv. Ingen Strava-koppling.
+- Inloggning med e-postkod (OTP).
+- Coach-instruktioner: Claude skriver ett utkast i etapp 3 om inga egna finns.
 Datum: 2026-11-08
 
 ---
