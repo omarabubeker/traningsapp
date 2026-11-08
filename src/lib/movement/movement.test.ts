@@ -127,17 +127,49 @@ describe("instruktioner", () => {
 });
 
 describe("synlighet", () => {
-  it("kräver att nödvändiga punkter syns i bild", () => {
-    const img = Array.from({ length: 33 }, () => ({ x: 0.5, y: 0.5, z: 0, visibility: 0.9 }));
-    expect(bodyVisible(img, [27, 28])).toBe(true);
-    img[27] = { x: 0.5, y: 1.2, z: 0, visibility: 0.9 };
-    expect(bodyVisible(img, [27, 28])).toBe(false);
+  const req = { left: [11, 23, 25, 27], right: [12, 24, 26, 28] };
+  const img = () => Array.from({ length: 33 }, () => ({ x: 0.5, y: 0.5, z: 0, visibility: 0.9 }));
+  it("räcker att en hel sida syns (rakt från sidan)", () => {
+    const i = img();
+    for (const k of req.left) i[k].visibility = 0.1; // bortre sidan skymd
+    expect(bodyVisible(i, req)).toBe(true);
+  });
+  it("är osynlig när fötterna är utanför bild på båda sidor", () => {
+    const i = img();
+    i[27] = { x: 0.5, y: 1.2, z: 0, visibility: 0.9 };
+    i[28] = { x: 0.5, y: 1.2, z: 0, visibility: 0.9 };
+    expect(bodyVisible(i, req)).toBe(false);
   });
   it("väntar en stund innan kroppen räknas som borta", () => {
-    const g = new VisibilityGate(600);
+    const g = new VisibilityGate(1000);
     expect(g.update(false, 0)).toBe(true);
-    expect(g.update(false, 700)).toBe(false);
-    expect(g.update(true, 800)).toBe(true);
+    expect(g.update(false, 1100)).toBe(false);
+    expect(g.update(true, 1200)).toBe(true);
+  });
+});
+
+describe("från sidan och startposition", () => {
+  it("räknar knäböj när bortre sidan är skymd och använder den synliga sidan", () => {
+    let state = squat.init();
+    const reps: RepEvent[] = [];
+    repAngles(90).forEach((a, i) => {
+      const f = frame((i * 1000) / 30, squatPose({ kneeAngle: a }));
+      // Vänster sida skymd: låg synlighet och skräpvärden i 3D.
+      for (const k of [11, 23, 25, 27, 29, 31]) f.image[k].visibility = 0.1;
+      f.world[25] = { x: -0.1, y: 0.45, z: 0 };
+      const out = squat.update(f, state);
+      state = out.state;
+      if (out.rep) reps.push(out.rep);
+    });
+    expect(reps).toHaveLength(1);
+    expect(reps[0].faults).not.toContain("knees_in");
+    expect(reps[0].faults).not.toContain("asymmetry");
+  });
+  it("känner igen startposition", () => {
+    expect(squat.ready(frame(0, squatPose({ kneeAngle: 175 })))).toBe(true);
+    expect(squat.ready(frame(0, squatPose({ kneeAngle: 120 })))).toBe(false);
+    expect(plank.ready(frame(0, plankPose()))).toBe(true);
+    expect(plank.ready(frame(0, plankPose({ tilt: 70 })))).toBe(false);
   });
 });
 

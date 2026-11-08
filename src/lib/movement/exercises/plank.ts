@@ -24,7 +24,10 @@ export const plank: MovementRule<State> = {
   key: "plank",
   name: "Planka",
   kind: "hold",
-  required: [P.nose, P.leftShoulder, P.leftHip, P.leftAnkle],
+  required: {
+    left: [P.leftShoulder, P.leftHip, P.leftAnkle],
+    right: [P.rightShoulder, P.rightHip, P.rightAnkle],
+  },
   setup: "Lägg telefonen på golvet 1,5–2 m bort, rakt från sidan. Hela kroppen från huvud till fötter ska synas.",
   faultLabels: {
     sag: "Höften sjunker",
@@ -32,6 +35,11 @@ export const plank: MovementRule<State> = {
     head: "Huvudet hänger",
   },
   init: () => ({ faultSince: null, lastT: null, inPosition: false }),
+  ready: (f) => {
+    const { sh, ank } = side(f.world, f.image);
+    const body = sub(ank, sh);
+    return (Math.asin(Math.min(1, Math.abs(body.y) / (len(body) || 1e-6))) * 180) / Math.PI <= HORIZONTAL_MAX;
+  },
   update(f: PoseFrame, s: State) {
     const w = f.world;
     const { sh, hip, ank } = side(w, f.image);

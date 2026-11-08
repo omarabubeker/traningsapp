@@ -47,9 +47,9 @@ export type CameraSettings = { voice: boolean; voiceName: string | null; model: 
 const KEY = "kamera-installningar";
 export function loadSettings(): CameraSettings {
   try {
-    return { voice: true, voiceName: null, model: "lite", ...JSON.parse(localStorage.getItem(KEY) ?? "{}") };
+    return { voice: false, voiceName: null, model: "lite", ...JSON.parse(localStorage.getItem(KEY) ?? "{}") };
   } catch {
-    return { voice: true, voiceName: null, model: "lite" };
+    return { voice: false, voiceName: null, model: "lite" };
   }
 }
 export function saveSettings(s: CameraSettings) {

@@ -35,12 +35,19 @@ export type RuleOutput<S> = {
 
 export type MovementKey = "squat" | "lunge" | "plank";
 
+export type RequiredLandmarks = { left: number[]; right: number[]; common?: number[] };
+
 export interface MovementRule<S = unknown> {
   key: MovementKey;
   name: string;
   kind: "reps" | "hold";
-  /** Landmärken som måste synas för att räkna (MediaPipe-index). */
-  required: number[];
+  /**
+   * Landmärken som måste synas för att räkna (MediaPipe-index). Det räcker att en hel
+   * sida syns (vänster eller höger), så att övningen fungerar även rakt från sidan.
+   */
+  required: RequiredLandmarks;
+  /** Står/ligger personen i startposition? Styr nedräkningen 3–2–1. */
+  ready(frame: PoseFrame): boolean;
   /** Uppställning: vinkel och avstånd. */
   setup: string;
   /** Vilka fel som kan bedömas från rekommenderad vinkel. */

@@ -29,7 +29,10 @@ export const lunge: MovementRule<State> = {
   key: "lunge",
   name: "Utfallssteg",
   kind: "reps",
-  required: [P.leftShoulder, P.rightShoulder, P.leftHip, P.rightHip, P.leftKnee, P.rightKnee, P.leftAnkle, P.rightAnkle],
+required: {
+    left: [P.leftShoulder, P.leftHip, P.leftKnee, P.leftAnkle],
+    right: [P.rightShoulder, P.rightHip, P.rightKnee, P.rightAnkle],
+  },
   setup: "Ställ telefonen i höfthöjd 2–3 m bort, snett framifrån eller från sidan. Hela kroppen ska synas genom hela steget.",
   faultLabels: {
     shallow: "För grunt i främre benet",
@@ -38,6 +41,11 @@ export const lunge: MovementRule<State> = {
     lean: "Bålen lutar för mycket",
   },
   init: () => fresh(),
+  ready: (f) =>
+    Math.min(
+      angle(f.world[P.leftHip], f.world[P.leftKnee], f.world[P.leftAnkle]),
+      angle(f.world[P.rightHip], f.world[P.rightKnee], f.world[P.rightAnkle]),
+    ) > TOP,
   update(f: PoseFrame, s: State) {
     const w = f.world;
     const kneeL = angle(w[P.leftHip], w[P.leftKnee], w[P.leftAnkle]);

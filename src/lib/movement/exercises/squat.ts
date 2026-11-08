@@ -1,7 +1,9 @@
 import { angle, angleFromVertical, mid } from "../geometry";
 import { P, type Cue, type MovementRule, type PoseFrame } from "../types";
+import { sideVisibility } from "../visibility";
 
-// Knäböj. Rekommenderad vinkel: snett framifrån (~45°), hela kroppen i bild.
+// Knäböj. Fungerar framifrån, snett framifrån och från sidan. Från sidan mäts den sida
+// som syns bäst; knän inåt och höger/vänster-skillnad kräver att båda sidor syns.
 // Repfaser via knävinkel med hysteres: under 140° = på väg ner, över 160° = uppe igen.
 
 const DOWN_START = 140;
@@ -28,8 +30,11 @@ export const squat: MovementRule<State> = {
   key: "squat",
   name: "Knäböj",
   kind: "reps",
-  required: [P.leftShoulder, P.rightShoulder, P.leftHip, P.rightHip, P.leftKnee, P.rightKnee, P.leftAnkle, P.rightAnkle],
-  setup: "Ställ telefonen i höfthöjd 2–3 m bort, snett framifrån (cirka 45°). Hela kroppen ska synas, även fötterna.",
+required: {
+    left: [P.leftShoulder, P.leftHip, P.leftKnee, P.leftAnkle],
+    right: [P.rightShoulder, P.rightHip, P.rightKnee, P.rightAnkle],
+  },
+  setup: "Ställ telefonen i höfthöjd 2–3 m bort. Snett framifrån (cirka 45°) bedömer flest fel; från sidan går också bra. Hela kroppen ska synas, även fötterna.",
   faultLabels: {
     shallow: "För grunt",
     knees_in: "Knäna faller inåt",
@@ -38,20 +43,19 @@ export const squat: MovementRule<State> = {
     asymmetry: "Ojämn belastning höger/vänster",
   },
   init: () => fresh(),
+  ready: (f) => kneeAngles(f).knee > TOP,
   update(f: PoseFrame, s: State) {
     const w = f.world;
-    const kneeL = angle(w[P.leftHip], w[P.leftKnee], w[P.leftAnkle]);
-    const kneeR = angle(w[P.rightHip], w[P.rightKnee], w[P.rightAnkle]);
-    const knee = (kneeL + kneeR) / 2;
+    const { kneeL, kneeR, knee, both, best } = kneeAngles(f);
     const lean = angleFromVertical(mid(w[P.leftHip], w[P.rightHip]), mid(w[P.leftShoulder], w[P.rightShoulder]));
     const kneeW = Math.abs(w[P.leftKnee].x - w[P.rightKnee].x);
     const ankleW = Math.abs(w[P.leftAnkle].x - w[P.rightAnkle].x) || 1e-6;
-    const ratio = kneeW / ankleW;
-    // y är nedåt: hälen högre än tårna betyder mindre y.
-    const heel = Math.max(
-      w[P.leftFoot] && w[P.leftHeel] ? w[P.leftFoot].y - w[P.leftHeel].y : 0,
-      w[P.rightFoot] && w[P.rightHeel] ? w[P.rightFoot].y - w[P.rightHeel].y : 0,
-    );
+    // Knän inåt går bara att se när båda sidor syns.
+    const ratio = both ? kneeW / ankleW : 9;
+    // y är nedåt: hälen högre än tårna betyder mindre y. Bara synliga sidor räknas.
+    const heelOf = (side: "left" | "right") =>
+      side === "left" ? (w[P.leftFoot]?.y ?? 0) - (w[P.leftHeel]?.y ?? 0) : (w[P.rightFoot]?.y ?? 0) - (w[P.rightHeel]?.y ?? 0);
+    const heel = both ? Math.max(heelOf("left"), heelOf("right")) : heelOf(best);
 
     const cues: Cue[] = [];
     if (s.phase === "top") {
@@ -65,7 +69,7 @@ export const squat: MovementRule<State> = {
       minKnee: Math.min(s.minKnee, knee),
       maxLean: Math.max(s.maxLean, lean),
       minKneeRatio: knee < 125 ? Math.min(s.minKneeRatio, ratio) : s.minKneeRatio,
-      maxAsym: knee < 125 ? Math.max(s.maxAsym, Math.abs(kneeL - kneeR)) : s.maxAsym,
+      maxAsym: knee < 125 && both ? Math.max(s.maxAsym, Math.abs(kneeL - kneeR)) : s.maxAsym,
       heelLift: Math.max(s.heelLift, heel),
     };
     if (knee < 125 && ratio < VALGUS_RATIO) cues.push({ id: "knees_in", text: "Tryck ut knäna", priority: 1 });
@@ -98,3 +102,16 @@ export const squat: MovementRule<State> = {
     return { state: s, cues, phase: knee < s.minKnee + 3 ? "Botten" : "Ner" };
   },
 };
+
+/** Knävinklar från den sida som syns bäst (eller snittet om båda syns bra). */
+function kneeAngles(f: PoseFrame) {
+  const w = f.world;
+  const kneeL = angle(w[P.leftHip], w[P.leftKnee], w[P.leftAnkle]);
+  const kneeR = angle(w[P.rightHip], w[P.rightKnee], w[P.rightAnkle]);
+  const vl = sideVisibility(f.image, "left");
+  const vr = sideVisibility(f.image, "right");
+  const both = vl >= 0.6 && vr >= 0.6;
+  const best: "left" | "right" = vl >= vr ? "left" : "right";
+  const knee = both ? (kneeL + kneeR) / 2 : best === "left" ? kneeL : kneeR;
+  return { kneeL, kneeR, knee, both, best };
+}

@@ -7,13 +7,25 @@ import { CueScheduler } from "@/lib/movement/cueScheduler";
 import { PointFilter } from "@/lib/movement/oneEuro";
 import { bodyVisible, VisibilityGate } from "@/lib/movement/visibility";
 import { TechniqueSession, type TechniqueSummary } from "@/lib/movement/session";
-import { bestSwedishVoice, loadSettings, speak } from "@/lib/movement/voice";
+import { bestSwedishVoice, loadSettings, saveSettings, speak } from "@/lib/movement/voice";
 import { saveCameraSet } from "@/lib/movement/save";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { MovementKey, PoseFrame } from "@/lib/movement/types";
 
 type Phase = "setup" | "loading" | "live" | "paused" | "summary" | "error";
-type Live = { reps: number; good: number; holdS: number; phase: string; cue: string | null; hidden: boolean; fps: number };
+type Live = {
+  reps: number;
+  good: number;
+  holdS: number;
+  phase: string;
+  cue: string | null;
+  hidden: boolean;
+  fps: number;
+  countdown: number | null; // 3, 2, 1 före start
+  waiting: string | null; // instruktion innan räkningen startat
+};
+const EMPTY_LIVE: Live = { reps: 0, good: 0, holdS: 0, phase: "", cue: null, hidden: false, fps: 0, countdown: null, waiting: null };
+const COUNTDOWN_MS = 3000;
 
 const NOT_VISIBLE = "Vi ser dig inte helt – backa lite";
 // Skelettets linjer (MediaPipe-index), utan ansiktet.
@@ -42,11 +54,15 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
     voice: SpeechSynthesisVoice | null;
     voiceOn: boolean;
     model: string;
+    mode: "waiting" | "countdown" | "active";
+    countdownStart: number;
+    lastCount: number | null;
   } | null>(null);
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [weight, setWeight] = useState("0");
-  const [live, setLive] = useState<Live>({ reps: 0, good: 0, holdS: 0, phase: "", cue: null, hidden: false, fps: 0 });
+  const [live, setLive] = useState<Live>(EMPTY_LIVE);
+  const [voiceOn, setVoiceOn] = useState(false);
   const [summary, setSummary] = useState<TechniqueSummary | null>(null);
   const [saved, setSaved] = useState<{ ok: boolean; sessionId?: string; error?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -108,8 +124,9 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
     setPhase("loading");
     const settings = loadSettings();
     const voice = bestSwedishVoice(settings.voiceName);
+    setVoiceOn(settings.voice);
     // Talsyntesen måste "låsas upp" av en tryckning på iOS.
-    if (settings.voice && !resume) speak(hold ? "Gå ner i planka när du är redo" : "Nu kör vi", voice);
+    if (settings.voice && !resume) speak("Ställ dig så att hela kroppen syns", voice);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
@@ -132,6 +149,10 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
         voice,
         voiceOn: settings.voice,
         model: settings.model,
+        // Efter paus fortsätter räkningen direkt; annars väntar vi på startposition.
+        mode: resume && prev?.mode === "active" ? "active" : "waiting",
+        countdownStart: 0,
+        lastCount: null,
       };
       const video = videoRef.current!;
       video.srcObject = stream;
@@ -178,14 +199,40 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
     let cueText: string | null = null;
     let hidden = false;
     let phaseLabel = "";
+    let countdown: number | null = null;
+    let waiting: string | null = null;
     if (!image || !worldRaw) {
       hidden = !r.gate.update(false, now);
     } else {
       const world = r.filter.apply(worldRaw, now);
       const visible = bodyVisible(image, rule.required);
       hidden = !r.gate.update(visible, now);
-      if (visible) {
-        const frame: PoseFrame = { t: now, world, image };
+      const frame: PoseFrame = { t: now, world, image };
+      if (r.mode !== "active") {
+        // Nedräkning 3–2–1 när hela kroppen syns och personen står (ligger) redo.
+        if (visible && rule.ready(frame)) {
+          if (r.mode === "waiting") {
+            r.mode = "countdown";
+            r.countdownStart = now;
+          }
+          const left = Math.ceil((COUNTDOWN_MS - (now - r.countdownStart)) / 1000);
+          if (left <= 0) {
+            r.mode = "active";
+            r.state = rule.init();
+            cueText = "Kör!";
+          } else {
+            countdown = left;
+            if (r.lastCount !== left) {
+              r.lastCount = left;
+              if (r.voiceOn) speak(String(left), r.voice);
+            }
+          }
+        } else {
+          r.mode = "waiting";
+          r.lastCount = null;
+          waiting = visible ? (hold ? "Gå ner i planka" : "Ställ dig upp, redo") : "Ställ dig så att hela kroppen syns";
+        }
+      } else if (visible) {
         const out = rule.update(frame, r.state as never);
         r.state = out.state;
         r.session.add(out, now);
@@ -194,15 +241,16 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
         if (cue) cueText = cue.text;
       }
     }
-    if (hidden) {
+    if (hidden && r.mode === "active") {
       const cue = r.cues.pick([{ id: "hidden", text: NOT_VISIBLE, priority: 0 }], now);
       if (cue) cueText = cue.text;
     }
+    if (r.mode !== "active" && !image) waiting = "Ställ dig så att hela kroppen syns";
     if (cueText && r.voiceOn) speak(cueText, r.voice);
     draw(image, hidden);
 
     // Uppdatera skärmen högst ~8 gånger/s (eller direkt vid ny instruktion).
-    if (cueText || now - r.lastUi > 120) {
+    if (cueText || countdown !== null || now - r.lastUi > 120) {
       r.lastUi = now;
       const s = r.session;
       const fps = r.frames.length;
@@ -211,9 +259,11 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
         good: s.goodReps,
         holdS: Math.floor(s.holdMs / 1000),
         phase: phaseLabel || l.phase,
-        cue: cueText ?? (hidden ? NOT_VISIBLE : l.cue),
-        hidden,
+        cue: cueText ?? (hidden && r.mode === "active" ? NOT_VISIBLE : r.mode === "active" ? l.cue : null),
+        hidden: hidden && r.mode === "active",
         fps,
+        countdown,
+        waiting,
       }));
       if (now - (r.frames[0] ?? now) > 900) setSlow(fps < 15 ? r.model : null);
     }
@@ -248,6 +298,15 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
     }
   }
 
+  function toggleVoice() {
+    const on = !voiceOn;
+    setVoiceOn(on);
+    if (run.current) run.current.voiceOn = on;
+    saveSettings({ ...loadSettings(), voice: on });
+    if (on) speak("Ljud på", run.current?.voice ?? bestSwedishVoice(loadSettings().voiceName));
+    else if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
+  }
+
   // --- Avsluta och spara ------------------------------------------------------------------
   async function finish() {
     const r = run.current;
@@ -271,7 +330,7 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
     run.current = null;
     setSummary(null);
     setSaved(null);
-    setLive({ reps: 0, good: 0, holdS: 0, phase: "", cue: null, hidden: false, fps: 0 });
+    setLive(EMPTY_LIVE);
     setPhase("setup");
   }
 
@@ -327,9 +386,18 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
             </p>
             {!hold && live.reps > 0 && <p className="text-sm text-white/70">{live.good} med god teknik</p>}
           </div>
-          <div className="text-right text-xs text-white/60">
-            <p>{live.phase}</p>
-            <p>{live.fps} fps</p>
+          <div className="flex items-start gap-3">
+            <div className="text-right text-xs text-white/60">
+              <p>{live.phase}</p>
+              <p>{live.fps} fps</p>
+            </div>
+            <button
+              onClick={toggleVoice}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-black/50 text-xl"
+              aria-label={voiceOn ? "Stäng av ljud" : "Slå på ljud"}
+            >
+              {voiceOn ? "🔊" : "🔇"}
+            </button>
           </div>
         </div>
 
@@ -337,7 +405,17 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
           <p className="absolute inset-x-0 top-1/2 text-center text-white/80">Startar kamera och modell…</p>
         )}
 
-        {live.cue && phase === "live" && (
+        {phase === "live" && live.countdown !== null && (
+          <p className="absolute inset-x-0 top-1/3 text-center text-[7rem] font-bold leading-none text-white drop-shadow-lg tabular-nums">
+            {live.countdown}
+          </p>
+        )}
+        {phase === "live" && live.countdown === null && live.waiting && (
+          <div className="absolute inset-x-4 top-1/3 flex justify-center">
+            <p className="rounded-2xl bg-black/75 px-5 py-3 text-center text-xl font-semibold text-white">{live.waiting}</p>
+          </div>
+        )}
+        {live.cue && phase === "live" && live.countdown === null && !live.waiting && (
           <div className="absolute inset-x-4 top-1/3 flex justify-center">
             <p className={`rounded-2xl px-5 py-3 text-center text-2xl font-semibold shadow-lg ${live.hidden ? "bg-danger text-black" : "bg-black/75 text-white"}`}>
               {live.cue}
