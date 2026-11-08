@@ -3,7 +3,8 @@
 Status: **godkänd 2026-11-08.**
 
 Beslut:
-- Datakälla: **A1, klockan synkar direkt till intervals.icu**, med A2 (FIT/GPX-uppladdning) som reserv. Ingen Strava-koppling.
+- Datakälla: **A1 via intervals.icu**, med A2 (FIT/GPX-uppladdning) som reserv. Ingen Strava-koppling.
+- Klocka: **Apple Watch Series 11**. Den kan inte synka direkt till intervals.icu, så vägen blir Apple Watch → Apple Hälsa → iOS-appen *Intervals.icu Companion* (gratis att ladda ner, har köp i appen) → intervals.icu → vår app. Reserv: *HealthFit* (engångsköp). Att synken är gratis verifieras innan etapp 2.
 - Inloggning med e-postkod (OTP).
 - Coach-instruktioner: Claude skriver ett utkast i etapp 3 om inga egna finns.
 Datum: 2026-11-08
@@ -99,6 +100,8 @@ weekly_reviews     id, user_id, week_start, summary, plan_id, cost_usd
 ```
 
 Veckobelastning (`weekly_load`) är en **SQL-vy** som räknas fram ur activities och gym_sets: km, tid, antal pass, tid i pulszoner eller TRIMP, gymvolym (set × reps × kg) per muskelgrupp. Den lagras alltså inte dubbelt.
+
+Tillägg i etapp 5 (rörelsecoach): `exercises.movement_key`, `gym_sets.duration_s`, `gym_sessions.source` och tabellen `technique_results`. Se etapp 5.
 
 ## 3. Sammanfattning till coachen och kostnad (fråga 3)
 
@@ -235,10 +238,73 @@ Koppling till vald källa, krypterad lagring av nycklar och tokens (med förnyel
 **Etapp 4 – Karta och finputs** (`etapp-4-karta-grafer`)
 Leaflet-karta per löppass, grafer (veckovolym, tempo och puls över tid, e1RM och toppset per övning), finputs på design, laddtillstånd, haptik och animationer, Lighthouse-genomgång för PWA och prestanda.
 
+**Etapp 5 – Rörelsecoach med kamera** (`etapp-5-rorelsecoach`). *Tillägg 2026-11-08, väntar på godkännande.*
+
+*Teknik*
+- `@mediapipe/tasks-vision`, Pose Landmarker i läget `VIDEO` med GPU-delegat. Allt körs i webbläsaren. Ingen bild eller video sparas eller skickas, bara siffror (reps, fel, vinklar) sparas.
+- WASM- och modellfiler självhostas under `public/mediapipe/` (kopieras från npm-paketet vid bygget med ett litet skript, versionslåst). Ingen trafik till Googles CDN. Service workern cachar dem efter första gången, så kameran fungerar även offline i gymmet.
+- Modell: `pose_landmarker_lite` som standard (~5 MB, snabbast) och `full` som val i inställningarna. Vi mäter fps på din iPhone och väljer standard utifrån det. Målet är minst ~20 fps.
+- Bildloopen körs med `requestVideoFrameCallback` och reducerad upplösning (t.ex. 640×480). Skelettet ritas på en `<canvas>` ovanpå videon (spegelvänd frontkamera).
+- **3D-vinklar från `worldLandmarks`** (meter, centrerat i höften), utjämnade med ett One Euro-filter mot brus. 2D-landmärkena används bara för overlay och för att avgöra om kroppen syns.
+- Kameran stängs (alla spår stoppas) när du lämnar vyn, byter flik eller låser skärmen. Under passet hålls skärmen vaken med Wake Lock.
+
+*Övningsregler som separata, testbara moduler* (`src/lib/movement/exercises/*.ts`)
+```ts
+interface MovementRule {
+  key: "squat" | "lunge" | "plank";
+  name: string;
+  requiredLandmarks: number[];          // måste synas för att räkna
+  kind: "reps" | "hold";
+  update(frame: PoseFrame, state): { state; event?: RepEvent | HoldTick; cues: Cue[] };
+}
+```
+- Varje modul är en ren funktion (state machine): ingen kamera och ingen DOM. Den testas med **Vitest** mot inspelade och syntetiska landmärkessekvenser i `__fixtures__`.
+- **Knäböj:** repfaser via knävinkel (topp > ~160°, botten < ~100°, med hysteres). Fel: för grunt, knän faller inåt (knä–fot-avstånd jämfört med höft), hälar lyfter, för stor framåtlutning (bålvinkel), asymmetri vänster/höger.
+- **Utfallssteg:** reps per ben. Fel: för grunt (främre knä), främre knä långt förbi tårna, knä inåt, bålen lutar, bakre knä nuddar inte nära golvet.
+- **Planka:** hålltid räknas bara när positionen är godkänd. Fel: höften sjunker, höften för högt, huvudet hänger. Timern pausas vid fel som varar mer än 2 sekunder.
+- En ny övning läggs till som en ny fil plus en rad i ett register.
+
+*Feedback*
+- En instruktion åt gången, med prioritet: säkerhet → största felet → beröm. Samma instruktion upprepas tidigast efter **3–4 s**. Tröskeln är en konstant i en egen modul (`cueScheduler`) och testas för sig.
+- Text på skärmen visas alltid. **Röst** kan slås på och av och använder `speechSynthesis`. Bästa svenska röst väljs automatiskt: `sv-SE` → namn som innehåller "Förbättrad", "Enhanced" eller "Premium" → övriga lokala röster → standard. Du kan också välja röst i inställningarna.
+- **"Vi ser dig inte helt – backa lite"** visas och sägs när nödvändiga landmärken har låg synlighet eller ligger utanför bilden en stund. Räkningen pausas då.
+- Före start visas uppställningsguide per övning: avstånd ~2–3 m, telefonen i höfthöjd, framifrån eller snett framifrån (planka från sidan), och 3 s nedräkning.
+
+*Efter passet*
+- Sammanfattning: reps (eller hålltid), andel reps med god teknik, de tre vanligaste felen och jämförelse med förra gången.
+- **Sparas automatiskt i gymloggen:** ett gympass skapas (eller det pågående används), med ett set per kameraset. Knäböj och utfall loggas med reps och vikt (vikten kan anges före start, 0 = kroppsvikt), plankan med hålltid.
+
+*Påverkan på datamodellen och det som redan är byggt*
+
+Inget i etapp 1 behöver göras om, men följande läggs till med en ny migrering (`0002_rorelsecoach.sql`):
+
+| Ändring | Varför |
+|---|---|
+| `exercises.movement_key text null` (`squat`/`lunge`/`plank`) | Kopplar kamerareglerna till din övningslista. Befintliga *Knäböj*, *Utfall* och *Plankan (sek)* får nyckeln automatiskt. |
+| `gym_sets.duration_s int null` | Hålltid för plankan. I dag loggas plankan som "reps = sekunder", vilket är en tillfällig lösning. Gymloggen får en sekundstegare för tidsövningar. |
+| `gym_sessions.source text default 'manual'` (`manual`/`camera`) | Kamerapass syns som sådana i loggen. |
+| Ny tabell `technique_results` (`id, user_id, gym_set_id → gym_sets, movement_key, reps, good_reps, hold_s, faults jsonb {felkod: antal}, metrics jsonb {snittdjup, ROM, asymmetri}, model, created_at`) + RLS | Teknikresultat per set. Ingen bild sparas. |
+| SQL-vy `technique_weekly` (per övning och vecka: andel god teknik, vanligaste fel, snittdjup) | Underlag till coachen och grafer. |
+
+Mindre ändringar i befintlig kod:
+- `src/proxy.ts`: matchern måste undanta `/mediapipe/` (och `.wasm`/`.task`), annars skickas modellfilerna till inloggningen.
+- `public/sw.js`: cachar modellfilerna (cache först, versionsnamn).
+- Startövningen *Utfall* byter namn till *Utfallssteg* för att matcha.
+- Bottenmenyn får en knapp till *Kamera*, eller *Teknik* under Gym.
+
+*Coachen och teknikresultaten.* Etapp 3 byggs före etapp 5. Därför gör jag sammanfattningsmotorn i etapp 3 modulär, med en sektion per datakälla, och i etapp 5 lägger jag till sektionen **"Teknik"**: per övning de senaste 4 veckorna, andel god teknik och trend, de 2–3 vanligaste felen samt förändring mot föregående period. Det blir ungefär 100–200 tokens extra per anrop, alltså försumbar kostnad. Coachen kan då koppla ihop teknikfel med skador och plan, till exempel "knä inåt i 40 % av knäböjen + ömt knä → fokus på…".
+
+*Risker och oklarheter*
+1. **Frontkamera och vinkel:** framifrån syns knän som faller inåt bra, men djup och framåtlutning syns sämre. Från sidan är det tvärtom. Jag föreslår snett framifrån (~45°) för knäböj och utfall och från sidan för planka, och visar vilka fel som kan bedömas från vald vinkel. Telefonen behöver stå stadigt 2–3 m bort (stativ, flaska, bänk).
+2. **3D-precisionen** i `worldLandmarks` är bra för vinklar men brusig i djupled (z). Trösklarna kalibreras därför på riktiga inspelningar av dig. Jag bygger ett dolt "kalibreringsläge" som sparar *landmärken* (inte video) lokalt så att vi kan justera.
+3. **Röster på iPhone:** Safari och hemskärmsappar visar inte alltid de nedladdade "Förbättrad"-rösterna (Siri-röster är aldrig tillgängliga för webben). Vi faller tillbaka till bästa tillgängliga röst. Detta måste testas på din telefon.
+4. **Prestanda:** iPhone (Series 11-klockan tyder på en nyare iPhone) bör klara 25–30 fps med lite-modellen. Om fps sjunker under 15 visas en notis och upplösningen sänks automatiskt.
+5. **Inte medicinsk bedömning:** formfeedback är vägledning. Vid smärta gäller samma regel som för coachen.
+6. **Storlek:** modell och WASM är ~10–15 MB och laddas bara när kameravyn öppnas första gången, inte i resten av appen.
+
 ---
 
-**Det jag behöver från dig för att börja:**
-1. Godkännande av planen, eller ändringar.
-2. Val av datakälla (A1/A2/A3), och vilken klocka du har.
-3. Koppla om GitHub (eller skapa repot), så pushar jag planen och startar etapp 1.
-4. Dina coach-instruktioner (behövs först i etapp 3).
+**Status och nästa steg**
+1. Etapp 1 är klar för test: PR https://github.com/omarabubeker/traningsapp/pull/1
+2. Etapp 5 ovan väntar på ditt godkännande. Den byggs efter etapp 4 om du inte vill ändra ordningen.
+3. Coach-instruktioner behövs först i etapp 3. Annars skriver jag ett utkast.
