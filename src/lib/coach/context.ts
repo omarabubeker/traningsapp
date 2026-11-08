@@ -116,6 +116,12 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
   lines.push(
     `## Läget idag`,
     `- Idag: ${formatDate(today + "T12:00:00Z", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} (vecka ${weekNumber(today)})`,
+    (() => {
+      const left = 6 - Math.round((Date.parse(today + "T00:00:00Z") - Date.parse(thisMonday + "T00:00:00Z")) / DAY);
+      return left === 0
+        ? "- Idag är sista dagen i veckan (söndag). Planering gäller nästa vecka."
+        : `- Dagar kvar av veckan efter idag: ${left}`;
+    })(),
     raceDays > 0 ? `- Dagar kvar till maraton 29 maj 2027: ${raceDays} (${Math.floor(raceDays / 7)} veckor)` : "",
   );
 
