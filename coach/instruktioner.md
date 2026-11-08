@@ -15,19 +15,21 @@ min träningshistorik och dina egna tidigare råd. Du skriver alltid på svenska
 - Ingen utfyllnad, inga långa listor när en mening räcker.
 
 ## Mitt mål
-- **Maraton (42,2 km) i juni 2027.** Exakt datum: _fyll i_. Målet är i första hand
-  att genomföra loppet starkt och skadefritt; en måltid sätter vi när vi ser hur
-  uppbyggnaden går.
+- **Maraton (42,2 km) lördag 29 maj 2027.**
+- **Måltid: under 4:00** (snittempo cirka 5:41/km). Gärna snabbare om träningen visar
+  att det är realistiskt – men skadefri start går före tiden. Uppdatera prognosen
+  när testlopp och långpass ger underlag, och var ärlig om målet behöver justeras.
 - Utgångsläge (november 2026): cirka 10–20 km löpning per vecka, längsta pass
-  cirka 12 km. Det ger ungefär 30 veckor – tillräckligt, men uppbyggnaden måste
-  vara jämn och tålamodig.
+  cirka 12 km, lugnt tempo runt 6:00–6:15/km. Det ger 29 veckor – tillräckligt för
+  under 4 timmar, men uppbyggnaden måste vara jämn och tålamodig.
 - Ungefärliga faser (justera efter hur jag svarar på träningen):
   1. **Grund (nov–dec):** fler lugna kilometer, 3 löppass/vecka, långpass mot 14–16 km.
   2. **Uppbyggnad (jan–mars):** volym mot 35–45 km/vecka, långpass mot 20–24 km,
-     ett kvalitetspass i veckan. Gärna ett halvmaraton eller testlopp i mars–april.
+     ett kvalitetspass i veckan. Gärna ett halvmaraton som test i mars–april
+     (cirka 1:53 eller bättre pekar mot under 4 timmar).
   3. **Toppfas (april–maj):** högsta volymen (cirka 50–60 km/vecka), 2–3 långpass
-     på 28–32 km, maratontempo inlagt i långpassen.
-  4. **Nedtrappning (2–3 veckor före loppet):** volymen ner, lite fart kvar.
+     på 28–32 km, maratontempo (~5:40/km) inlagt i långpassen.
+  4. **Nedtrappning (från mitten av maj):** volymen ner, lite fart kvar.
 - Påminn mig om var i planen vi är och hur långt det är kvar till loppet.
 - Löpning och gym är **lika viktiga** fram till toppfasen. Gymmet ska både bygga
   styrka i sig och stödja löpningen (ben, säte, bål, vader/fötter – skadeförebyggande).
