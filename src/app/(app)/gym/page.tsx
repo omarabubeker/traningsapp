@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
 import { StartSessionButton } from "@/components/StartSessionButton";
-import { formatDate, formatTime } from "@/lib/dates";
+import { formatDate, formatKg, formatTime } from "@/lib/dates";
+import { bestSet } from "@/lib/gym";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,21 @@ export default async function GymPage() {
     .order("started_at", { ascending: false })
     .limit(30);
   const sessions = (data ?? []) as unknown as Row[];
+  const { data: exData } = await supabase
+    .from("exercises")
+    .select("id, name, is_bodyweight, gym_sets(reps, weight_kg, is_warmup, created_at)")
+    .eq("archived", false)
+    .order("name");
+  type Ex = { id: string; name: string; is_bodyweight: boolean; gym_sets: { reps: number; weight_kg: number; is_warmup: boolean; created_at: string }[] };
+  const exercises = ((exData ?? []) as Ex[])
+    .map((e) => ({ ...e, gym_sets: e.gym_sets ?? [] }))
+    .filter((e) => e.gym_sets.length)
+    .map((e) => {
+      const latest = [...e.gym_sets].sort((a, b) => b.created_at.localeCompare(a.created_at));
+      const lastDay = latest[0]?.created_at.slice(0, 10);
+      return { ...e, last: latest[0]?.created_at, best: bestSet(latest.filter((x) => x.created_at.slice(0, 10) === lastDay), e.is_bodyweight) };
+    })
+    .sort((a, b) => (b.last ?? "").localeCompare(a.last ?? ""));
   const active = sessions.find((s) => !s.ended_at);
 
   return (
@@ -30,6 +46,22 @@ export default async function GymPage() {
         <Link href={`/gym/${active.id}`} className="btn-primary w-full">Fortsätt pågående pass</Link>
       ) : (
         <StartSessionButton />
+      )}
+
+      {exercises.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-medium text-muted">Övningar och utveckling</h2>
+          <div className="card divide-y divide-line p-0">
+            {exercises.map((e) => (
+              <Link key={e.id} href={`/gym/ovning/${e.id}`} className="flex items-center justify-between px-4 py-3">
+                <span>{e.name}</span>
+                <span className="text-sm text-muted tabular-nums">
+                  {e.best ? `${formatKg(e.best.weight_kg)} kg × ${e.best.reps}` : ""} →
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
 
       <section className="space-y-2">

@@ -110,6 +110,22 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
     return { sets: all, pendingIds: new Set(pending.map((p) => p.id)) };
   }, [serverSets, queueVersion, sessionId]);
 
+  // --- Håll skärmen vaken under passet (iOS 16.4+, Android, desktop) ----------
+  const ended = !!session?.ended_at;
+  useEffect(() => {
+    if (!session || ended || !("wakeLock" in navigator)) return;
+    let lock: WakeLockSentinel | null = null;
+    const request = () =>
+      navigator.wakeLock.request("screen").then((l) => (lock = l)).catch(() => {});
+    request();
+    const onVisible = () => document.visibilityState === "visible" && request();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      lock?.release().catch(() => {});
+    };
+  }, [session, ended]);
+
   // --- Vilotimer -------------------------------------------------------------
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -232,7 +248,6 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
   if (activeEx && !groups.includes(activeEx)) groups.push(activeEx);
   const active = activeEx ? exercises.find((e) => e.id === activeEx) : null;
   const activePrev = activeEx ? prev[activeEx] : undefined;
-  const ended = !!session.ended_at;
   const pendingCount = pendingIds.size;
 
   return (

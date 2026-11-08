@@ -64,3 +64,25 @@ textarea {
 @utility pt-safe {
   padding-top: max(env(safe-area-inset-top), 0.75rem);
 }
+
+/* Mörk karta: OSM-rutorna inverteras och tonas ner så att de passar temat. */
+.map-tiles-dark {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
+}
+.leaflet-container {
+  background: var(--color-surface-2) !important;
+  font-family: var(--font-sans);
+}
+.leaflet-control-attribution {
+  background: rgb(14 17 19 / 0.7) !important;
+  color: var(--color-muted) !important;
+  font-size: 10px;
+}
+.leaflet-control-attribution a {
+  color: var(--color-muted) !important;
+}
+.leaflet-bar a {
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-line) !important;
+}

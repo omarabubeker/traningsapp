@@ -3,6 +3,10 @@
 Personlig träningsapp (PWA) med gymlogg, löppass från klockan och AI-coach.
 Se [PLAN.md](PLAN.md) för helheten och etapperna.
 
+**Etapp 4:** karta per löppass (Leaflet + OpenStreetMap), grafer för veckovolym,
+tempo, puls och gymutveckling, rättning av löpbandsdistans, skärmen hålls vaken under
+gympass och nedräkning till maran.
+
 **Etapp 3:** AI-coach – chatt (Claude Haiku 5.5), minne, veckoavstämning med plan
 (Claude Sonnet 5.5), plan mot utfört och förbrukning. Instruktionerna finns i
 [`coach/instruktioner.md`](coach/instruktioner.md) – redigera fritt.
@@ -43,6 +47,9 @@ med "förra gången" och offlinekö, veckoöversikt, PWA (hemskärm, mörkt läg
 1. Supabase → **SQL Editor** → kör `supabase/migrations/0003_etapp3_coach.sql`.
 2. Vercel → `ANTHROPIC_API_KEY` (Production och Preview).
 3. Sätt en månadsgräns i Claude Console (Limits).
+
+### Etapp 4: rättad distans
+1. Supabase → **SQL Editor** → kör `supabase/migrations/0004_etapp4_distans.sql`.
 
 ### 3. iPhone
 Öppna adressen i Safari → **Dela** → **Lägg till på hemskärmen**. Logga in i appen
