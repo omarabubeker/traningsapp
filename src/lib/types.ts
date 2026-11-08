@@ -37,3 +37,27 @@ export type GymSet = {
   is_warmup: boolean;
   created_at: string;
 };
+
+export type Split = { km: number; dist_m: number; time_s: number; pace_s: number; hr: number | null; elev_m: number | null };
+
+export type Activity = {
+  id: string;
+  source: "intervals" | "apple_health" | "file";
+  external_id: string;
+  sport_type: string;
+  name: string | null;
+  start_time: string;
+  distance_m: number | null;
+  moving_time_s: number | null;
+  elapsed_time_s: number | null;
+  avg_hr: number | null;
+  max_hr: number | null;
+  elevation_gain_m: number | null;
+  avg_pace_s_per_km: number | null;
+  avg_cadence: number | null;
+  calories: number | null;
+  training_load: number | null;
+  indoor: boolean;
+  splits: Split[] | null;
+  route: [number, number][] | null;
+};

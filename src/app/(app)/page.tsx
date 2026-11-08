@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { StartSessionButton } from "@/components/StartSessionButton";
+import { ActivityRow } from "@/components/ActivityRow";
+import { isRun } from "@/lib/running";
+import type { Activity } from "@/lib/types";
 import { requireUser } from "@/lib/supabase/server";
 import { WEEKDAYS_SHORT, formatKg, formatTime, isoDay, weekNumber, weekRange } from "@/lib/dates";
 
@@ -22,6 +25,18 @@ export default async function Overview() {
     .gte("started_at", from)
     .lt("started_at", to)
     .order("started_at");
+
+  const { data: actData } = await supabase
+    .from("activities")
+    .select("id, sport_type, name, start_time, distance_m, moving_time_s, avg_hr, avg_pace_s_per_km, indoor, source")
+    .is("deleted_at", null)
+    .gte("start_time", from)
+    .lt("start_time", to)
+    .order("start_time");
+  const activities = ((actData ?? []) as Activity[])
+    .map((a) => ({ ...a, day: isoDay(new Date(a.start_time)) }))
+    .filter((a) => days.includes(a.day));
+  const runKm = activities.filter((a) => isRun(a.sport_type)).reduce((s, a) => s + (a.distance_m ?? 0) / 1000, 0);
 
   const sessions = ((data ?? []) as Row[])
     .map((s) => ({ ...s, day: isoDay(new Date(s.started_at)) }))
@@ -52,12 +67,13 @@ export default async function Overview() {
         <ol className="grid grid-cols-7 gap-1 text-center">
           {days.map((d, i) => {
             const gym = sessions.some((s) => s.day === d);
+            const ran = activities.some((a) => a.day === d && isRun(a.sport_type));
             return (
               <li key={d} className="flex flex-col items-center gap-2">
                 <span className={`text-xs ${d === today ? "text-text" : "text-muted"}`}>{WEEKDAYS_SHORT[i]}</span>
                 <span
                   className={`flex h-9 w-9 items-center justify-center rounded-full text-sm ${
-                    gym ? "bg-gym/20 text-gym" : d === today ? "border border-line" : "text-muted"
+                    ran && gym ? "bg-accent/20 text-accent" : ran ? "bg-run/20 text-run" : gym ? "bg-gym/20 text-gym" : d === today ? "border border-line" : "text-muted"
                   }`}
                 >
                   {Number(d.slice(8))}
@@ -69,14 +85,17 @@ export default async function Overview() {
       </section>
 
       <section className="grid grid-cols-3 gap-3">
+        <Stat label="Löpning" value={`${runKm.toLocaleString("sv-SE", { maximumFractionDigits: 1 })} km`} />
         <Stat label="Gympass" value={String(sessions.length)} />
-        <Stat label="Arbetsset" value={String(work.length)} />
-        <Stat label="Volym" value={`${formatKg(Math.round(volume / 100) / 10)} t`} />
+        <Stat label="Gymvolym" value={`${formatKg(Math.round(volume / 100) / 10)} t`} />
       </section>
 
       <section className="space-y-2">
         <h2 className="text-sm font-medium text-muted">Veckans pass</h2>
-        {sessions.length === 0 && <p className="card text-muted">Inga pass än den här veckan.</p>}
+        {sessions.length === 0 && activities.length === 0 && <p className="card text-muted">Inga pass än den här veckan.</p>}
+        {activities.map((a) => (
+          <ActivityRow key={a.id} a={a} />
+        ))}
         {sessions.map((s) => (
           <Link key={s.id} href={`/gym/${s.id}`} className="card flex items-center justify-between">
             <span>
@@ -91,7 +110,6 @@ export default async function Overview() {
             </span>
           </Link>
         ))}
-        <p className="px-1 pt-1 text-xs text-muted">Löppass från klockan visas här från etapp 2.</p>
       </section>
 
       {!active && <StartSessionButton />}

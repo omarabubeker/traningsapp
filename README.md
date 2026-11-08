@@ -3,7 +3,10 @@
 Personlig träningsapp (PWA) med gymlogg, löppass från klockan och AI-coach.
 Se [PLAN.md](PLAN.md) för helheten och etapperna.
 
-**Etapp 1 (den här):** inloggning (e-post + lösenord), profil med vikthistorik, gymlogg
+**Etapp 2:** löppass från klockan (Apple Watch → Apple Hälsa → Intervals.icu Companion →
+intervals.icu → appen), engångsimport av Apple Hälsa-export, splits och veckovolym.
+
+**Etapp 1:** inloggning (e-post + lösenord), profil med vikthistorik, gymlogg
 med "förra gången" och offlinekö, veckoöversikt, PWA (hemskärm, mörkt läge).
 
 ## Kom igång (en gång)
@@ -27,6 +30,11 @@ med "förra gången" och offlinekö, veckoöversikt, PWA (hemskärm, mörkt läg
    - `ALLOWED_EMAIL`
 3. **Deploy.** Varje pull request får därefter en egen testlänk.
 
+### Etapp 2: databas och klockan
+1. Supabase → **SQL Editor** → kör `supabase/migrations/0002_etapp2_lopning.sql`.
+2. Vercel → miljövariablerna `INTERVALS_API_KEY` och `INTERVALS_ATHLETE_ID` (med "i").
+3. I appen: **Profil → Inställningar → Synka**, och **Importera export.zip** för historiken.
+
 ### 3. iPhone
 Öppna adressen i Safari → **Dela** → **Lägg till på hemskärmen**. Logga in i appen
 från hemskärmen (inloggningen i Safari och i hemskärmsappen är separata på iOS);
@@ -43,6 +51,9 @@ npm run dev
 - `src/app/(app)/` – inloggade sidor: översikt, gym, profil
 - `src/app/login/` – inloggning (server actions, allowlist)
 - `src/lib/gymQueue.ts` – offlinekö för gymset
+- `src/lib/intervals.ts`, `src/app/api/sync/` – synk mot intervals.icu
+- `src/lib/appleHealth.ts` – strömmande läsning av Apple Hälsa-export i webbläsaren
+- `src/lib/running.ts` – splits, rutt, tempo (testas med `npm test`)
 - `src/proxy.ts` – sessionsförnyelse och inloggningsskydd
 - `supabase/migrations/` – databas med Row Level Security
 - `public/sw.js`, `src/app/manifest.ts` – PWA
