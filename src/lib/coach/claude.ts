@@ -60,17 +60,17 @@ export async function logUsage(supabase: SupabaseClient, kind: string, model: st
 }
 
 export function friendlyError(e: unknown) {
-  if (e instanceof Anthropic.AuthenticationError) return "Claude-nyckeln saknas eller är fel (ANTHROPIC_API_KEY).";
-  if (e instanceof Anthropic.PermissionDeniedError) return "Claude-kontot saknar behörighet – kontrollera nyckeln.";
-  if (e instanceof Anthropic.RateLimitError) return "För många anrop just nu – försök igen om en stund.";
-  if (e instanceof Anthropic.BadRequestError && /credit|billing|balance/i.test(e.message))
-    return "Claude-kontot saknar krediter eller har nått sin månadsgräns.";
-  if (e instanceof Anthropic.BadRequestError) {
-    // Visa Claudes egen förklaring – appen har bara en användare och det underlättar felsökning.
-    const detail = (e.error as { error?: { message?: string } } | undefined)?.error?.message ?? e.message;
-    return `Claude avvisade anropet (400): ${detail}`;
+  // Fel under strömning kommer som generiskt APIError, så titta på status och text.
+  if (e instanceof Anthropic.APIError) {
+    const detail =
+      (e.error as { error?: { message?: string } } | undefined)?.error?.message ?? e.message ?? "";
+    if (e.status === 401) return "Claude-nyckeln saknas eller är fel (ANTHROPIC_API_KEY).";
+    if (e.status === 403) return "Claude-kontot saknar behörighet – kontrollera nyckeln.";
+    if (e.status === 429) return "För många anrop just nu – försök igen om en stund.";
+    if (/credit|balance|billing/i.test(detail))
+      return "Claude-kontot saknar krediter. Fyll på under Billing i Claude Console (det kan ta några minuter innan det gäller).";
+    if (e.status === 404) return `Claude-modellen hittades inte (404): ${detail}`;
+    return `Claude svarade med fel (${e.status ?? "okänt"}): ${detail}`;
   }
-  if (e instanceof Anthropic.NotFoundError) return "Claude-modellen hittades inte för ditt konto (404).";
-  if (e instanceof Anthropic.APIError) return `Claude svarade med fel (${e.status}). Försök igen.`;
-  return "Något gick fel. Försök igen.";
+  return e instanceof Error ? `Något gick fel: ${e.message}` : "Något gick fel. Försök igen.";
 }
