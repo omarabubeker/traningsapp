@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Kopierade tredjepartsfiler (MediaPipe WASM) och service worker.
+    "public/**",
   ]),
 ]);
 

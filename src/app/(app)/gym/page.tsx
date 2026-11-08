@@ -47,6 +47,14 @@ export default async function GymPage() {
       ) : (
         <StartSessionButton />
       )}
+      <Link href="/kamera" className="card flex items-center gap-3">
+        <span className="text-2xl" aria-hidden>📷</span>
+        <span className="flex-1">
+          <span className="block font-medium">Teknik med kamera</span>
+          <span className="block text-sm text-muted">Knäböj, utfallssteg och planka med feedback i realtid</span>
+        </span>
+        <span className="text-muted">→</span>
+      </Link>
 
       {exercises.length > 0 && (
         <section className="space-y-2">

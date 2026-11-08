@@ -45,6 +45,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Allt utom statiska filer, ikoner, manifest och service worker.
-    "/((?!_next/static|_next/image|favicon.ico|icons/|manifest.webmanifest|sw.js|.*\\.(?:png|svg|jpg|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icons/|mediapipe/|manifest.webmanifest|sw.js|.*\\.(?:png|svg|jpg|webp|ico|wasm|task)$).*)",
   ],
 };

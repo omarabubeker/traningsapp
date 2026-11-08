@@ -1,6 +1,6 @@
 // Enkel service worker: nätverk först, cache som reserv.
 // Gör att appen går att öppna i gymmet med dålig täckning.
-const CACHE = "traning-v1";
+const CACHE = "traning-v2";
 const OFFLINE_URL = "/offline";
 
 self.addEventListener("install", (event) => {
@@ -22,8 +22,8 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (req.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
 
-  // Statiska byggfiler: cache först (de har unika namn).
-  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/")) {
+  // Statiska byggfiler och MediaPipe-modeller: cache först (rörelsecoachen fungerar offline).
+  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/") || url.pathname.startsWith("/mediapipe/")) {
     event.respondWith(
       caches.match(req).then(
         (hit) =>
