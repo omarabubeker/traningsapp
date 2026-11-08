@@ -10,17 +10,21 @@ import { sideVisibility } from "../visibility";
 //     där MediaPipes djupled är osäker och knävinkeln ser för rak ut).
 // Stående läge och fotens normala lutning kalibreras medan personen står still.
 
-const DOWN_KNEE = 140;
-const TOP_KNEE = 155;
+// Gränsvärden kalibrerade mot riktiga inspelningar (pose_recordings, nov 2026):
+//   stående knävinkel framifrån 151–160°, från sidan 160–174°
+//   höftsänkning i botten: bra reps 0,42–0,52, grunda 0,72–0,79 (båda vyerna)
+//   knävinkel i botten från sidan: bra 59–68°, grunda 102–111° (framifrån opålitlig)
+const DOWN_KNEE = 130;
+const TOP_KNEE = 145; // stående/redo; framifrån mäts knät aldrig helt rakt
 const DOWN_DROP = 0.9; // höft–fotled-höjd / stående: repen börjar under detta
 const TOP_DROP = 0.93; // …och slutar när den är tillbaka över detta
 const REP_MIN_KNEE = 130; // annars var det bara en halv rörelse – ingen rep
 const REP_MIN_DROP = 0.85;
-const DEPTH_KNEE = 105; // godkänt djup: knävinkel …
-const DEPTH_DROP = 0.72; // … eller höftens sänkning (kompromiss: din tidigare version 0,76, min 0,66)
+const DEPTH_KNEE = 90; // godkänt djup från sidan: knävinkel …
+const DEPTH_DROP = 0.62; // … eller höftens sänkning (gäller i alla vyer)
 const MIN_REP_MS = 800; // kortare = brus
 const FAULT_MS = 300; // ett fel måste hålla i sig så här länge för att räknas
-const FRONT_VIEW = 0.6; // axelbredd / bållängd över detta = framifrån
+const FRONT_VIEW = 0.45; // axelbredd / bållängd: framifrån 0,6–1,0, från sidan 0–0,3
 const LEAN_MAX = 60; // bållutning från lodlinjen (från sidan); viss lutning är normal och individuell
 const VALGUS_RATIO = 0.8;
 const ASYM_MAX = 15;
@@ -43,6 +47,7 @@ type State = {
   /** När varje fel började synas (ms) och om det hållit i sig länge nog. */
   faultSince: Record<string, number>;
   faults: string[];
+  front: boolean; // filmas repen framifrån?
 };
 
 const fresh = (t: number, keep?: State): State => ({
@@ -59,6 +64,7 @@ const fresh = (t: number, keep?: State): State => ({
   heelLift: 0,
   faultSince: {},
   faults: [],
+  front: false,
 });
 
 /** Registrerar ett fel först när det varat minst FAULT_MS. */
@@ -115,13 +121,13 @@ function updateSquat(f: PoseFrame, s: State): RuleOutput<State> {
 
   if (s.phase === "top") {
     // Kalibrera stående läge medan personen står rak.
-    if (m.knee > TOP_KNEE && (s.baseHeight === null || m.height > s.baseHeight * 0.9)) {
+    if (m.knee > TOP_KNEE && (s.baseHeight === null || m.height > s.baseHeight * 0.92)) {
       s = { ...s, baseHeight: ema(s.baseHeight, m.height), baseHeel: ema(s.baseHeel, m.heel) };
     }
     const drop = s.baseHeight ? m.height / s.baseHeight : 1;
     const leaving = m.knee < TOP_KNEE || drop < TOP_DROP;
     const leftTop = leaving ? (s.leftTop ?? f.t) : null;
-    if (m.knee < DOWN_KNEE || drop < DOWN_DROP) s = { ...fresh(leftTop ?? f.t, s), phase: "down" };
+    if (drop < DOWN_DROP || (!m.front && m.knee < DOWN_KNEE)) s = { ...fresh(leftTop ?? f.t, s), phase: "down" };
     else return { state: { ...s, leftTop }, cues, phase: "Upp" };
   }
 
@@ -132,6 +138,7 @@ function updateSquat(f: PoseFrame, s: State): RuleOutput<State> {
     ...s,
     minKnee: Math.min(s.minKnee, m.knee),
     minDrop: Math.min(s.minDrop, drop),
+    front: s.front || m.front,
     maxLean: m.front ? s.maxLean : Math.max(s.maxLean, m.lean),
     minKneeRatio: deep && m.front ? Math.min(s.minKneeRatio, m.ratio) : s.minKneeRatio,
     maxAsym: deep && m.both ? Math.max(s.maxAsym, m.asym) : s.maxAsym,
@@ -145,12 +152,14 @@ function updateSquat(f: PoseFrame, s: State): RuleOutput<State> {
 
   if (f.t - s.started > MAX_REP_MS) return { state: fresh(f.t, s), cues, phase: "Upp" };
 
-  if (m.knee > TOP_KNEE && drop > TOP_DROP) {
+  if (drop > TOP_DROP && m.knee > TOP_KNEE - 10) {
     // Halv rörelse eller för snabbt (brus): ingen rep.
-    const real = (s.minKnee < REP_MIN_KNEE || s.minDrop < REP_MIN_DROP) && f.t - s.started >= MIN_REP_MS;
+    const real = (s.minDrop < REP_MIN_DROP || (!s.front && s.minKnee < REP_MIN_KNEE)) && f.t - s.started >= MIN_REP_MS;
     if (!real) return { state: fresh(f.t, s), cues, phase: "Upp" };
     const faults: string[] = [...s.faults];
-    if (s.minKnee > DEPTH_KNEE && s.minDrop > DEPTH_DROP) faults.unshift("shallow");
+    // Framifrån är knävinkeln opålitlig – där avgör bara höftsänkningen.
+    const deepEnough = s.minDrop <= DEPTH_DROP || (!s.front && s.minKnee <= DEPTH_KNEE);
+    if (!deepEnough) faults.unshift("shallow");
     if (s.maxAsym > ASYM_MAX) faults.push("asymmetry");
     if (faults.includes("shallow")) cues.push({ id: "shallow", text: "Gå lite djupare", priority: 2 });
     else if (!faults.length) cues.push({ id: "good", text: "Snyggt!", priority: 3 });

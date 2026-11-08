@@ -75,7 +75,7 @@ export function frame(t: number, world: Vec3[]): PoseFrame {
 }
 
 /** Sekvens av knävinklar ner till botten och upp igen, 30 fps. */
-export function repAngles(bottom: number, steps = 20) {
+export function repAngles(bottom: number, steps = 30) {
   const down = Array.from({ length: steps }, (_, i) => 175 - ((175 - bottom) * (i + 1)) / steps);
   return [175, 175, ...down, ...[...down].reverse(), 175, 175];
 }
