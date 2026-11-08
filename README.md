@@ -3,7 +3,7 @@
 Personlig träningsapp (PWA) med gymlogg, löppass från klockan och AI-coach.
 Se [PLAN.md](PLAN.md) för helheten och etapperna.
 
-**Etapp 1 (den här):** inloggning med e-postkod, profil med vikthistorik, gymlogg
+**Etapp 1 (den här):** inloggning (e-post + lösenord), profil med vikthistorik, gymlogg
 med "förra gången" och offlinekö, veckoöversikt, PWA (hemskärm, mörkt läge).
 
 ## Kom igång (en gång)
@@ -11,19 +11,13 @@ med "förra gången" och offlinekö, veckoöversikt, PWA (hemskärm, mörkt läg
 ### 1. Supabase
 1. [supabase.com](https://supabase.com) → **New project**, region *North EU (Stockholm)*.
 2. **SQL Editor** → klistra in och kör `supabase/migrations/0001_etapp1_grund.sql`.
-3. **Authentication → Sign In / Providers → Email**: ska vara på.
-4. **Authentication → Emails → Magic Link**: byt mallens innehåll så att koden visas, t.ex.
-   ```html
-   <h2>Din inloggningskod</h2>
-   <p style="font-size:28px;letter-spacing:4px"><strong>{{ .Token }}</strong></p>
-   ```
-5. **Authentication → URL Configuration → Site URL**: din Vercel-adress (t.ex. `https://traningsapp.vercel.app`).
-6. **Project Settings → API Keys**: kopiera *Project URL* och *Publishable key*.
+3. **Authentication → Users → Add user → Create new user**: din e-post och ett starkt
+   lösenord (spara i lösenordshanteraren), kryssa i **Auto Confirm User**.
+4. **Authentication → Sign In / Providers**: stäng av **Allow new users to sign up**.
+5. **Connect** (överst) → **App Frameworks** → **Next.js**: kopiera URL och publishable/anon key.
 
-> Efter första lyckade inloggningen: **Authentication → Sign In / Providers → Allow new users to sign up = av**.
-> Appen spärrar dessutom alla adresser utom `ALLOWED_EMAIL`.
-
-> Supabase gratisnivå skickar högst några få mejl per timme. Testa inte för många gånger i rad.
+> Inloggning sker med e-post + lösenord, så ingen e-post behöver skickas. Appen spärrar
+> dessutom alla adresser utom `ALLOWED_EMAIL`.
 
 ### 2. Vercel
 1. [vercel.com](https://vercel.com) → logga in med GitHub → **Add New → Project** → välj `traningsapp`.
@@ -35,7 +29,8 @@ med "förra gången" och offlinekö, veckoöversikt, PWA (hemskärm, mörkt läg
 
 ### 3. iPhone
 Öppna adressen i Safari → **Dela** → **Lägg till på hemskärmen**. Logga in i appen
-från hemskärmen (inloggningen i Safari och i hemskärmsappen är separata på iOS).
+från hemskärmen (inloggningen i Safari och i hemskärmsappen är separata på iOS);
+lösenordet kan fyllas i med Face ID.
 
 ## Utveckling lokalt
 ```bash
@@ -46,7 +41,7 @@ npm run dev
 
 ## Struktur
 - `src/app/(app)/` – inloggade sidor: översikt, gym, profil
-- `src/app/login/` – e-postkod (server actions, allowlist)
+- `src/app/login/` – inloggning (server actions, allowlist)
 - `src/lib/gymQueue.ts` – offlinekö för gymset
 - `src/proxy.ts` – sessionsförnyelse och inloggningsskydd
 - `supabase/migrations/` – databas med Row Level Security
