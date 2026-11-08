@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 !.env.example
+
+# MediaPipe WASM kopieras från node_modules vid build
+/public/mediapipe/wasm/

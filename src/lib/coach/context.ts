@@ -5,6 +5,8 @@ import { applyOverride, formatDuration, formatPace, isRun, SPORT_LABEL } from ".
 import { intervalsConfigured, listWellness } from "../intervals";
 import { itemStatus } from "./plan";
 import { daysToRace } from "../race";
+import { MOVEMENTS } from "../movement/registry";
+import type { MovementKey } from "../movement/types";
 import type { Activity, Memory, PlanItem, Profile } from "../types";
 
 // Bygger kompakta textsammanfattningar till coachen. All räkning sker här –
@@ -237,6 +239,41 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
       }
     } catch {
       /* wellness är frivilligt */
+    }
+  }
+
+  // --- Teknik från rörelsecoachen (kamera) ---------------------------------------------
+  const { data: tech } = await supabase
+    .from("technique_results")
+    .select("movement_key, reps, good_reps, hold_s, faults, metrics, created_at")
+    .gte("created_at", new Date(Date.parse(today + "T00:00:00Z") - 56 * DAY).toISOString());
+  if (tech?.length) {
+    lines.push("", "## Teknik (rörelsecoach med kamera, senaste 4 veckorna jämfört med veckorna innan)");
+    const cut = new Date(Date.parse(today + "T00:00:00Z") - 28 * DAY).toISOString();
+    for (const key of Object.keys(MOVEMENTS) as MovementKey[]) {
+      const rows = tech.filter((t) => t.movement_key === key);
+      if (!rows.length) continue;
+      const rule = MOVEMENTS[key];
+      const agg = (xs: typeof rows) => {
+        const reps = xs.reduce((s2, x) => s2 + x.reps, 0);
+        const good = xs.reduce((s2, x) => s2 + x.good_reps, 0);
+        const hold = xs.reduce((s2, x) => s2 + (x.hold_s ?? 0), 0);
+        const faults: Record<string, number> = {};
+        for (const x of xs) for (const [f, n] of Object.entries((x.faults ?? {}) as Record<string, number>)) faults[f] = (faults[f] ?? 0) + n;
+        return { sets: xs.length, reps, good, hold, faults };
+      };
+      const recent = agg(rows.filter((r) => r.created_at >= cut));
+      const before = agg(rows.filter((r) => r.created_at < cut));
+      const pct = (a: { reps: number; good: number }) => (a.reps ? `${Math.round((a.good / a.reps) * 100)} %` : "–");
+      const top = Object.entries(recent.faults).sort((a, b) => b[1] - a[1]).slice(0, 3)
+        .map(([f, n]) => `${(rule.faultLabels[f] ?? f).toLowerCase()} (${n}${rule.kind === "hold" ? " s" : ""})`);
+      const main = rule.kind === "hold"
+        ? `${recent.sets} set, total hålltid ${recent.hold} s`
+        : `${recent.sets} set, ${recent.reps} reps, god teknik ${pct(recent)}`;
+      const prev = before.sets
+        ? rule.kind === "hold" ? ` (innan: ${before.hold} s)` : ` (innan: ${pct(before)} av ${before.reps} reps)`
+        : "";
+      lines.push(`- ${rule.name}: ${recent.sets ? main : "inget senaste 4 v"}${prev}${top.length ? `. Vanligaste fel: ${top.join(", ")}` : ""}`);
     }
   }
 

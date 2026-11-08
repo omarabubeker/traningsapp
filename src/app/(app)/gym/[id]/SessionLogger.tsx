@@ -298,7 +298,7 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
                         className={`rounded-lg bg-surface-2 px-3 py-1.5 text-sm ${pendingIds.has(s.id) ? "opacity-60" : ""}`}
                       >
                         <span className="mr-1 text-muted">{i + 1}.</span>
-                        {formatKg(s.weight_kg)} × {s.reps}
+                        {s.duration_s ? `${s.duration_s} s` : `${formatKg(s.weight_kg)} × ${s.reps}`}
                       </button>
                     </li>
                   ))}

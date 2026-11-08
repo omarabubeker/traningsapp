@@ -35,6 +35,7 @@ export type GymSet = {
   weight_kg: number;
   rpe: number | null;
   is_warmup: boolean;
+  duration_s?: number | null;
   created_at: string;
 };
 

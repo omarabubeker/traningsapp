@@ -3,6 +3,10 @@
 Personlig träningsapp (PWA) med gymlogg, löppass från klockan och AI-coach.
 Se [PLAN.md](PLAN.md) för helheten och etapperna.
 
+**Etapp 5:** rörelsecoach med kamera – knäböj, utfallssteg och planka med MediaPipe Pose
+Landmarker direkt i webbläsaren (självhostade modeller), skelett, repräknare/hålltid,
+instruktioner (text + svensk röst), sammanfattning som sparas i gymloggen och följer med till coachen.
+
 **Etapp 4:** karta per löppass (Leaflet + OpenStreetMap), grafer för veckovolym,
 tempo, puls och gymutveckling, rättning av löpbandsdistans, skärmen hålls vaken under
 gympass och nedräkning till maran.
@@ -51,6 +55,11 @@ med "förra gången" och offlinekö, veckoöversikt, PWA (hemskärm, mörkt läg
 ### Etapp 4: rättad distans
 1. Supabase → **SQL Editor** → kör `supabase/migrations/0004_etapp4_distans.sql`.
 
+### Etapp 5: rörelsecoachen
+1. Supabase → **SQL Editor** → kör `supabase/migrations/0006_etapp5_rorelsecoach.sql`.
+2. Valfritt för bättre röst: iPhone → Inställningar → Hjälpmedel → Uppläst innehåll →
+   Röster → Svenska → ladda ner en ”Förbättrad” röst.
+
 ### 3. iPhone
 Öppna adressen i Safari → **Dela** → **Lägg till på hemskärmen**. Logga in i appen
 från hemskärmen (inloggningen i Safari och i hemskärmsappen är separata på iOS);
@@ -73,6 +82,9 @@ npm run dev
 - `coach/instruktioner.md` – coachens grundinstruktioner
 - `src/lib/coach/` – sammanfattning till coachen, minne, säkerhetsregler, prissättning
 - `src/app/api/coach/` – chatt (strömmande) och veckoavstämning
+- `src/lib/movement/` – rörelsecoachen: en regelmodul per övning i `exercises/`
+  (lägg till ny övning där + i `registry.ts`), filter, instruktioner, röst. Tester: `movement.test.ts`
+- `public/mediapipe/` – självhostade modeller; WASM kopieras vid build (`scripts/copy-mediapipe.mjs`)
 - `src/proxy.ts` – sessionsförnyelse och inloggningsskydd
 - `supabase/migrations/` – databas med Row Level Security
 - `public/sw.js`, `src/app/manifest.ts` – PWA
