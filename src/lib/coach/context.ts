@@ -7,6 +7,7 @@ import { itemStatus } from "./plan";
 import { daysToRace } from "../race";
 import { MOVEMENTS } from "../movement/registry";
 import type { MovementKey } from "../movement/types";
+import { matchWatchToGym } from "../watchMerge";
 import type { Activity, Memory, PlanItem, Profile } from "../types";
 
 // Bygger kompakta textsammanfattningar till coachen. All räkning sker här –
@@ -26,6 +27,7 @@ const sv = (n: number, d = 1) => n.toLocaleString("sv-SE", { maximumFractionDigi
 type GymRow = {
   id: string;
   started_at: string;
+  ended_at: string | null;
   gym_sets: { reps: number; weight_kg: number; is_warmup: boolean; exercises: { name: string } | null }[];
 };
 
@@ -69,13 +71,13 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
   const [{ data: acts }, { data: gyms }, { data: plans }, { data: mems }] = await Promise.all([
     supabase
       .from("activities")
-      .select("sport_type, start_time, distance_m, distance_override_m, moving_time_s, avg_hr, max_hr, avg_pace_s_per_km, elevation_gain_m, training_load, indoor, name")
+      .select("id, sport_type, start_time, distance_m, distance_override_m, moving_time_s, elapsed_time_s, avg_hr, max_hr, avg_pace_s_per_km, elevation_gain_m, training_load, indoor, name")
       .is("deleted_at", null)
       .gte("start_time", fromIso)
       .order("start_time"),
     supabase
       .from("gym_sessions")
-      .select("id, started_at, gym_sets(reps, weight_kg, is_warmup, exercises(name))")
+      .select("id, started_at, ended_at, gym_sets(reps, weight_kg, is_warmup, exercises(name))")
       .gte("started_at", fromIso)
       .order("started_at"),
     supabase
@@ -93,8 +95,19 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
       .limit(40),
   ]);
 
-  const activities = ((acts ?? []) as Activity[]).map(applyOverride).map((a) => ({ ...a, day: isoDay(new Date(a.start_time)) }));
   const gymSessions = ((gyms ?? []) as unknown as GymRow[]).map((g) => ({ ...g, day: isoDay(new Date(g.started_at)) }));
+  // Klockans styrkepass som hör till ett loggat gympass räknas inte som eget pass;
+  // pulsen läggs till gympasset i stället.
+  const watchToGym = matchWatchToGym((acts ?? []) as Activity[], gymSessions);
+  const gymHr = new Map<string, number>();
+  for (const a of (acts ?? []) as Activity[]) {
+    const g = watchToGym.get(a.id);
+    if (g && a.avg_hr) gymHr.set(g, a.avg_hr);
+  }
+  const activities = ((acts ?? []) as Activity[])
+    .filter((a) => !watchToGym.has(a.id))
+    .map(applyOverride)
+    .map((a) => ({ ...a, day: isoDay(new Date(a.start_time)) }));
   const runs = activities.filter((a) => isRun(a.sport_type));
 
   // --- Veckotabell -------------------------------------------------------------
@@ -161,7 +174,8 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
       byEx.set(name, [...(byEx.get(name) ?? []), `${sv(Number(s.weight_kg))}×${s.reps}`]);
     }
     const text = [...byEx].map(([n, s]) => `${n} ${s.join(" ")}`).join("; ");
-    entries.push({ day: g.day, t: g.started_at, text: `Gym: ${text || "inga set"}` });
+    const hr = gymHr.get(g.id);
+    entries.push({ day: g.day, t: g.started_at, text: `Gym: ${text || "inga set"}${hr ? ` (snittpuls ${hr} enligt klockan)` : ""}` });
   }
   entries.sort((a, b) => a.t.localeCompare(b.t));
   if (!entries.length) lines.push("- Inga pass.");

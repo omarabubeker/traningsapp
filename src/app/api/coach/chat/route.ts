@@ -14,6 +14,7 @@ import {
   systemInstructions,
 } from "@/lib/coach/claude";
 import { extractMemories } from "@/lib/coach/memory";
+import { currentConversation, pruneOldMessages } from "@/lib/coach/conversation";
 
 export const maxDuration = 60;
 
@@ -27,13 +28,14 @@ export async function POST(req: Request) {
   if (!claims?.claims?.sub) return Response.json({ error: "Inte inloggad" }, { status: 401 });
   if (!claudeConfigured()) return Response.json({ error: "ANTHROPIC_API_KEY saknas i Vercel." }, { status: 400 });
 
-  const { message } = (await req.json()) as { message?: string };
+  const { message, newConversation } = (await req.json()) as { message?: string; newConversation?: boolean };
   const text = (message ?? "").trim().slice(0, 4000);
   if (!text) return Response.json({ error: "Tomt meddelande" }, { status: 400 });
 
+  const conversationId = await currentConversation(supabase, !!newConversation);
   const { data: userMsg, error: saveError } = await supabase
     .from("coach_messages")
-    .insert({ role: "user", content: text })
+    .insert({ role: "user", content: text, conversation_id: conversationId })
     .select("id")
     .single();
   if (saveError) {
@@ -49,9 +51,11 @@ export async function POST(req: Request) {
     systemInstructions(),
     profileBlock(supabase),
     trainingBlock(supabase),
+    // Bara det pågående samtalet skickas med; äldre sammanhang finns i minnet.
     supabase
       .from("coach_messages")
       .select("role, content")
+      .eq("conversation_id", conversationId)
       .order("created_at", { ascending: false })
       .limit(HISTORY_MESSAGES + 1),
   ]);
@@ -88,6 +92,7 @@ export async function POST(req: Request) {
     if (!final) return;
     await logUsage(supabase, "chat", final.model ?? CHAT_MODEL, final.usage);
     await extractMemories(supabase, text, answer, savedId ?? userMsg?.id ?? null).catch((e) => console.error("Minne", e));
+    await pruneOldMessages(supabase).catch(() => {});
   });
 
   const encoder = new TextEncoder();
@@ -111,7 +116,7 @@ export async function POST(req: Request) {
         // Spara svaret innan strömmen stängs, så att nästa fråga ser det i historiken.
         const { data: saved } = await supabase
           .from("coach_messages")
-          .insert({ role: "assistant", content: answer.trim() || "(inget svar)" })
+          .insert({ role: "assistant", content: answer.trim() || "(inget svar)", conversation_id: conversationId })
           .select("id")
           .single();
         finish({ answer, final, savedId: saved?.id ?? null });
@@ -125,5 +130,7 @@ export async function POST(req: Request) {
     },
   });
 
-  return new Response(body, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
+  return new Response(body, {
+    headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store", "X-Conversation-Id": conversationId },
+  });
 }
