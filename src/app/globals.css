@@ -1,4 +1,8 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 /* Lugn, mörk palett. Appen är alltid i mörkt läge. */
 @theme {
@@ -7,17 +11,52 @@
   --color-surface-2: #1e2327;
   --color-line: #2a3035;
   --color-text: #e8ecee;
-  --color-muted: #8d979e;
-  --color-accent: #7cc4a4;
-  --color-accent-strong: #5fb08d;
+  --color-brand: #7cc4a4;
+  --color-brand-strong: #5fb08d;
   --color-run: #7aa7e0;
   --color-gym: #d8a76a;
   --color-danger: #e07a7a;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
-:root {
+/* Appens mörka palett i shadcns variabler. Appen är alltid i mörkt läge, så samma
+   värden gäller både :root och .dark. Grön accentfärg heter "brand" (shadcns "accent"
+   är hovringsbakgrund). */
+:root,
+.dark {
   color-scheme: dark;
+  --background: #0e1113;
+  --foreground: #e8ecee;
+  --card: #161a1d;
+  --card-foreground: #e8ecee;
+  --popover: #161a1d;
+  --popover-foreground: #e8ecee;
+  --primary: #7cc4a4;
+  --primary-foreground: #0b1a13;
+  --secondary: #1e2327;
+  --secondary-foreground: #e8ecee;
+  --muted: #1e2327;
+  --muted-foreground: #8d979e;
+  --accent: #1e2327;
+  --accent-foreground: #e8ecee;
+  --destructive: #e07a7a;
+  --border: #2a3035;
+  --input: #2a3035;
+  --ring: #7cc4a4;
+  --chart-1: #7aa7e0;
+  --chart-2: #d8a76a;
+  --chart-3: #7cc4a4;
+  --chart-4: #8d979e;
+  --chart-5: #e07a7a;
+  --radius: 0.625rem;
+  --sidebar: #161a1d;
+  --sidebar-foreground: #e8ecee;
+  --sidebar-primary: #7cc4a4;
+  --sidebar-primary-foreground: #0b1a13;
+  --sidebar-accent: #1e2327;
+  --sidebar-accent-foreground: #e8ecee;
+  --sidebar-border: #2a3035;
+  --sidebar-ring: #7cc4a4;
 }
 
 html,
@@ -40,23 +79,12 @@ textarea {
   font-size: 16px;
 }
 
+/* Enkelt kort för listor och sektioner (samma färger som shadcns Card). */
 @utility card {
-  @apply rounded-2xl border border-line bg-surface p-4;
-}
-@utility btn {
-  @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 font-medium transition active:scale-[0.98] disabled:opacity-50;
-}
-@utility btn-primary {
-  @apply btn bg-accent text-[#0b1a13] active:bg-accent-strong;
-}
-@utility btn-ghost {
-  @apply btn border border-line bg-surface-2 text-text;
-}
-@utility field {
-  @apply w-full rounded-xl border border-line bg-surface-2 px-4 py-3 text-text placeholder:text-muted focus:border-accent focus:outline-none;
+  @apply rounded-2xl border border-border bg-card p-4 text-card-foreground;
 }
 @utility label {
-  @apply mb-1 block text-sm text-muted;
+  @apply mb-1 block text-sm text-muted-foreground;
 }
 @utility pb-safe {
   padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
@@ -94,14 +122,69 @@ input[type="date"]::-webkit-date-and-time-value {
 }
 .leaflet-control-attribution {
   background: rgb(14 17 19 / 0.7) !important;
-  color: var(--color-muted) !important;
+  color: var(--color-muted-foreground) !important;
   font-size: 10px;
 }
 .leaflet-control-attribution a {
-  color: var(--color-muted) !important;
+  color: var(--color-muted-foreground) !important;
 }
 .leaflet-bar a {
   background: var(--color-surface) !important;
   color: var(--color-text) !important;
   border-color: var(--color-line) !important;
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
 }

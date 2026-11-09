@@ -26,7 +26,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="sv" className={inter.variable}>
+    <html lang="sv" className={`dark ${inter.variable}`}>
       <body className="min-h-dvh antialiased">
         {children}
         <ServiceWorker />

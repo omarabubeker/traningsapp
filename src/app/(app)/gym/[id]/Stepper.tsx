@@ -23,9 +23,9 @@ export function Stepper({ label, value, step, min = 0, decimals = false, onChang
 
   return (
     <div>
-      <p className="mb-1 text-center text-xs text-muted">{label}</p>
+      <p className="mb-1 text-center text-xs text-muted-foreground">{label}</p>
       <div className="flex items-stretch overflow-hidden rounded-xl border border-line bg-surface-2">
-        <button type="button" onClick={() => bump(-step)} className="w-12 text-2xl text-muted active:bg-line" aria-label={`Minska ${label}`}>−</button>
+        <button type="button" onClick={() => bump(-step)} className="w-12 text-2xl text-muted-foreground active:bg-line" aria-label={`Minska ${label}`}>−</button>
         <input
           value={text ?? fmt(value)}
           inputMode={decimals ? "decimal" : "numeric"}
@@ -38,7 +38,7 @@ export function Stepper({ label, value, step, min = 0, decimals = false, onChang
           className="min-w-0 flex-1 bg-transparent py-3 text-center text-2xl font-semibold tabular-nums outline-none"
           aria-label={label}
         />
-        <button type="button" onClick={() => bump(step)} className="w-12 text-2xl text-muted active:bg-line" aria-label={`Öka ${label}`}>+</button>
+        <button type="button" onClick={() => bump(step)} className="w-12 text-2xl text-muted-foreground active:bg-line" aria-label={`Öka ${label}`}>+</button>
       </div>
     </div>
   );

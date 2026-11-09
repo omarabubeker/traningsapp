@@ -27,7 +27,7 @@ const FORMATS: Record<Props["unit"], (v: number) => string> = {
 
 export function TrendChart({ data, color, name, unit, invert = false, height = 176 }: Props) {
   const format = FORMATS[unit];
-  if (data.length < 2) return <p className="py-6 text-center text-sm text-muted">För lite data än.</p>;
+  if (data.length < 2) return <p className="py-6 text-center text-sm text-muted-foreground">För lite data än.</p>;
   const values = data.map((d) => d.value);
   // Jämna skalsteg: 30 s / 1 min för tempo, 10/20 för puls, 5/10/20 för kg.
   const min = Math.min(...values), max = Math.max(...values);
@@ -61,7 +61,7 @@ export function TrendChart({ data, color, name, unit, invert = false, height = 1
             width={unit === "pace" ? 48 : 40}
           />
           <Tooltip
-            cursor={{ stroke: "var(--color-muted)", strokeWidth: 1 }}
+            cursor={{ stroke: "var(--color-muted-foreground)", strokeWidth: 1 }}
             content={({ active, payload }) => {
               const p = active ? (payload?.[0]?.payload as TrendPoint | undefined) : undefined;
               return p ? (

@@ -9,6 +9,7 @@ import type { Exercise, GymSession, GymSet } from "@/lib/types";
 import { Stepper } from "./Stepper";
 import { MoreMenu } from "@/components/MoreMenu";
 import { ExercisePicker } from "./ExercisePicker";
+import { Button } from "@/components/ui/button";
 
 type Prev = { date: string; sets: GymSet[] };
 
@@ -255,11 +256,11 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
     return (
       <main className="space-y-4 pt-6">
         <p>{loadError}</p>
-        <Link href="/gym" className="btn-ghost">Tillbaka</Link>
+        <Button asChild variant="secondary"><Link href="/gym">Tillbaka</Link></Button>
       </main>
     );
   }
-  if (!session) return <main className="pt-6 text-muted">Laddar pass…</main>;
+  if (!session) return <main className="pt-6 text-muted-foreground">Laddar pass…</main>;
 
   const exName = (id: string) => exercises.find((e) => e.id === id)?.name ?? "Övning";
   const groups = [...new Set(sets.map((s) => s.exercise_id))];
@@ -271,24 +272,24 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
   return (
     <main className="pt-3">
       <header className="mb-4 flex items-center justify-between gap-3">
-        <Link href="/gym" className="-ml-2 px-2 py-2 text-muted" aria-label="Tillbaka">←</Link>
+        <Link href="/gym" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
         <div className="flex-1">
           <h1 className="text-lg font-semibold inline-block first-letter:uppercase">{formatDate(session.started_at)}</h1>
-          <p className="text-xs text-muted">
+          <p className="text-xs text-muted-foreground">
             {ended ? `Avslutat ${formatTime(session.ended_at!)}` : `Startat ${formatTime(session.started_at)}`}
             {pendingCount > 0 && <span className="ml-2 text-gym">· {pendingCount} väntar på nät</span>}
           </p>
         </div>
         {ended ? (
-          <button onClick={reopen} className="btn-ghost min-h-10 px-3 text-sm">Fortsätt logga</button>
+          <Button onClick={reopen} variant="secondary" size="sm">Fortsätt logga</Button>
         ) : (
-          <button onClick={finish} className="btn-ghost min-h-10 px-3 text-sm">Avsluta</button>
+          <Button onClick={finish} variant="secondary" size="sm">Avsluta</Button>
         )}
         <MoreMenu items={[{ label: "Radera pass", onSelect: deleteSession, danger: true }]} />
       </header>
 
       {watch && (
-        <p className="mb-3 rounded-xl bg-surface-2 px-3 py-2 text-sm text-muted">
+        <p className="mb-3 rounded-xl bg-surface-2 px-3 py-2 text-sm text-muted-foreground">
           ⌚ Klockan: {watch.minutes} min{watch.hr ? ` · snittpuls ${watch.hr}` : ""}{watch.maxHr ? ` (max ${watch.maxHr})` : ""}{watch.kcal ? ` · ${watch.kcal} kcal` : ""}
         </p>
       )}
@@ -304,12 +305,12 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
           return (
             <div
               key={exId}
-              className={`card transition ${isActive ? "border-accent/60" : ""}`}
+              className={`card transition ${isActive ? "border-brand/60" : ""}`}
               onClick={() => !ended && !isActive && selectExercise(exId)}
             >
               <div className="flex items-baseline justify-between">
                 <h2 className="font-medium">{exName(exId)}</h2>
-                <span className="text-xs text-muted">{exSets.length} set</span>
+                <span className="text-xs text-muted-foreground">{exSets.length} set</span>
               </div>
               {exSets.length > 0 && (
                 <ul className="mt-2 flex flex-wrap gap-2">
@@ -322,7 +323,7 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
                         }}
                         className={`rounded-lg bg-surface-2 px-3 py-1.5 text-sm ${pendingIds.has(s.id) ? "opacity-60" : ""}`}
                       >
-                        <span className="mr-1 text-muted">{i + 1}.</span>
+                        <span className="mr-1 text-muted-foreground">{i + 1}.</span>
                         {s.duration_s ? `${s.duration_s} s` : `${formatKg(s.weight_kg)} × ${s.reps}`}
                       </button>
                     </li>
@@ -332,11 +333,11 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
             </div>
           );
         })}
-        {groups.length === 0 && <p className="card text-muted">Välj en övning för att börja logga.</p>}
+        {groups.length === 0 && <p className="card text-muted-foreground">Välj en övning för att börja logga.</p>}
       </section>
 
       {!ended && (
-        <button onClick={() => setPicker(true)} className="btn-ghost mt-3 w-full">+ Lägg till övning</button>
+        <Button onClick={() => setPicker(true)} variant="secondary" className="mt-3 w-full">+ Lägg till övning</Button>
       )}
 
 
@@ -349,12 +350,12 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
               <div className="flex items-baseline justify-between gap-2">
                 <p className="truncate font-medium">{active.name}</p>
                 {restSec !== null && (
-                  <p className="shrink-0 text-sm text-muted">
+                  <p className="shrink-0 text-sm text-muted-foreground">
                     Vila <span className="text-text tabular-nums">{Math.floor(restSec / 60)}:{String(restSec % 60).padStart(2, "0")}</span>
                   </p>
                 )}
               </div>
-              <p className="min-h-5 truncate text-sm text-muted">
+              <p className="min-h-5 truncate text-sm text-muted-foreground">
                 {activePrev === undefined
                   ? " "
                   : activePrev
@@ -365,7 +366,7 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
                 <Stepper label={active.is_bodyweight ? "Extra vikt (kg)" : "Vikt (kg)"} value={weight} step={2.5} min={0} decimals onChange={setWeight} />
                 <Stepper label="Reps" value={reps} step={1} min={0} onChange={setReps} />
               </div>
-              <button onClick={saveSet} className="btn-primary w-full text-lg">Spara set</button>
+              <Button onClick={saveSet} size="lg" className="w-full">Spara set</Button>
             </div>
           </div>
         </>

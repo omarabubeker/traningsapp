@@ -3,6 +3,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { MOVEMENT_LIST } from "@/lib/movement/registry";
 import { bestSwedishVoice, loadSettings, onVoicesReady, saveSettings, speak, swedishVoices, type CameraSettings } from "@/lib/movement/voice";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const ICON: Record<string, string> = { squat: "🏋️", lunge: "🦵", plank: "🧘", pushup: "💪", deadlift: "🏋️‍♂️" };
 
@@ -29,10 +32,10 @@ export default function KameraPage() {
   return (
     <main className="space-y-5 pt-3">
       <header className="flex items-center gap-3">
-        <Link href="/gym" className="-ml-2 px-2 py-2 text-muted" aria-label="Tillbaka">←</Link>
+        <Link href="/gym" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
         <div>
           <h1 className="text-2xl font-semibold">Teknik med kamera</h1>
-          <p className="text-xs text-muted">Allt analyseras i telefonen. Ingen bild eller video sparas eller skickas.</p>
+          <p className="text-xs text-muted-foreground">Allt analyseras i telefonen. Ingen bild eller video sparas eller skickas.</p>
         </div>
       </header>
 
@@ -42,9 +45,9 @@ export default function KameraPage() {
             <span className="text-2xl" aria-hidden>{ICON[m.key]}</span>
             <span className="flex-1">
               <span className="block font-medium">{m.name}</span>
-              <span className="block text-sm text-muted">{m.setup}</span>
+              <span className="block text-sm text-muted-foreground">{m.setup}</span>
             </span>
-            <span className="text-muted">→</span>
+            <span className="text-muted-foreground">→</span>
           </Link>
         ))}
       </section>
@@ -52,29 +55,29 @@ export default function KameraPage() {
       {settings && (
         <section className="card space-y-4">
           <h2 className="font-medium">Inställningar</h2>
-          <label className="flex items-center justify-between gap-3">
-            <span>Röstfeedback</span>
-            <input type="checkbox" checked={settings.voice} onChange={(e) => update({ voice: e.target.checked })} className="h-6 w-6 accent-[var(--color-accent)]" />
-          </label>
+          <div className="flex items-center justify-between gap-3">
+            <label htmlFor="voice-on">Röstfeedback</label>
+            <Switch id="voice-on" checked={settings.voice} onCheckedChange={(v) => update({ voice: v })} />
+          </div>
           {settings.voice && (
             <div className="space-y-2">
               <label className="label" htmlFor="voice">Röst</label>
-              <select id="voice" className="field" value={settings.voiceName ?? ""} onChange={(e) => update({ voiceName: e.target.value || null })}>
+              <NativeSelect id="voice" value={settings.voiceName ?? ""} onChange={(e) => update({ voiceName: e.target.value || null })}>
                 <option value="">Automatiskt{best ? ` (${best.name})` : ""}</option>
                 {voices.map((v) => (
                   <option key={v.name} value={v.name}>{v.name}</option>
                 ))}
-              </select>
-              {voices.length === 0 && <p className="text-xs text-muted">Hittar ingen svensk röst. På iPhone: Inställningar → Hjälpmedel → Uppläst innehåll → Röster → Svenska och ladda ner en ”Förbättrad” röst.</p>}
-              <button type="button" className="btn-ghost w-full" onClick={() => speak("Tryck ut knäna", bestSwedishVoice(settings.voiceName))}>Testa rösten</button>
+              </NativeSelect>
+              {voices.length === 0 && <p className="text-xs text-muted-foreground">Hittar ingen svensk röst. På iPhone: Inställningar → Hjälpmedel → Uppläst innehåll → Röster → Svenska och ladda ner en ”Förbättrad” röst.</p>}
+              <Button type="button" variant="secondary" className="w-full" onClick={() => speak("Tryck ut knäna", bestSwedishVoice(settings.voiceName))}>Testa rösten</Button>
             </div>
           )}
           <div>
             <label className="label" htmlFor="model">Modell</label>
-            <select id="model" className="field" value={settings.model} onChange={(e) => update({ model: e.target.value as CameraSettings["model"] })}>
+            <NativeSelect id="model" value={settings.model} onChange={(e) => update({ model: e.target.value as CameraSettings["model"] })}>
               <option value="lite">Snabb (rekommenderas)</option>
               <option value="full">Noggrann (kräver snabbare telefon)</option>
-            </select>
+            </NativeSelect>
           </div>
         </section>
       )}

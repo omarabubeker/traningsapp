@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { Markdown } from "@/components/Markdown";
 import { formatDate } from "@/lib/dates";
 import type { Conversation } from "@/lib/coach/conversation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export type ChatMessage = { id: string; role: "user" | "assistant"; kind: "chat" | "weekly"; content: string; created_at: string };
 
@@ -94,8 +96,8 @@ export function CoachChat({ current, previous: prevInitial, configured }: Props)
       <header className="mb-3 flex items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold">Coach</h1>
         <div className="flex gap-2">
-          <Link href="/plan" className="btn-ghost min-h-10 px-3 text-sm">Plan</Link>
-          <Link href="/coach/minne" className="btn-ghost min-h-10 px-3 text-sm">Minne</Link>
+          <Button asChild variant="secondary" size="sm"><Link href="/plan">Plan</Link></Button>
+          <Button asChild variant="secondary" size="sm"><Link href="/coach/minne">Minne</Link></Button>
         </div>
       </header>
 
@@ -103,13 +105,13 @@ export function CoachChat({ current, previous: prevInitial, configured }: Props)
         <p className="card mb-3 text-sm text-danger">Coachen är inte kopplad: lägg in ANTHROPIC_API_KEY i Vercel och bygg om.</p>
       )}
 
-      <button onClick={weekly} disabled={!!busy || !configured} className="btn-primary mb-4 w-full">
+      <Button onClick={weekly} disabled={!!busy || !configured} className="mb-4 w-full">
         {busy === "weekly" ? "Coachen går igenom veckan…" : "Veckoavstämning"}
-      </button>
+      </Button>
 
       {previous.length > 0 && (
         <section className="mb-4">
-          <button onClick={() => setShowHistory((v) => !v)} className="w-full py-2 text-left text-sm text-muted">
+          <button onClick={() => setShowHistory((v) => !v)} className="w-full py-2 text-left text-sm text-muted-foreground">
             {showHistory ? "▾" : "▸"} Tidigare samtal ({previous.length})
           </button>
           {showHistory && (
@@ -122,24 +124,24 @@ export function CoachChat({ current, previous: prevInitial, configured }: Props)
 
       {messages.length > 0 && (
         <div className="mb-3 flex justify-end">
-          <button onClick={newConversation} disabled={!!busy} className="text-sm text-accent">+ Nytt samtal</button>
+          <button onClick={newConversation} disabled={!!busy} className="text-sm text-brand">+ Nytt samtal</button>
         </div>
       )}
 
       <section className="flex-1 space-y-3 pb-40">
         {messages.length === 0 && (
-          <p className="card text-sm text-muted">
+          <p className="card text-sm text-muted-foreground">
             Fråga coachen om din träning, berätta hur du mår, eller tryck på Veckoavstämning för att få nästa veckas plan.
           </p>
         )}
         {messages.map((m) =>
           m.role === "user" ? (
-            <div key={m.id} className="ml-10 rounded-2xl rounded-br-md bg-accent/15 px-4 py-2.5 text-right">
-              {m.kind === "weekly" ? <span className="text-sm text-muted">📋 {m.content}</span> : m.content}
+            <div key={m.id} className="ml-10 rounded-2xl rounded-br-md bg-brand/15 px-4 py-2.5 text-right">
+              {m.kind === "weekly" ? <span className="text-sm text-muted-foreground">📋 {m.content}</span> : m.content}
             </div>
           ) : (
-            <div key={m.id} className={`mr-6 rounded-2xl rounded-bl-md border px-4 py-3 ${m.kind === "weekly" ? "border-accent/40 bg-surface" : "border-line bg-surface"}`}>
-              {m.content ? <Markdown text={m.content} /> : <span className="text-muted">Tänker…</span>}
+            <div key={m.id} className={`mr-6 rounded-2xl rounded-bl-md border px-4 py-3 ${m.kind === "weekly" ? "border-brand/40 bg-surface" : "border-line bg-surface"}`}>
+              {m.content ? <Markdown text={m.content} /> : <span className="text-muted-foreground">Tänker…</span>}
             </div>
           ),
         )}
@@ -151,7 +153,7 @@ export function CoachChat({ current, previous: prevInitial, configured }: Props)
         <div className="mx-auto max-w-md space-y-2 px-4 pt-2">
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
             {QUICK.map((q) => (
-              <button key={q} onClick={() => send(q)} disabled={!!busy || !configured} className="shrink-0 rounded-full border border-line px-3 py-1.5 text-sm text-muted active:bg-surface-2 disabled:opacity-50">
+              <button key={q} onClick={() => send(q)} disabled={!!busy || !configured} className="shrink-0 rounded-full border border-line px-3 py-1.5 text-sm text-muted-foreground active:bg-surface-2 disabled:opacity-50">
                 {q}
               </button>
             ))}
@@ -163,15 +165,15 @@ export function CoachChat({ current, previous: prevInitial, configured }: Props)
             }}
             className="flex gap-2"
           >
-            <input
+            <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Skriv till coachen…"
-              className="field"
+             
               disabled={!configured}
               enterKeyHint="send"
             />
-            <button className="btn-primary px-4" disabled={!!busy || !input.trim()}>Skicka</button>
+            <Button className="px-4" disabled={!!busy || !input.trim()}>Skicka</Button>
           </form>
         </div>
       </div>
@@ -187,7 +189,7 @@ function OldConversation({ conv }: { conv: Conversation }) {
     <div className="card p-3">
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-baseline justify-between gap-3 text-left">
         <span className="truncate text-sm">{title}</span>
-        <span className="shrink-0 text-xs text-muted">
+        <span className="shrink-0 text-xs text-muted-foreground">
           {formatDate(conv.startedAt, { day: "numeric", month: "short" })} · {conv.messages.length} medd.
         </span>
       </button>
@@ -195,7 +197,7 @@ function OldConversation({ conv }: { conv: Conversation }) {
         <div className="mt-3 space-y-2 text-sm">
           {conv.messages.map((m) =>
             m.role === "user" ? (
-              <p key={m.id} className="ml-8 rounded-xl bg-accent/10 px-3 py-2 text-right">{m.content}</p>
+              <p key={m.id} className="ml-8 rounded-xl bg-brand/10 px-3 py-2 text-right">{m.content}</p>
             ) : (
               <div key={m.id} className="mr-4 rounded-xl border border-line px-3 py-2"><Markdown text={m.content} /></div>
             ),

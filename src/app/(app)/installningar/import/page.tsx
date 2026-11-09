@@ -6,6 +6,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { parseAppleHealthExport, toActivityRows, type ActivityRow } from "@/lib/appleHealth";
 import { SPORT_LABEL } from "@/lib/running";
 import { formatDate } from "@/lib/dates";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 type Phase =
   | { kind: "idle" }
@@ -65,22 +66,22 @@ export default function ImportPage() {
   return (
     <main className="space-y-5 pt-3">
       <header className="flex items-center gap-3">
-        <Link href="/installningar" className="-ml-2 px-2 py-2 text-muted" aria-label="Tillbaka">←</Link>
+        <Link href="/installningar" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
         <h1 className="text-xl font-semibold">Importera från Apple Hälsa</h1>
       </header>
 
       {phase.kind === "idle" && (
         <section className="card space-y-4 text-sm">
-          <ol className="list-decimal space-y-1 pl-5 text-muted">
+          <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
             <li>Hälsa-appen → din profilbild → <span className="text-text">Exportera all hälsodata</span>.</li>
             <li>Spara filen (export.zip) i Filer eller skicka den till datorn.</li>
             <li>Välj filen här. Den läses i din webbläsare – bara träningspassen sparas.</li>
           </ol>
-          <label className="btn-primary w-full cursor-pointer">
+          <label className={buttonVariants({ className: "w-full cursor-pointer" })}>
             Välj export.zip
             <input type="file" accept=".zip,application/zip" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
           </label>
-          <p className="text-xs text-muted">Filen kan vara flera hundra MB. Det går snabbast på en dator, men fungerar även i mobilen.</p>
+          <p className="text-xs text-muted-foreground">Filen kan vara flera hundra MB. Det går snabbast på en dator, men fungerar även i mobilen.</p>
         </section>
       )}
 
@@ -88,9 +89,9 @@ export default function ImportPage() {
         <section className="card space-y-3">
           <p>Läser filen… {phase.pct} %</p>
           <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-            <div className="h-full bg-accent transition-all" style={{ width: `${phase.pct}%` }} />
+            <div className="h-full bg-brand transition-all" style={{ width: `${phase.pct}%` }} />
           </div>
-          <p className="text-sm text-muted">{phase.workouts} pass hittade hittills</p>
+          <p className="text-sm text-muted-foreground">{phase.workouts} pass hittade hittills</p>
         </section>
       )}
 
@@ -100,7 +101,7 @@ export default function ImportPage() {
         <section className="card space-y-3">
           <p>Sparar {phase.done} av {phase.total}…</p>
           <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-            <div className="h-full bg-accent transition-all" style={{ width: `${(phase.done / phase.total) * 100}%` }} />
+            <div className="h-full bg-brand transition-all" style={{ width: `${(phase.done / phase.total) * 100}%` }} />
           </div>
         </section>
       )}
@@ -108,14 +109,14 @@ export default function ImportPage() {
       {phase.kind === "done" && (
         <section className="card space-y-3">
           <p className="font-medium">Klart! {phase.saved} pass importerade.</p>
-          <Link href="/lopning" className="btn-primary w-full">Visa löppassen</Link>
+          <Button asChild className="w-full"><Link href="/lopning">Visa löppassen</Link></Button>
         </section>
       )}
 
       {phase.kind === "error" && (
         <section className="card space-y-3">
           <p className="text-danger">{phase.message}</p>
-          <button className="btn-ghost w-full" onClick={() => setPhase({ kind: "idle" })}>Försök igen</button>
+          <Button variant="secondary" className="w-full" onClick={() => setPhase({ kind: "idle" })}>Försök igen</Button>
         </section>
       )}
     </main>
@@ -132,18 +133,18 @@ function Preview({ rows, skipped, onSave }: { rows: ActivityRow[]; skipped: numb
     <section className="card space-y-4">
       <div>
         <p className="font-medium">{rows.length} pass att importera</p>
-        {rows.length > 0 && <p className="text-sm text-muted">{fmt(sorted[0].start_time)} – {fmt(sorted.at(-1)!.start_time)}</p>}
-        {skipped > 0 && <p className="text-sm text-muted">{skipped} finns redan från klockan och hoppas över.</p>}
+        {rows.length > 0 && <p className="text-sm text-muted-foreground">{fmt(sorted[0].start_time)} – {fmt(sorted.at(-1)!.start_time)}</p>}
+        {skipped > 0 && <p className="text-sm text-muted-foreground">{skipped} finns redan från klockan och hoppas över.</p>}
       </div>
       <ul className="divide-y divide-line text-sm">
         {bySport.map(([sport, n]) => (
           <li key={sport} className="flex justify-between py-2">
             <span>{SPORT_LABEL[sport] ?? sport}</span>
-            <span className="text-muted">{n}</span>
+            <span className="text-muted-foreground">{n}</span>
           </li>
         ))}
       </ul>
-      <button className="btn-primary w-full" disabled={!rows.length} onClick={onSave}>Importera</button>
+      <Button className="w-full" disabled={!rows.length} onClick={onSave}>Importera</Button>
     </section>
   );
 }
