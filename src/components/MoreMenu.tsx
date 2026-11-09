@@ -17,7 +17,7 @@ export function MoreMenu({ items }: { items: MoreItem[] }) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex h-10 w-10 items-center justify-center rounded-full text-xl text-muted active:bg-surface-2"
+        className="flex h-10 w-10 items-center justify-center rounded-full text-xl text-muted-foreground active:bg-surface-2"
         aria-label="Fler val"
         aria-expanded={open}
       >

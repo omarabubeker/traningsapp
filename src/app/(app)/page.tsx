@@ -65,40 +65,40 @@ export default async function Overview() {
     <main className="space-y-5 pt-4">
       <header className="flex items-end justify-between">
         <div>
-          <p className="text-sm text-muted">Vecka {weekNumber(today)}</p>
+          <p className="text-sm text-muted-foreground">Vecka {weekNumber(today)}</p>
           <h1 className="text-2xl font-semibold">Översikt</h1>
         </div>
         {raceDays > 0 && (
           <p className="text-right text-sm leading-tight">
             <span className="block text-xl font-semibold tabular-nums">{raceDays}</span>
-            <span className="text-muted">dagar till maran</span>
+            <span className="text-muted-foreground">dagar till maran</span>
           </p>
         )}
       </header>
 
       {active && (
-        <Link href={`/gym/${active.id}`} className="card flex items-center justify-between border-accent/50">
+        <Link href={`/gym/${active.id}`} className="card flex items-center justify-between border-brand/50">
           <span>
             <span className="block font-medium">Pågående gympass</span>
-            <span className="text-sm text-muted">Startat {formatTime(active.started_at)}</span>
+            <span className="text-sm text-muted-foreground">Startat {formatTime(active.started_at)}</span>
           </span>
-          <span className="text-accent">Fortsätt →</span>
+          <span className="text-brand">Fortsätt →</span>
         </Link>
       )}
 
       <section className="space-y-2">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-sm font-medium text-muted">Idag enligt planen</h2>
-          <Link href="/plan" className="text-sm text-accent">Hela veckan →</Link>
+          <h2 className="text-sm font-medium text-muted-foreground">Idag enligt planen</h2>
+          <Link href="/plan" className="text-sm text-brand">Hela veckan →</Link>
         </div>
         {todayItems.length > 0 ? (
           todayItems.map((it) => <PlanItemCard key={it.id} item={it} status={it.status} showDate={false} />)
         ) : plans.length ? (
-          <p className="card text-sm text-muted">
+          <p className="card text-sm text-muted-foreground">
             Inget planerat idag.{nextItem ? ` Nästa: ${nextItem.title}.` : ""}
           </p>
         ) : (
-          <Link href="/coach" className="card block text-sm text-muted">Ingen plan än – gör en veckoavstämning med coachen →</Link>
+          <Link href="/coach" className="card block text-sm text-muted-foreground">Ingen plan än – gör en veckoavstämning med coachen →</Link>
         )}
       </section>
 
@@ -109,10 +109,10 @@ export default async function Overview() {
             const ran = activities.some((a) => a.day === d && isRun(a.sport_type));
             return (
               <li key={d} className="flex flex-col items-center gap-2">
-                <span className={`text-xs ${d === today ? "text-text" : "text-muted"}`}>{WEEKDAYS_SHORT[i]}</span>
+                <span className={`text-xs ${d === today ? "text-text" : "text-muted-foreground"}`}>{WEEKDAYS_SHORT[i]}</span>
                 <span
                   className={`flex h-9 w-9 items-center justify-center rounded-full text-sm ${
-                    ran && gym ? "bg-accent/20 text-accent" : ran ? "bg-run/20 text-run" : gym ? "bg-gym/20 text-gym" : d === today ? "border border-line" : "text-muted"
+                    ran && gym ? "bg-brand/20 text-brand" : ran ? "bg-run/20 text-run" : gym ? "bg-gym/20 text-gym" : d === today ? "border border-line" : "text-muted-foreground"
                   }`}
                 >
                   {Number(d.slice(8))}
@@ -130,8 +130,8 @@ export default async function Overview() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-sm font-medium text-muted">Veckans pass</h2>
-        {sessions.length === 0 && shownActivities.length === 0 && <p className="card text-muted">Inga pass än den här veckan.</p>}
+        <h2 className="text-sm font-medium text-muted-foreground">Veckans pass</h2>
+        {sessions.length === 0 && shownActivities.length === 0 && <p className="card text-muted-foreground">Inga pass än den här veckan.</p>}
         {shownActivities.map((a) => (
           <ActivityRow key={a.id} a={a} />
         ))}
@@ -140,11 +140,11 @@ export default async function Overview() {
             <span>
               <span className="mr-2 inline-block h-2 w-2 rounded-full bg-gym align-middle" />
               <span className="font-medium">Gym</span>
-              <span className="ml-2 text-sm text-muted">
+              <span className="ml-2 text-sm text-muted-foreground">
                 {WEEKDAYS_SHORT[days.indexOf(s.day)]} {formatTime(s.started_at)}
               </span>
             </span>
-            <span className="text-right text-sm text-muted">
+            <span className="text-right text-sm text-muted-foreground">
               {new Set(s.gym_sets.map((x) => x.exercise_id)).size} övn · {s.gym_sets.length} set
               {watchFor(s.id)?.avg_hr ? <span className="block text-xs">♥ {watchFor(s.id)!.avg_hr} · klockan</span> : null}
             </span>
@@ -160,7 +160,7 @@ export default async function Overview() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="card p-3">
-      <p className="text-xs text-muted">{label}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-xl font-semibold">{value}</p>
     </div>
   );

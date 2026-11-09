@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import type { Exercise } from "@/lib/types";
+import { Input } from "@/components/ui/input";
 
 type Props = {
   exercises: Exercise[];
@@ -20,19 +21,19 @@ export function ExercisePicker({ exercises, onPick, onCreate, onClose }: Props) 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-bg">
       <div className="pt-safe mx-auto flex w-full max-w-md items-center gap-2 px-4 pb-3">
-        <input
+        <Input
           autoFocus
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Sök eller skapa övning"
-          className="field"
+         
         />
-        <button onClick={onClose} className="px-2 py-3 text-muted">Stäng</button>
+        <button onClick={onClose} className="px-2 py-3 text-muted-foreground">Stäng</button>
       </div>
       <ul className="pb-safe mx-auto w-full max-w-md flex-1 overflow-y-auto px-4">
         {q.trim() && !exact && (
           <li>
-            <button onClick={() => onCreate(q.trim())} className="w-full rounded-xl px-3 py-4 text-left text-accent active:bg-surface">
+            <button onClick={() => onCreate(q.trim())} className="w-full rounded-xl px-3 py-4 text-left text-brand active:bg-surface">
               + Skapa ”{q.trim()}”
             </button>
           </li>
@@ -41,7 +42,7 @@ export function ExercisePicker({ exercises, onPick, onCreate, onClose }: Props) 
           <li key={e.id}>
             <button onClick={() => onPick(e.id)} className="flex w-full items-baseline justify-between rounded-xl px-3 py-4 text-left active:bg-surface">
               <span>{e.name}</span>
-              <span className="text-xs text-muted">{e.muscle_group}</span>
+              <span className="text-xs text-muted-foreground">{e.muscle_group}</span>
             </button>
           </li>
         ))}

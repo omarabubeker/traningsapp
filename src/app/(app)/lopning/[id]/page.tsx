@@ -35,10 +35,10 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
   return (
     <main className="space-y-5 pt-3">
       <header className="flex items-center gap-3">
-        <Link href="/lopning" className="-ml-2 px-2 py-2 text-muted" aria-label="Tillbaka">←</Link>
+        <Link href="/lopning" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
         <div className="flex-1">
           <h1 className="text-lg font-semibold">{displayName(a)}</h1>
-          <p className="inline-block text-xs text-muted first-letter:uppercase">
+          <p className="inline-block text-xs text-muted-foreground first-letter:uppercase">
             {formatDate(a.start_time, { weekday: "long", day: "numeric", month: "long" })} · {formatTime(a.start_time)}
             {a.indoor && " · inomhus"}
           </p>
@@ -63,9 +63,9 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
 
       {splits.length > 0 && (
         <section className="card">
-          <h2 className="mb-2 text-sm text-muted">Splits</h2>
+          <h2 className="mb-2 text-sm text-muted-foreground">Splits</h2>
           <table className="w-full text-sm tabular-nums">
-            <thead className="text-xs text-muted">
+            <thead className="text-xs text-muted-foreground">
               <tr>
                 <th className="py-1 text-left font-normal">{factor === 1 ? "Km" : "Vid km"}</th>
                 <th className="text-right font-normal">Tempo</th>
@@ -77,9 +77,9 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
               {splits.map((s) => (
                 <tr key={s.km} className="border-t border-line">
                   <td className="py-2">{s.label}</td>
-                  <td className={`text-right ${s.pace_s === fastest ? "text-accent" : ""}`}>{formatPace(s.pace_s)}</td>
-                  <td className="text-right text-muted">{s.hr ?? "–"}</td>
-                  <td className="text-right text-muted">{s.elev_m != null ? `+${s.elev_m}` : "–"}</td>
+                  <td className={`text-right ${s.pace_s === fastest ? "text-brand" : ""}`}>{formatPace(s.pace_s)}</td>
+                  <td className="text-right text-muted-foreground">{s.hr ?? "–"}</td>
+                  <td className="text-right text-muted-foreground">{s.elev_m != null ? `+${s.elev_m}` : "–"}</td>
                 </tr>
               ))}
             </tbody>
@@ -90,7 +90,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
       {run && (
         <DistanceEditor id={a.id} watchDistance={a.watch_distance_m} override={a.corrected ? a.distance_m : null} />
       )}
-      <p className="text-center text-xs text-muted">
+      <p className="text-center text-xs text-muted-foreground">
         Källa: {SOURCE_LABEL[a.source]}
         {a.corrected && ` · distans rättad manuellt (klockan: ${formatKm(a.watch_distance_m)} km), splits omräknade`}
       </p>
@@ -101,7 +101,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="card p-3">
-      <p className="text-xs text-muted">{label}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-lg font-semibold">{value}</p>
     </div>
   );

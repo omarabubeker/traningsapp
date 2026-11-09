@@ -3,6 +3,9 @@ import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ageFrom } from "@/lib/dates";
 import type { Profile } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 export function ProfileForm({ initial, userId }: { initial: Profile | null; userId: string }) {
   const [p, setP] = useState({
@@ -43,32 +46,32 @@ export function ProfileForm({ initial, userId }: { initial: Profile | null; user
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="label" htmlFor="height">Längd (cm)</label>
-          <input id="height" inputMode="decimal" className="field" value={p.height_cm} onChange={set("height_cm")} />
+          <Input id="height" inputMode="decimal" value={p.height_cm} onChange={set("height_cm")} />
         </div>
         <div>
           <label className="label" htmlFor="birth">Född {age !== null && <span>({age} år)</span>}</label>
-          <input id="birth" type="date" className="field" value={p.birth_date} onChange={set("birth_date")} />
+          <Input id="birth" type="date" value={p.birth_date} onChange={set("birth_date")} />
         </div>
         <div>
           <label className="label" htmlFor="rhr">Vilopuls</label>
-          <input id="rhr" inputMode="numeric" className="field" value={p.resting_hr} onChange={set("resting_hr")} />
+          <Input id="rhr" inputMode="numeric" value={p.resting_hr} onChange={set("resting_hr")} />
         </div>
         <div>
           <label className="label" htmlFor="mhr">Maxpuls</label>
-          <input id="mhr" inputMode="numeric" className="field" value={p.max_hr} onChange={set("max_hr")} />
+          <Input id="mhr" inputMode="numeric" value={p.max_hr} onChange={set("max_hr")} />
         </div>
       </div>
       <div>
         <label className="label" htmlFor="goals">Mål</label>
-        <textarea id="goals" rows={3} className="field" placeholder="T.ex. springa 10 km under 50 min i maj, bli starkare i knäböj" value={p.goals} onChange={set("goals")} />
+        <Textarea id="goals" rows={3} placeholder="T.ex. springa 10 km under 50 min i maj, bli starkare i knäböj" value={p.goals} onChange={set("goals")} />
       </div>
       <div>
         <label className="label" htmlFor="inj">Skador och begränsningar</label>
-        <textarea id="inj" rows={3} className="field" placeholder="T.ex. känsligt vänsterknä vid djupa böj" value={p.injuries} onChange={set("injuries")} />
+        <Textarea id="inj" rows={3} placeholder="T.ex. känsligt vänsterknä vid djupa böj" value={p.injuries} onChange={set("injuries")} />
       </div>
-      <button className="btn-primary w-full" disabled={status === "saving"}>
+      <Button className="w-full" disabled={status === "saving"}>
         {status === "saving" ? "Sparar…" : status === "saved" ? "Sparat ✓" : "Spara"}
-      </button>
+      </Button>
       {status === "error" && <p className="text-sm text-danger">Kunde inte spara. Kontrollera värdena och försök igen.</p>}
     </form>
   );

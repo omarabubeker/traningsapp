@@ -13,21 +13,21 @@ const KIND_STYLE: Record<PlanItem["kind"], string> = {
   run: "bg-run",
   gym: "bg-gym",
   rest: "bg-line",
-  other: "bg-muted",
+  other: "bg-muted-foreground",
 };
 const STATUS_STYLE: Record<ItemStatus, string> = {
-  done: "text-accent",
+  done: "text-brand",
   missed: "text-danger",
   today: "text-text",
-  upcoming: "text-muted",
-  rest: "text-muted",
+  upcoming: "text-muted-foreground",
+  rest: "text-muted-foreground",
 };
 
 export function PlanItemCard({ item, status, showDate = true }: { item: PlanItem; status: ItemStatus; showDate?: boolean }) {
   const t = (item.target ?? {}) as Target;
   if (item.kind === "rest") {
     return (
-      <div className="flex items-baseline justify-between gap-2 rounded-2xl border border-dashed border-line px-4 py-2.5 text-sm text-muted">
+      <div className="flex items-baseline justify-between gap-2 rounded-2xl border border-dashed border-line px-4 py-2.5 text-sm text-muted-foreground">
         <span>
           {showDate && <span className="mr-2 inline-block first-letter:uppercase">{formatDate(item.date + "T12:00:00Z", { weekday: "short", day: "numeric" })}</span>}
           {item.title}
@@ -42,7 +42,7 @@ export function PlanItemCard({ item, status, showDate = true }: { item: PlanItem
     t.intensity,
   ].filter(Boolean);
   return (
-    <div className={`card ${status === "today" ? "border-accent/60" : ""} ${status === "done" ? "opacity-70" : ""}`}>
+    <div className={`card ${status === "today" ? "border-brand/60" : ""} ${status === "done" ? "opacity-70" : ""}`}>
       <div className="flex items-baseline justify-between gap-2">
         <p className="font-medium">
           <span className={`mr-2 inline-block h-2 w-2 rounded-full align-middle ${KIND_STYLE[item.kind]}`} />
@@ -54,18 +54,18 @@ export function PlanItemCard({ item, status, showDate = true }: { item: PlanItem
         </span>
       </div>
       {showDate && (
-        <p className="mt-0.5 inline-block text-xs text-muted first-letter:uppercase">
+        <p className="mt-0.5 inline-block text-xs text-muted-foreground first-letter:uppercase">
           {formatDate(item.date + "T12:00:00Z", { weekday: "long", day: "numeric", month: "short" })}
         </p>
       )}
       {facts.length > 0 && <p className="mt-2 text-sm">{facts.join(" · ")}</p>}
-      {item.description && <p className="mt-1 text-sm text-muted">{item.description}</p>}
+      {item.description && <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>}
       {t.exercises && t.exercises.length > 0 && (
         <ul className="mt-2 space-y-1 text-sm">
           {t.exercises.map((e, i) => (
             <li key={i} className="flex justify-between gap-2">
               <span>{e.name}</span>
-              <span className="text-muted tabular-nums">
+              <span className="text-muted-foreground tabular-nums">
                 {e.sets} × {e.reps}
                 {e.weight_kg ? ` · ${e.weight_kg.toLocaleString("sv-SE")} kg` : ""}
               </span>

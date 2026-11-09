@@ -23,7 +23,7 @@ export function BottomNav() {
             <li key={it.href} className="flex-1">
               <Link
                 href={it.href}
-                className={`flex flex-col items-center gap-1 pt-2 text-xs ${active ? "text-accent" : "text-muted"}`}
+                className={`flex flex-col items-center gap-1 pt-2 text-xs ${active ? "text-brand" : "text-muted-foreground"}`}
               >
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
                   <path d={it.icon} />

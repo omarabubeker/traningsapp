@@ -21,10 +21,10 @@ export default async function ProfilPage() {
       <ProfileForm initial={profile as Profile | null} userId={user.id} />
       <Link href="/installningar" className="card flex items-center justify-between">
         <span>Inställningar, synk och import</span>
-        <span className="text-muted">→</span>
+        <span className="text-muted-foreground">→</span>
       </Link>
       <form action={signOut} className="pt-2 text-center">
-        <p className="mb-2 text-xs text-muted">Inloggad som {user.email}</p>
+        <p className="mb-2 text-xs text-muted-foreground">Inloggad som {user.email}</p>
         <button className="text-sm text-danger">Logga ut</button>
       </form>
     </main>

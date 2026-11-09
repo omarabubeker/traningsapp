@@ -4,6 +4,7 @@ import { intervalsConfigured } from "@/lib/intervals";
 import { formatDate, formatTime } from "@/lib/dates";
 import { SyncButton } from "@/components/SyncButton";
 import { USD_TO_SEK } from "@/lib/coach/pricing";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export default async function Installningar() {
   return (
     <main className="space-y-5 pt-3">
       <header className="flex items-center gap-3">
-        <Link href="/profil" className="-ml-2 px-2 py-2 text-muted" aria-label="Tillbaka">←</Link>
+        <Link href="/profil" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
         <h1 className="text-2xl font-semibold">Inställningar</h1>
       </header>
 
@@ -36,7 +37,7 @@ export default async function Installningar() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-medium">Klockan (intervals.icu)</h2>
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted-foreground">
               {!configured
                 ? "Inte kopplad – lägg in INTERVALS_API_KEY och INTERVALS_ATHLETE_ID i Vercel."
                 : state?.last_sync_at
@@ -46,7 +47,7 @@ export default async function Installningar() {
           </div>
           {configured && <SyncButton />}
         </div>
-        <p className="text-xs text-muted">
+        <p className="text-xs text-muted-foreground">
           Synkar automatiskt när du öppnar appen (högst var 10:e minut). Nya pass kommer via Apple Hälsa → Intervals.icu Companion → intervals.icu.
         </p>
       </section>
@@ -57,18 +58,18 @@ export default async function Installningar() {
           <p className="text-lg font-semibold">{money(sum(cur))}</p>
         </div>
         <ul className="divide-y divide-line text-sm">
-          <li className="flex justify-between py-2"><span className="text-muted">Chattfrågor ({byKind("chat").length})</span><span>{money(sum(byKind("chat")))}</span></li>
-          <li className="flex justify-between py-2"><span className="text-muted">Veckoavstämningar ({byKind("weekly").length})</span><span>{money(sum(byKind("weekly")))}</span></li>
-          <li className="flex justify-between py-2"><span className="text-muted">Minnesanteckningar</span><span>{money(sum(byKind("memory")))}</span></li>
-          <li className="flex justify-between py-2"><span className="text-muted">Förra månaden</span><span>{money(sum(rows.filter((r) => !r.thisMonth)))}</span></li>
+          <li className="flex justify-between py-2"><span className="text-muted-foreground">Chattfrågor ({byKind("chat").length})</span><span>{money(sum(byKind("chat")))}</span></li>
+          <li className="flex justify-between py-2"><span className="text-muted-foreground">Veckoavstämningar ({byKind("weekly").length})</span><span>{money(sum(byKind("weekly")))}</span></li>
+          <li className="flex justify-between py-2"><span className="text-muted-foreground">Minnesanteckningar</span><span>{money(sum(byKind("memory")))}</span></li>
+          <li className="flex justify-between py-2"><span className="text-muted-foreground">Förra månaden</span><span>{money(sum(rows.filter((r) => !r.thisMonth)))}</span></li>
         </ul>
-        <p className="text-xs text-muted">Denna månad, ungefärligt (1 USD ≈ {USD_TO_SEK} kr). Exakt belopp och månadsgräns finns i Claude Console.</p>
+        <p className="text-xs text-muted-foreground">Denna månad, ungefärligt (1 USD ≈ {USD_TO_SEK} kr). Exakt belopp och månadsgräns finns i Claude Console.</p>
       </section>
 
       <section className="card space-y-2">
         <h2 className="font-medium">Historik från Apple Hälsa</h2>
-        <p className="text-sm text-muted">Importera äldre pass från en Apple Hälsa-export. {count ?? 0} pass finns i appen nu.</p>
-        <Link href="/installningar/import" className="btn-ghost w-full">Importera export.zip</Link>
+        <p className="text-sm text-muted-foreground">Importera äldre pass från en Apple Hälsa-export. {count ?? 0} pass finns i appen nu.</p>
+        <Button asChild variant="secondary" className="w-full"><Link href="/installningar/import">Importera export.zip</Link></Button>
       </section>
     </main>
   );

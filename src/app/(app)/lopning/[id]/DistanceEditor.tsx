@@ -2,6 +2,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Props = { id: string; watchDistance: number | null; override: number | null };
 
@@ -20,7 +22,7 @@ export function DistanceEditor({ id, watchDistance, override }: Props) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="w-full py-2 text-sm text-accent">
+      <button onClick={() => setOpen(true)} className="w-full py-2 text-sm text-brand">
         {override ? "Ändra rättad distans" : "Rätta distans (t.ex. från löpbandet)"}
       </button>
     );
@@ -36,13 +38,13 @@ export function DistanceEditor({ id, watchDistance, override }: Props) {
       }}
     >
       <label className="label" htmlFor="km">Verklig distans (km)</label>
-      <input id="km" inputMode="decimal" value={km} onChange={(e) => setKm(e.target.value)} className="field text-lg" autoFocus />
-      {watchDistance && <p className="text-xs text-muted">Klockan mätte {(watchDistance / 1000).toFixed(2).replace(".", ",")} km. Tempo och veckovolym räknas om.</p>}
+      <Input id="km" inputMode="decimal" value={km} onChange={(e) => setKm(e.target.value)} className="text-lg" autoFocus />
+      {watchDistance && <p className="text-xs text-muted-foreground">Klockan mätte {(watchDistance / 1000).toFixed(2).replace(".", ",")} km. Tempo och veckovolym räknas om.</p>}
       {error && <p className="text-sm text-danger">{error}</p>}
       <div className="flex gap-2">
-        <button className="btn-primary flex-1">Spara</button>
-        {override && <button type="button" onClick={() => save(null)} className="btn-ghost">Återställ</button>}
-        <button type="button" onClick={() => setOpen(false)} className="btn-ghost">Avbryt</button>
+        <Button className="flex-1">Spara</Button>
+        {override && <Button type="button" onClick={() => save(null)} variant="secondary">Återställ</Button>}
+        <Button type="button" onClick={() => setOpen(false)} variant="secondary">Avbryt</Button>
       </div>
     </form>
   );

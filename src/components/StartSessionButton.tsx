@@ -2,8 +2,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 
-export function StartSessionButton({ className = "btn-primary w-full" }: { className?: string }) {
+export function StartSessionButton({ className = "w-full" }: { className?: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,9 +24,9 @@ export function StartSessionButton({ className = "btn-primary w-full" }: { class
 
   return (
     <>
-      <button onClick={start} disabled={busy} className={className}>
+      <Button onClick={start} disabled={busy} className={className}>
         {busy ? "Startar…" : "Starta gympass"}
-      </button>
+      </Button>
       {error && <p className="mt-2 text-sm text-danger">{error}</p>}
     </>
   );

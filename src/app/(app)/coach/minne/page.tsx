@@ -16,10 +16,10 @@ export default async function MinnePage() {
   return (
     <main className="space-y-4 pt-3">
       <header className="flex items-center gap-3">
-        <Link href="/coach" className="-ml-2 px-2 py-2 text-muted" aria-label="Tillbaka">←</Link>
+        <Link href="/coach" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
         <h1 className="text-xl font-semibold">Coachens minne</h1>
       </header>
-      <p className="text-sm text-muted">
+      <p className="text-sm text-muted-foreground">
         Det här kommer coachen ihåg från era samtal. Ta bort det som inte stämmer, eller lägg till något den ska veta.
       </p>
       <MemoryList initial={(data ?? []) as Memory[]} />

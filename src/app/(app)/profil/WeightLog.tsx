@@ -3,6 +3,8 @@ import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { formatDate, formatKg, isoDay } from "@/lib/dates";
 import type { WeightEntry } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export function WeightLog({ initial }: { initial: WeightEntry[] }) {
   const [entries, setEntries] = useState(initial);
@@ -37,30 +39,30 @@ export function WeightLog({ initial }: { initial: WeightEntry[] }) {
     <section className="card space-y-4">
       <div className="flex items-baseline justify-between">
         <h2 className="font-medium">Vikt</h2>
-        {latest && <p className="text-2xl font-semibold">{formatKg(latest.weight_kg)} <span className="text-base text-muted">kg</span></p>}
+        {latest && <p className="text-2xl font-semibold">{formatKg(latest.weight_kg)} <span className="text-base text-muted-foreground">kg</span></p>}
       </div>
       <Sparkline entries={entries} />
       <form onSubmit={add} className="flex gap-2">
-        <input inputMode="decimal" placeholder="kg" className="field w-20 shrink-0 px-3" value={value} onChange={(e) => setValue(e.target.value)} />
-        <input type="date" className="field min-w-0 flex-1 px-3" value={date} max={isoDay()} onChange={(e) => setDate(e.target.value)} />
-        <button className="btn-primary shrink-0 px-4">Spara</button>
+        <Input inputMode="decimal" placeholder="kg" className="w-20 shrink-0 px-3" value={value} onChange={(e) => setValue(e.target.value)} />
+        <Input type="date" className="min-w-0 flex-1 px-3" value={date} max={isoDay()} onChange={(e) => setDate(e.target.value)} />
+        <Button className="shrink-0 px-4">Spara</Button>
       </form>
       {error && <p className="text-sm text-danger">{error}</p>}
       {entries.length > 0 && (
         <ul className="divide-y divide-line text-sm">
           {(showAll ? entries : entries.slice(0, 5)).map((w) => (
             <li key={w.id} className="flex items-center justify-between py-2">
-              <span className="text-muted inline-block first-letter:uppercase">{formatDate(w.measured_on + "T12:00:00Z", { day: "numeric", month: "short", year: "numeric" })}</span>
+              <span className="text-muted-foreground inline-block first-letter:uppercase">{formatDate(w.measured_on + "T12:00:00Z", { day: "numeric", month: "short", year: "numeric" })}</span>
               <span className="flex items-center gap-3">
                 {formatKg(w.weight_kg)} kg
-                <button onClick={() => remove(w.id)} className="px-1 text-muted" aria-label="Ta bort">×</button>
+                <button onClick={() => remove(w.id)} className="px-1 text-muted-foreground" aria-label="Ta bort">×</button>
               </span>
             </li>
           ))}
         </ul>
       )}
       {entries.length > 5 && (
-        <button onClick={() => setShowAll(!showAll)} className="w-full text-sm text-muted">{showAll ? "Visa färre" : `Visa alla (${entries.length})`}</button>
+        <button onClick={() => setShowAll(!showAll)} className="w-full text-sm text-muted-foreground">{showAll ? "Visa färre" : `Visa alla (${entries.length})`}</button>
       )}
     </section>
   );
@@ -78,7 +80,7 @@ function Sparkline({ entries }: { entries: WeightEntry[] }) {
     .join(" ");
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="h-16 w-full" preserveAspectRatio="none" aria-label="Viktkurva">
-      <path d={d} fill="none" stroke="var(--color-accent)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
+      <path d={d} fill="none" stroke="var(--color-brand)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }

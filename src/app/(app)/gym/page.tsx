@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { StartSessionButton } from "@/components/StartSessionButton";
 import { formatDate, formatKg, formatTime } from "@/lib/dates";
 import { bestSet } from "@/lib/gym";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ export default async function GymPage() {
       <h1 className="text-2xl font-semibold">Gym</h1>
 
       {active ? (
-        <Link href={`/gym/${active.id}`} className="btn-primary w-full">Fortsätt pågående pass</Link>
+        <Button asChild className="w-full"><Link href={`/gym/${active.id}`}>Fortsätt pågående pass</Link></Button>
       ) : (
         <StartSessionButton />
       )}
@@ -51,19 +52,19 @@ export default async function GymPage() {
         <span className="text-2xl" aria-hidden>📷</span>
         <span className="flex-1">
           <span className="block font-medium">Teknik med kamera</span>
-          <span className="block text-sm text-muted">Knäböj, utfallssteg, planka, armhävningar och marklyft med feedback i realtid</span>
+          <span className="block text-sm text-muted-foreground">Knäböj, utfallssteg, planka, armhävningar och marklyft med feedback i realtid</span>
         </span>
-        <span className="text-muted">→</span>
+        <span className="text-muted-foreground">→</span>
       </Link>
 
       {exercises.length > 0 && (
         <section className="space-y-2">
-          <h2 className="text-sm font-medium text-muted">Övningar och utveckling</h2>
+          <h2 className="text-sm font-medium text-muted-foreground">Övningar och utveckling</h2>
           <div className="card divide-y divide-line p-0">
             {exercises.map((e) => (
               <Link key={e.id} href={`/gym/ovning/${e.id}`} className="flex items-center justify-between px-4 py-3">
                 <span>{e.name}</span>
-                <span className="text-sm text-muted tabular-nums">
+                <span className="text-sm text-muted-foreground tabular-nums">
                   {e.best ? `${formatKg(e.best.weight_kg)} kg × ${e.best.reps}` : ""} →
                 </span>
               </Link>
@@ -73,19 +74,19 @@ export default async function GymPage() {
       )}
 
       <section className="space-y-2">
-        <h2 className="text-sm font-medium text-muted">Senaste passen</h2>
-        {sessions.length === 0 && <p className="card text-muted">Inga pass loggade än.</p>}
+        <h2 className="text-sm font-medium text-muted-foreground">Senaste passen</h2>
+        {sessions.length === 0 && <p className="card text-muted-foreground">Inga pass loggade än.</p>}
         {sessions.map((s) => {
           const names = [...new Map(s.gym_sets.map((x) => [x.exercise_id, x.exercises?.name ?? "?"])).values()];
           return (
             <Link key={s.id} href={`/gym/${s.id}`} className="card block">
               <div className="flex items-baseline justify-between">
                 <span className="font-medium inline-block first-letter:uppercase">{formatDate(s.started_at)}</span>
-                <span className="text-sm text-muted">
+                <span className="text-sm text-muted-foreground">
                   {s.ended_at ? `${formatTime(s.started_at)}–${formatTime(s.ended_at)}` : "pågår"}
                 </span>
               </div>
-              <p className="mt-1 truncate text-sm text-muted">
+              <p className="mt-1 truncate text-sm text-muted-foreground">
                 {names.length ? names.join(" · ") : "Inga set"} {s.gym_sets.length > 0 && `(${s.gym_sets.length} set)`}
               </p>
             </Link>

@@ -64,31 +64,31 @@ export default async function LopningPage() {
 
       <section className="card">
         <div className="mb-2 flex items-baseline justify-between">
-          <h2 className="text-sm text-muted">Km per vecka</h2>
+          <h2 className="text-sm text-muted-foreground">Km per vecka</h2>
           <p className="text-sm">
             Denna vecka <span className="font-semibold">{thisWeek.km.toLocaleString("sv-SE")} km</span>
-            <span className="text-muted"> · snitt {avg4.toLocaleString("sv-SE", { maximumFractionDigits: 1 })}</span>
+            <span className="text-muted-foreground"> · snitt {avg4.toLocaleString("sv-SE", { maximumFractionDigits: 1 })}</span>
           </p>
         </div>
         <WeeklyVolumeChart data={weeks} />
       </section>
 
       <section className="card">
-        <h2 className="text-sm text-muted">Snittempo per pass</h2>
-        <p className="mb-2 text-xs text-muted">Utomhus och rättade löpbandspass · högre upp = snabbare</p>
+        <h2 className="text-sm text-muted-foreground">Snittempo per pass</h2>
+        <p className="mb-2 text-xs text-muted-foreground">Utomhus och rättade löpbandspass · högre upp = snabbare</p>
         <TrendChart data={pace} color="var(--color-run)" name="Tempo" unit="pace" invert />
       </section>
 
       <section className="card">
-        <h2 className="mb-2 text-sm text-muted">Snittpuls per pass</h2>
+        <h2 className="mb-2 text-sm text-muted-foreground">Snittpuls per pass</h2>
         <TrendChart data={hr} color="var(--color-run)" name="Puls" unit="bpm" />
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-sm font-medium text-muted">Senaste passen</h2>
+        <h2 className="text-sm font-medium text-muted-foreground">Senaste passen</h2>
         {all.length === 0 && (
-          <p className="card text-muted">
-            Inga pass än. Synka från klockan eller <Link href="/installningar/import" className="text-accent">importera från Apple Hälsa</Link>.
+          <p className="card text-muted-foreground">
+            Inga pass än. Synka från klockan eller <Link href="/installningar/import" className="text-brand">importera från Apple Hälsa</Link>.
           </p>
         )}
         {all.slice(0, 30).map((a) => (

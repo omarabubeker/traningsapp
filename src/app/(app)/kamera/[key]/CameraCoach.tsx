@@ -11,6 +11,8 @@ import { bestSwedishVoice, loadSettings, saveSettings, speak } from "@/lib/movem
 import { saveCameraSet } from "@/lib/movement/save";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { MovementKey, PoseFrame } from "@/lib/movement/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Phase = "setup" | "loading" | "live" | "paused" | "summary" | "error";
 type Live = {
@@ -398,7 +400,7 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
     <main className="pt-3">
       {!showCamera && (
         <header className="mb-4 flex items-center gap-3">
-          <Link href="/kamera" className="-ml-2 px-2 py-2 text-muted" aria-label="Tillbaka">←</Link>
+          <Link href="/kamera" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
           <h1 className="text-xl font-semibold">{rule.name}</h1>
         </header>
       )}
@@ -407,27 +409,27 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
         <section className="space-y-4">
           <div className="card space-y-2 text-sm">
             <p className="font-medium">Uppställning</p>
-            <p className="text-muted">{rule.setup}</p>
-            <p className="text-muted">
+            <p className="text-muted-foreground">{rule.setup}</p>
+            <p className="text-muted-foreground">
               Kameran bedömer: {Object.values(rule.faultLabels).join(", ").toLowerCase()}. Ingen bild sparas.
             </p>
           </div>
           {!hold && movementKey !== "pushup" && (
             <div className="card">
               <label className="label" htmlFor="w">Vikt (kg, 0 = kroppsvikt)</label>
-              <input id="w" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} className="field text-lg" />
+              <Input id="w" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} className="text-lg" />
             </div>
           )}
           {error && <p className="text-sm text-danger">{error}</p>}
-          <button onClick={() => start()} className="btn-primary w-full text-lg">Starta kameran</button>
+          <Button onClick={() => start()} size="lg" className="w-full">Starta kameran</Button>
         </section>
       )}
 
       {phase === "paused" && (
         <section className="card space-y-3 text-center">
           <p>Kameran stängdes när du lämnade appen.</p>
-          <button onClick={() => start(true)} className="btn-primary w-full">Fortsätt</button>
-          <button onClick={finish} className="btn-ghost w-full">Avsluta och spara</button>
+          <Button onClick={() => start(true)} className="w-full">Fortsätt</Button>
+          <Button onClick={finish} variant="secondary" className="w-full">Avsluta och spara</Button>
         </section>
       )}
 
@@ -482,7 +484,7 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
             >
               {recStatus === "recording" ? "⏹ Stoppa och spara" : recStatus === "saving" ? "Sparar…" : "⏺ Spela in mätdata (30 s)"}
             </button>
-            {recStatus === "saved" && <p className="text-accent">✓ Inspelning sparad</p>}
+            {recStatus === "saved" && <p className="text-brand">✓ Inspelning sparad</p>}
             {recStatus === "error" && <p className="text-danger">Kunde inte spara</p>}
           </div>
         )}
@@ -516,7 +518,7 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
               {slow === "full" ? "välj ”Snabb” modell under Teknik med kamera." : "stäng andra appar och se till att telefonen inte är i strömsparläge."}
             </p>
           )}
-          <button onClick={finish} className="btn-primary w-full text-lg">Klar</button>
+          <Button onClick={finish} size="lg" className="w-full">Klar</Button>
         </div>
       </div>
 
@@ -540,26 +542,26 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
           <div className="card space-y-2">
             <p className="font-medium">Vanligaste felen</p>
             {(hold ? summary.holdS : summary.reps) === 0 ? (
-              <p className="text-sm text-muted">Inget registrerades. Kontrollera att hela kroppen syns och försök igen.</p>
+              <p className="text-sm text-muted-foreground">Inget registrerades. Kontrollera att hela kroppen syns och försök igen.</p>
             ) : summary.topFaults.length === 0 ? (
-              <p className="text-sm text-accent">Inga fel upptäcktes – snyggt!</p>
+              <p className="text-sm text-brand">Inga fel upptäcktes – snyggt!</p>
             ) : (
               <ul className="space-y-1 text-sm">
                 {summary.topFaults.map((f) => (
                   <li key={f.key} className="flex justify-between">
                     <span>{f.label}</span>
-                    <span className="text-muted">{hold ? `${f.count} s` : `${f.count} av ${summary.reps}`}</span>
+                    <span className="text-muted-foreground">{hold ? `${f.count} s` : `${f.count} av ${summary.reps}`}</span>
                   </li>
                 ))}
               </ul>
             )}
           </div>
           {saved?.ok && (
-            <Link href={`/gym/${saved.sessionId}`} className="card block text-sm text-accent">✓ Sparat i gymloggen – visa passet →</Link>
+            <Link href={`/gym/${saved.sessionId}`} className="card block text-sm text-brand">✓ Sparat i gymloggen – visa passet →</Link>
           )}
-          {saved && !saved.ok && <p className="card text-sm text-muted">{saved.error}</p>}
-          <button onClick={again} className="btn-primary w-full">Nytt set</button>
-          <Link href="/kamera" className="btn-ghost w-full">Byt övning</Link>
+          {saved && !saved.ok && <p className="card text-sm text-muted-foreground">{saved.error}</p>}
+          <Button onClick={again} className="w-full">Nytt set</Button>
+          <Button asChild variant="secondary" className="w-full"><Link href="/kamera">Byt övning</Link></Button>
         </section>
       )}
     </main>
@@ -569,7 +571,7 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="card p-3">
-      <p className="text-xs text-muted">{label}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-3xl font-semibold tabular-nums">{value}</p>
     </div>
   );
