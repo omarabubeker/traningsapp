@@ -8,6 +8,8 @@ import { formatDate, formatKg, formatTime } from "@/lib/dates";
 import type { Exercise, GymSession, GymSet } from "@/lib/types";
 import { Stepper } from "./Stepper";
 import { MoreMenu } from "@/components/MoreMenu";
+import { confirmDialog } from "@/components/ConfirmDialog";
+import { toast } from "sonner";
 import { ExercisePicker } from "./ExercisePicker";
 import { Button } from "@/components/ui/button";
 
@@ -206,8 +208,8 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
     flush(supabase);
   }
 
-  function removeSet(s: GymSet) {
-    if (!confirm(`Ta bort set ${formatKg(s.weight_kg)} kg × ${s.reps}?`)) return;
+  async function removeSet(s: GymSet) {
+    if (!(await confirmDialog({ title: "Ta bort setet?", description: `${formatKg(s.weight_kg)} kg × ${s.reps}`, confirmLabel: "Ta bort", danger: true }))) return;
     setServerSets((xs) => xs.filter((x) => x.id !== s.id));
     enqueue({ kind: "deleteSet", id: s.id });
     flush(supabase);
@@ -244,9 +246,10 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
   }
 
   async function deleteSession() {
-    if (!confirm("Radera hela passet och alla dess set?")) return;
+    if (!(await confirmDialog({ title: "Radera passet?", description: "Hela passet och alla dess set tas bort.", confirmLabel: "Radera", danger: true }))) return;
     const { error } = await supabase.from("gym_sessions").delete().eq("id", sessionId);
-    if (error) return setMessage("Kunde inte radera passet.");
+    if (error) return void toast.error("Kunde inte radera passet.");
+    toast.success("Passet är raderat");
     router.push("/gym");
     router.refresh();
   }
@@ -372,14 +375,13 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
         </>
       )}
 
-      {picker && (
-        <ExercisePicker
-          exercises={exercises}
-          onPick={selectExercise}
-          onCreate={createExercise}
-          onClose={() => setPicker(false)}
-        />
-      )}
+      <ExercisePicker
+        open={picker}
+        exercises={exercises}
+        onPick={selectExercise}
+        onCreate={createExercise}
+        onClose={() => setPicker(false)}
+      />
     </main>
   );
 }
