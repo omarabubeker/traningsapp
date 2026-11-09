@@ -89,9 +89,12 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
     if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
   }, []);
 
+  // Modellen behålls mellan set och stängs först när sidan lämnas.
+  const model = useRef<{ lm: PoseLandmarker; name: string; lastTs: number } | null>(null);
   useEffect(() => () => {
     stopCamera();
-    run.current?.lm?.close();
+    model.current?.lm.close();
+    model.current = null;
   }, [stopCamera]);
 
   // Stäng kameran när appen göms (byter app, låser skärmen).
@@ -141,7 +144,12 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
         video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
         audio: false,
       });
-      const lm = run.current?.lm ?? (await createLandmarker(settings.model));
+      if (model.current && model.current.name !== settings.model) {
+        model.current.lm.close();
+        model.current = null;
+      }
+      if (!model.current) model.current = { lm: await createLandmarker(settings.model), name: settings.model, lastTs: 0 };
+      const lm = model.current.lm;
       const prev = run.current;
       run.current = {
         stream,
@@ -168,7 +176,8 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
       video.srcObject = stream;
       await video.play();
       setPhase("live");
-      requestAnimationFrame(loop);
+      const own = run.current;
+      requestAnimationFrame((ts) => loop(own, ts));
     } catch (e) {
       console.error(e);
       stopCamera();
@@ -182,19 +191,23 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
   }
 
   // --- Bildloopen ---------------------------------------------------------------------
-  // ts kommer från requestVideoFrameCallback/requestAnimationFrame (monoton tid i ms).
-  function loop(ts: number) {
-    const r = run.current;
+  // Varje kamerastart har en egen loop som stannar så fort en ny start ersatt den
+  // (annars kan två loopar skicka bilder i fel tidsordning och spårningen fryser).
+  // ts kommer från requestVideoFrameCallback/requestAnimationFrame.
+  function loop(r: typeof run.current, ts: number) {
     const video = videoRef.current;
-    if (!r || r.stop || !video) return;
+    if (!r || r !== run.current || r.stop || !video) return;
     const next = () => {
       const v = video as HTMLVideoElement & { requestVideoFrameCallback?: (cb: (now: number) => void) => number };
-      if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(loop);
-      else requestAnimationFrame(loop);
+      if (v.requestVideoFrameCallback) v.requestVideoFrameCallback((t) => loop(r, t));
+      else requestAnimationFrame((t) => loop(r, t));
     };
     if (video.readyState < 2 || video.currentTime === r.lastVideoTime) return next();
     r.lastVideoTime = video.currentTime;
-    const now = ts;
+    // MediaPipe kräver strikt stigande tidsstämplar för samma modell.
+    const m = model.current!;
+    const now = Math.max(ts, m.lastTs + 1);
+    m.lastTs = now;
     let res;
     try {
       res = r.lm!.detectForVideo(video, now);
@@ -372,8 +385,7 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
   }
 
   function again() {
-    run.current?.lm?.close();
-    run.current = null;
+    run.current = null; // modellen behålls till nästa set
     setSummary(null);
     setSaved(null);
     setLive(EMPTY_LIVE);
