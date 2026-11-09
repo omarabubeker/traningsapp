@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/dates";
 import type { Conversation } from "@/lib/coach/conversation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { confirmDialog } from "@/components/ConfirmDialog";
 
 export type ChatMessage = { id: string; role: "user" | "assistant"; kind: "chat" | "weekly"; content: string; created_at: string };
 
@@ -76,7 +77,7 @@ export function CoachChat({ current, previous: prevInitial, configured }: Props)
 
   async function weekly() {
     if (busy) return;
-    if (!confirm("Låt coachen gå igenom veckan och planera nästa? (tar en halv till en minut)")) return;
+    if (!(await confirmDialog({ title: "Veckoavstämning", description: "Coachen går igenom veckan och planerar nästa. Det tar en halv till en minut.", confirmLabel: "Kör" }))) return;
     setBusy("weekly");
     setError(null);
     try {

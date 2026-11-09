@@ -5,6 +5,7 @@ import { formatDate, formatKg, isoDay } from "@/lib/dates";
 import type { WeightEntry } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { confirmDialog } from "@/components/ConfirmDialog";
 
 export function WeightLog({ initial }: { initial: WeightEntry[] }) {
   const [entries, setEntries] = useState(initial);
@@ -30,7 +31,7 @@ export function WeightLog({ initial }: { initial: WeightEntry[] }) {
   }
 
   async function remove(id: string) {
-    if (!confirm("Ta bort mätningen?")) return;
+    if (!(await confirmDialog({ title: "Ta bort mätningen?", confirmLabel: "Ta bort", danger: true }))) return;
     const { error } = await supabaseBrowser().from("weight_entries").delete().eq("id", id);
     if (!error) setEntries((xs) => xs.filter((x) => x.id !== id));
   }
