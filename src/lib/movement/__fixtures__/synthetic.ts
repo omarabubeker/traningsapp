@@ -79,3 +79,51 @@ export function repAngles(bottom: number, steps = 30) {
   const down = Array.from({ length: steps }, (_, i) => 175 - ((175 - bottom) * (i + 1)) / steps);
   return [175, 175, ...down, ...[...down].reverse(), 175, 175];
 }
+
+/** Armhävning från sidan: armbågsvinkel styr axelns höjd. Kroppen längs z (huvud mot +z), golvet y = 0,6. */
+export function pushupPose({ elbow, hipOffset = 0, headDrop = 0 }: { elbow: number; hipOffset?: number; headDrop?: number }): Vec3[] {
+  const w = empty();
+  const FLOOR = 0.6;
+  const phi = deg(180 - elbow);
+  for (const [sx, s, e, wr, h, a] of [
+    [-0.15, P.leftShoulder, P.leftElbow, P.leftWrist, P.leftHip, P.leftAnkle],
+    [0.15, P.rightShoulder, P.rightElbow, P.rightWrist, P.rightHip, P.rightAnkle],
+  ] as const) {
+    const wrist = { x: sx, y: FLOOR, z: 0 };
+    const el = { x: sx, y: FLOOR - 0.27, z: 0 };
+    const sh = { x: sx, y: el.y - 0.3 * Math.cos(phi), z: 0.3 * Math.sin(phi) };
+    const ank = { x: sx * 0.6, y: FLOOR - 0.05, z: sh.z - 1.4 };
+    const hip = { x: sx * 0.7, y: (sh.y + ank.y) / 2 + hipOffset, z: (sh.z + ank.z) / 2 };
+    w[s] = sh; w[e] = el; w[wr] = wrist; w[h] = hip; w[a] = ank;
+  }
+  const sh = w[P.leftShoulder];
+  w[P.nose] = { x: 0, y: sh.y + headDrop, z: sh.z + 0.2 };
+  return w;
+}
+
+/** Marklyft från sidan: bållutning (från lodlinjen) och lårets vinkel (knäböjning). Höftvinkel = 180 − (bål + lår). */
+export function deadliftPose({ lean, thigh }: { lean: number; thigh: number }): Vec3[] {
+  const w = empty();
+  for (const [sx, s, h, k, a] of [
+    [-1, P.leftShoulder, P.leftHip, P.leftKnee, P.leftAnkle],
+    [1, P.rightShoulder, P.rightHip, P.rightKnee, P.rightAnkle],
+  ] as const) {
+    const hip = { x: sx * 0.1, y: 0, z: 0 };
+    const knee = { x: sx * 0.1, y: THIGH * Math.cos(deg(thigh)), z: THIGH * Math.sin(deg(thigh)) };
+    const ankle = { x: sx * 0.1, y: knee.y + SHIN, z: knee.z };
+    const sh = { x: sx * 0.03, y: -TORSO * Math.cos(deg(lean)), z: TORSO * Math.sin(deg(lean)) };
+    w[s] = sh; w[h] = hip; w[k] = knee; w[a] = ankle;
+  }
+  w[P.nose] = { x: 0, y: w[P.leftShoulder].y - 0.15, z: w[P.leftShoulder].z + 0.1 };
+  return w;
+}
+
+/** Linjär interpolation av en parameter genom flera hållpunkter, `perSegment` rutor mellan varje. */
+export function path(points: number[], perSegment = 30): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    for (let k = 0; k < perSegment; k++) out.push(points[i] + ((points[i + 1] - points[i]) * k) / perSegment);
+  }
+  out.push(points.at(-1)!);
+  return out;
+}

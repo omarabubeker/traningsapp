@@ -28,7 +28,7 @@ type Live = {
 const EMPTY_LIVE: Live = { reps: 0, good: 0, holdS: 0, phase: "", cue: null, hidden: false, fps: 0, countdown: null, waiting: null, debug: null };
 const COUNTDOWN_MS = 3000;
 // Kalibrering: vilka punkter som spelas in (huvud, axlar, höfter, ben, fötter) och hur länge.
-const REC_LANDMARKS = [0, 7, 8, 11, 12, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
+const REC_LANDMARKS = [0, 7, 8, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
 const REC_MS = 30000;
 type RecFrame = { t: number; w: number[][]; i: number[][] };
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
@@ -400,7 +400,7 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
               Kameran bedömer: {Object.values(rule.faultLabels).join(", ").toLowerCase()}. Ingen bild sparas.
             </p>
           </div>
-          {!hold && (
+          {!hold && movementKey !== "pushup" && (
             <div className="card">
               <label className="label" htmlFor="w">Vikt (kg, 0 = kroppsvikt)</label>
               <input id="w" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} className="field text-lg" />
