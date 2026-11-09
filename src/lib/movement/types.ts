@@ -35,7 +35,7 @@ export type RuleOutput<S> = {
   debug?: Record<string, string | number>;
 };
 
-export type MovementKey = "squat" | "lunge" | "plank";
+export type MovementKey = "squat" | "lunge" | "plank" | "pushup" | "deadlift";
 
 export type RequiredLandmarks = { left: number[]; right: number[]; common?: number[] };
 
@@ -65,6 +65,10 @@ export const P = {
   rightEar: 8,
   leftShoulder: 11,
   rightShoulder: 12,
+  leftElbow: 13,
+  rightElbow: 14,
+  leftWrist: 15,
+  rightWrist: 16,
   leftHip: 23,
   rightHip: 24,
   leftKnee: 25,

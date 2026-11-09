@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { MOVEMENT_LIST } from "@/lib/movement/registry";
 import { bestSwedishVoice, loadSettings, onVoicesReady, saveSettings, speak, swedishVoices, type CameraSettings } from "@/lib/movement/voice";
 
-const ICON: Record<string, string> = { squat: "🏋️", lunge: "🦵", plank: "🧘" };
+const ICON: Record<string, string> = { squat: "🏋️", lunge: "🦵", plank: "🧘", pushup: "💪", deadlift: "🏋️‍♂️" };
 
 export default function KameraPage() {
   const [settings, setSettings] = useState<CameraSettings | null>(null);

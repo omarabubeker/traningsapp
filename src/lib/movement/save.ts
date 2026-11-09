@@ -4,6 +4,8 @@ import type { MovementKey } from "./types";
 import type { TechniqueSummary } from "./session";
 import { MOVEMENTS } from "./registry";
 
+const MUSCLE: Record<MovementKey, string> = { squat: "Ben", lunge: "Ben", plank: "Bål", pushup: "Bröst", deadlift: "Baksida" };
+
 /**
  * Sparar ett kameraset som ett vanligt gymset (i pågående pass eller ett nytt kamerapass)
  * plus teknikresultatet. Returnerar passets id.
@@ -22,7 +24,7 @@ export async function saveCameraSet(
   if (!ex) {
     const { data, error } = await supabase
       .from("exercises")
-      .insert({ name: rule.name, movement_key: key, is_bodyweight: key === "plank", muscle_group: key === "plank" ? "Bål" : "Ben" })
+      .insert({ name: rule.name, movement_key: key, is_bodyweight: key === "plank" || key === "pushup", muscle_group: MUSCLE[key] })
       .select("id")
       .single();
     if (error) throw error;
