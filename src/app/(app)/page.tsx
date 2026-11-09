@@ -5,6 +5,7 @@ import { applyOverride, isRun } from "@/lib/running";
 import type { Activity } from "@/lib/types";
 import { loadPlans } from "@/lib/coach/planData";
 import { daysToRace } from "@/lib/race";
+import { matchWatchToGym } from "@/lib/watchMerge";
 import { PlanItemCard } from "@/components/PlanItemCard";
 import { requireUser } from "@/lib/supabase/server";
 import { WEEKDAYS_SHORT, formatKg, formatTime, isoDay, weekNumber, weekRange } from "@/lib/dates";
@@ -32,7 +33,7 @@ export default async function Overview() {
 
   const { data: actData } = await supabase
     .from("activities")
-    .select("id, sport_type, name, start_time, distance_m, distance_override_m, moving_time_s, avg_hr, avg_pace_s_per_km, indoor, source")
+    .select("id, sport_type, name, start_time, distance_m, distance_override_m, moving_time_s, elapsed_time_s, avg_hr, calories, avg_pace_s_per_km, indoor, source")
     .is("deleted_at", null)
     .gte("start_time", from)
     .lt("start_time", to)
@@ -50,6 +51,11 @@ export default async function Overview() {
   const sessions = ((data ?? []) as Row[])
     .map((s) => ({ ...s, day: isoDay(new Date(s.started_at)) }))
     .filter((s) => days.includes(s.day));
+
+  // Styrkepass från klockan som hör till ett loggat gympass visas inte separat.
+  const watchToGym = matchWatchToGym(activities, sessions);
+  const watchFor = (sessionId: string) => activities.find((a) => watchToGym.get(a.id) === sessionId);
+  const shownActivities = activities.filter((a) => !watchToGym.has(a.id));
 
   const work = sessions.flatMap((s) => s.gym_sets.filter((x) => !x.is_warmup));
   const volume = work.reduce((sum, x) => sum + x.reps * Number(x.weight_kg), 0);
@@ -125,8 +131,8 @@ export default async function Overview() {
 
       <section className="space-y-2">
         <h2 className="text-sm font-medium text-muted">Veckans pass</h2>
-        {sessions.length === 0 && activities.length === 0 && <p className="card text-muted">Inga pass än den här veckan.</p>}
-        {activities.map((a) => (
+        {sessions.length === 0 && shownActivities.length === 0 && <p className="card text-muted">Inga pass än den här veckan.</p>}
+        {shownActivities.map((a) => (
           <ActivityRow key={a.id} a={a} />
         ))}
         {sessions.map((s) => (
@@ -138,8 +144,9 @@ export default async function Overview() {
                 {WEEKDAYS_SHORT[days.indexOf(s.day)]} {formatTime(s.started_at)}
               </span>
             </span>
-            <span className="text-sm text-muted">
+            <span className="text-right text-sm text-muted">
               {new Set(s.gym_sets.map((x) => x.exercise_id)).size} övn · {s.gym_sets.length} set
+              {watchFor(s.id)?.avg_hr ? <span className="block text-xs">♥ {watchFor(s.id)!.avg_hr} · klockan</span> : null}
             </span>
           </Link>
         ))}

@@ -15,7 +15,7 @@ export function BottomNav() {
   // Under ett pågående gympass tar loggningen hela skärmen.
   if (/^\/gym\/[^/]+$/.test(path)) return null;
   return (
-    <nav className="pb-safe fixed inset-x-0 bottom-0 z-20 border-t border-line bg-bg/95 backdrop-blur">
+    <nav className="bottom-nav pb-safe fixed inset-x-0 bottom-0 z-20 border-t border-line bg-bg/95 backdrop-blur">
       <ul className="mx-auto flex max-w-md">
         {items.map((it) => {
           const active = it.href === "/" ? path === "/" : path.startsWith(it.href) || (it.href === "/coach" && path.startsWith("/plan"));

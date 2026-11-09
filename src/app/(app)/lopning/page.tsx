@@ -7,10 +7,11 @@ import { SyncButton } from "@/components/SyncButton";
 import { ActivityRow } from "@/components/ActivityRow";
 import { WeeklyVolumeChart, type WeekPoint } from "@/components/charts/WeeklyVolumeChart";
 import { TrendChart, type TrendPoint } from "@/components/charts/TrendChart";
+import { matchWatchToGym } from "@/lib/watchMerge";
 
 export const dynamic = "force-dynamic";
 
-const COLS = "id, sport_type, name, start_time, distance_m, distance_override_m, moving_time_s, avg_hr, avg_pace_s_per_km, indoor, source";
+const COLS = "id, sport_type, name, start_time, distance_m, distance_override_m, moving_time_s, elapsed_time_s, avg_hr, avg_pace_s_per_km, indoor, source";
 const WEEKS = 16;
 const DAY = 864e5;
 
@@ -25,7 +26,12 @@ export default async function LopningPage() {
     .is("deleted_at", null)
     .gte("start_time", since)
     .order("start_time", { ascending: false });
-  const all = ((data ?? []) as Activity[]).map(applyOverride).map((a) => ({ ...a, day: isoDay(new Date(a.start_time)) }));
+  const { data: gyms } = await supabase.from("gym_sessions").select("id, started_at, ended_at").gte("started_at", since);
+  const merged = matchWatchToGym((data ?? []) as Activity[], gyms ?? []);
+  const all = ((data ?? []) as Activity[])
+    .filter((a) => !merged.has(a.id)) // klockans styrkepass visas på gympasset i stället
+    .map(applyOverride)
+    .map((a) => ({ ...a, day: isoDay(new Date(a.start_time)) }));
   const runs = all.filter((a) => isRun(a.sport_type));
 
   const weeks: WeekPoint[] = Array.from({ length: WEEKS }, (_, i) => {

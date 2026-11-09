@@ -7,6 +7,7 @@ import { enqueue, flush, pendingOps, subscribe } from "@/lib/gymQueue";
 import { formatDate, formatKg, formatTime } from "@/lib/dates";
 import type { Exercise, GymSession, GymSet } from "@/lib/types";
 import { Stepper } from "./Stepper";
+import { MoreMenu } from "@/components/MoreMenu";
 import { ExercisePicker } from "./ExercisePicker";
 
 type Prev = { date: string; sets: GymSet[] };
@@ -54,6 +55,7 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
   const [picker, setPicker] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [message, setMessage] = useState<string | null>(null);
+  const [watch, setWatch] = useState<{ minutes: number; hr: number | null; maxHr: number | null; kcal: number | null } | null>(null);
 
   // --- Ladda pass, övningar och set -----------------------------------------
   useEffect(() => {
@@ -69,6 +71,22 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
       }
       setSession(s.data);
       setExercises(ex.data ?? []);
+      // Styrkepass från klockan under samma tid (puls och kalorier).
+      const from = new Date(Date.parse(s.data.started_at) - 30 * 60e3).toISOString();
+      const to = new Date((s.data.ended_at ? Date.parse(s.data.ended_at) : Date.parse(s.data.started_at) + 3 * 3600e3) + 30 * 60e3).toISOString();
+      supabase
+        .from("activities")
+        .select("moving_time_s, elapsed_time_s, avg_hr, max_hr, calories, sport_type")
+        .in("sport_type", ["Strength", "WeightTraining"])
+        .is("deleted_at", null)
+        .gte("start_time", from)
+        .lte("start_time", to)
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }: { data: unknown }) => {
+          const w = data as { moving_time_s: number | null; elapsed_time_s: number | null; avg_hr: number | null; max_hr: number | null; calories: number | null } | null;
+          if (w) setWatch({ minutes: Math.round((w.elapsed_time_s ?? w.moving_time_s ?? 0) / 60), hr: w.avg_hr, maxHr: w.max_hr, kcal: w.calories });
+        });
       setServerSets(sets.data ?? []);
       const last = (sets.data ?? []).at(-1);
       if (last) {
@@ -266,7 +284,14 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
         ) : (
           <button onClick={finish} className="btn-ghost min-h-10 px-3 text-sm">Avsluta</button>
         )}
+        <MoreMenu items={[{ label: "Radera pass", onSelect: deleteSession, danger: true }]} />
       </header>
+
+      {watch && (
+        <p className="mb-3 rounded-xl bg-surface-2 px-3 py-2 text-sm text-muted">
+          ⌚ Klockan: {watch.minutes} min{watch.hr ? ` · snittpuls ${watch.hr}` : ""}{watch.maxHr ? ` (max ${watch.maxHr})` : ""}{watch.kcal ? ` · ${watch.kcal} kcal` : ""}
+        </p>
+      )}
 
       {message && (
         <p className="mb-3 rounded-xl bg-surface-2 p-3 text-sm" onClick={() => setMessage(null)}>{message}</p>
@@ -314,9 +339,6 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
         <button onClick={() => setPicker(true)} className="btn-ghost mt-3 w-full">+ Lägg till övning</button>
       )}
 
-      {ended && (
-        <button onClick={deleteSession} className="mt-8 w-full py-3 text-sm text-danger">Radera pass</button>
-      )}
 
       {/* Inmatningspanel – fast längst ner för tummen */}
       {!ended && active && (

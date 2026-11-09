@@ -3,14 +3,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Markdown } from "@/components/Markdown";
+import { formatDate } from "@/lib/dates";
+import type { Conversation } from "@/lib/coach/conversation";
 
 export type ChatMessage = { id: string; role: "user" | "assistant"; kind: "chat" | "weekly"; content: string; created_at: string };
 
 const QUICK = ["Trött i dag", "Kändes bra", "Har ont någonstans", "Vad ska jag köra idag?", "Hinner inte dagens pass"];
 
-export function CoachChat({ initial, configured }: { initial: ChatMessage[]; configured: boolean }) {
+type Props = { current: ChatMessage[]; previous: Conversation[]; configured: boolean };
+
+export function CoachChat({ current, previous: prevInitial, configured }: Props) {
   const router = useRouter();
-  const [messages, setMessages] = useState(initial);
+  const [messages, setMessages] = useState(current);
+  const [previous, setPrevious] = useState(prevInitial);
+  const [forceNew, setForceNew] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState<null | "chat" | "weekly">(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +41,8 @@ export function CoachChat({ initial, configured }: { initial: ChatMessage[]; con
       { id: replyId, role: "assistant", kind: "chat", content: "", created_at: now },
     ]);
     try {
-      const res = await fetch("/api/coach/chat", { method: "POST", body: JSON.stringify({ message: content }) });
+      const res = await fetch("/api/coach/chat", { method: "POST", body: JSON.stringify({ message: content, newConversation: forceNew }) });
+      setForceNew(false);
       if (!res.ok || !res.body) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? "Kunde inte nå coachen.");
@@ -54,6 +62,14 @@ export function CoachChat({ initial, configured }: { initial: ChatMessage[]; con
     } finally {
       setBusy(null);
     }
+  }
+
+  function newConversation() {
+    if (!messages.length) return;
+    const now = new Date().toISOString();
+    setPrevious((p) => [...p, { id: "lokalt-" + now, startedAt: messages[0].created_at, messages: messages as Conversation["messages"] }]);
+    setMessages([]);
+    setForceNew(true);
   }
 
   async function weekly() {
@@ -91,6 +107,25 @@ export function CoachChat({ initial, configured }: { initial: ChatMessage[]; con
         {busy === "weekly" ? "Coachen går igenom veckan…" : "Veckoavstämning"}
       </button>
 
+      {previous.length > 0 && (
+        <section className="mb-4">
+          <button onClick={() => setShowHistory((v) => !v)} className="w-full py-2 text-left text-sm text-muted">
+            {showHistory ? "▾" : "▸"} Tidigare samtal ({previous.length})
+          </button>
+          {showHistory && (
+            <div className="space-y-2">
+              {[...previous].reverse().map((c) => <OldConversation key={c.id} conv={c} />)}
+            </div>
+          )}
+        </section>
+      )}
+
+      {messages.length > 0 && (
+        <div className="mb-3 flex justify-end">
+          <button onClick={newConversation} disabled={!!busy} className="text-sm text-accent">+ Nytt samtal</button>
+        </div>
+      )}
+
       <section className="flex-1 space-y-3 pb-40">
         {messages.length === 0 && (
           <p className="card text-sm text-muted">
@@ -112,7 +147,7 @@ export function CoachChat({ initial, configured }: { initial: ChatMessage[]; con
         <div ref={bottom} />
       </section>
 
-      <div className="fixed inset-x-0 bottom-[calc(3.4rem+max(env(safe-area-inset-bottom),0.75rem))] z-10 border-t border-line bg-bg/95 pb-2 backdrop-blur">
+      <div className="chat-composer fixed inset-x-0 bottom-[calc(3.4rem+max(env(safe-area-inset-bottom),0.75rem))] z-10 border-t border-line bg-bg/95 pb-2 backdrop-blur">
         <div className="mx-auto max-w-md space-y-2 px-4 pt-2">
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
             {QUICK.map((q) => (
@@ -141,5 +176,32 @@ export function CoachChat({ initial, configured }: { initial: ChatMessage[]; con
         </div>
       </div>
     </main>
+  );
+}
+
+function OldConversation({ conv }: { conv: Conversation }) {
+  const [open, setOpen] = useState(false);
+  const first = conv.messages.find((m) => m.role === "user");
+  const title = first?.kind === "weekly" ? "Veckoavstämning" : first?.content ?? "Samtal";
+  return (
+    <div className="card p-3">
+      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-baseline justify-between gap-3 text-left">
+        <span className="truncate text-sm">{title}</span>
+        <span className="shrink-0 text-xs text-muted">
+          {formatDate(conv.startedAt, { day: "numeric", month: "short" })} · {conv.messages.length} medd.
+        </span>
+      </button>
+      {open && (
+        <div className="mt-3 space-y-2 text-sm">
+          {conv.messages.map((m) =>
+            m.role === "user" ? (
+              <p key={m.id} className="ml-8 rounded-xl bg-accent/10 px-3 py-2 text-right">{m.content}</p>
+            ) : (
+              <div key={m.id} className="mr-4 rounded-xl border border-line px-3 py-2"><Markdown text={m.content} /></div>
+            ),
+          )}
+        </div>
+      )}
+    </div>
   );
 }

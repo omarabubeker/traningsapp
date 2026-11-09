@@ -44,7 +44,7 @@ export async function POST() {
       return {
         ...a,
         source: "intervals",
-        deleted_at: null,
+        // deleted_at sätts inte här: pass som raderats i appen ska förbli raderade.
         updated_at: now.toISOString(),
         ...(changed ? { details_fetched: false } : {}),
       };

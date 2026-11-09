@@ -4,6 +4,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { profileBlock, trainingBlock } from "@/lib/coach/context";
 import { anthropic, buildSystem, claudeConfigured, friendlyError, logUsage, REVIEW_MODEL, systemInstructions } from "@/lib/coach/claude";
 import { formatDate } from "@/lib/dates";
+import { randomUUID } from "node:crypto";
 
 export const maxDuration = 180;
 
@@ -111,10 +112,12 @@ Följ progressionsreglerna i instruktionerna. Om träningsdatan är tunn: börja
     }
 
     // Lägg avstämningen i chatten så att den syns och blir en del av historiken.
-    await supabase.from("coach_messages").insert({ role: "user", kind: "weekly", content: "Veckoavstämning" });
+    // Varje veckoavstämning startar ett nytt samtal.
+    const conversationId = randomUUID();
+    await supabase.from("coach_messages").insert({ role: "user", kind: "weekly", content: "Veckoavstämning", conversation_id: conversationId });
     const { data: msg } = await supabase
       .from("coach_messages")
-      .insert({ role: "assistant", kind: "weekly", content: `${plan.review}\n\n**Nästa vecka:** ${plan.focus}\n\nPlanen finns under Plan.` })
+      .insert({ role: "assistant", kind: "weekly", conversation_id: conversationId, content: `${plan.review}\n\n**Nästa vecka:** ${plan.focus}\n\nPlanen finns under Plan.` })
       .select("id")
       .single();
     if (plan.memories.length) {
