@@ -112,7 +112,7 @@ export function CoachChat({ initial, configured }: { initial: ChatMessage[]; con
         <div ref={bottom} />
       </section>
 
-      <div className="fixed inset-x-0 bottom-[calc(3.4rem+max(env(safe-area-inset-bottom),0.75rem))] z-10 border-t border-line bg-bg/95 pb-2 backdrop-blur">
+      <div className="chat-composer fixed inset-x-0 bottom-[calc(3.4rem+max(env(safe-area-inset-bottom),0.75rem))] z-10 border-t border-line bg-bg/95 pb-2 backdrop-blur">
         <div className="mx-auto max-w-md space-y-2 px-4 pt-2">
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
             {QUICK.map((q) => (

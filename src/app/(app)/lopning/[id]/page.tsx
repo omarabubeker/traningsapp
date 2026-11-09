@@ -6,6 +6,7 @@ import { SPORT_LABEL, applyOverride, formatDuration, formatKm, formatPace, isRun
 import type { Activity } from "@/lib/types";
 import { DistanceEditor } from "./DistanceEditor";
 import { RouteMapLoader } from "./RouteMapLoader";
+import { ActivityMenu } from "./DeleteActivity";
 
 export const dynamic = "force-dynamic";
 
@@ -35,13 +36,14 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
     <main className="space-y-5 pt-3">
       <header className="flex items-center gap-3">
         <Link href="/lopning" className="-ml-2 px-2 py-2 text-muted" aria-label="Tillbaka">←</Link>
-        <div>
+        <div className="flex-1">
           <h1 className="text-lg font-semibold">{displayName(a)}</h1>
           <p className="inline-block text-xs text-muted first-letter:uppercase">
             {formatDate(a.start_time, { weekday: "long", day: "numeric", month: "long" })} · {formatTime(a.start_time)}
             {a.indoor && " · inomhus"}
           </p>
         </div>
+        <ActivityMenu id={a.id} />
       </header>
 
       <section className="grid grid-cols-3 gap-3">

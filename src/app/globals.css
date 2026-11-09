@@ -65,6 +65,25 @@ textarea {
   padding-top: max(env(safe-area-inset-top), 0.75rem);
 }
 
+/* Tangentbord öppet (se KeyboardWatcher): göm bottenmenyn, chattfältet direkt ovanför tangentbordet. */
+html.kb .bottom-nav {
+  display: none;
+}
+html.kb .chat-composer {
+  bottom: 0;
+}
+
+/* iOS ger datumfält en egen minsta bredd så att de sticker ut ur rutnätet. */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  display: block;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 /* Mörk karta: OSM-rutorna inverteras och tonas ner så att de passar temat. */
 .map-tiles-dark {
   filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);

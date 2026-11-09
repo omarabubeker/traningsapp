@@ -7,6 +7,7 @@ import { enqueue, flush, pendingOps, subscribe } from "@/lib/gymQueue";
 import { formatDate, formatKg, formatTime } from "@/lib/dates";
 import type { Exercise, GymSession, GymSet } from "@/lib/types";
 import { Stepper } from "./Stepper";
+import { MoreMenu } from "@/components/MoreMenu";
 import { ExercisePicker } from "./ExercisePicker";
 
 type Prev = { date: string; sets: GymSet[] };
@@ -266,6 +267,7 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
         ) : (
           <button onClick={finish} className="btn-ghost min-h-10 px-3 text-sm">Avsluta</button>
         )}
+        <MoreMenu items={[{ label: "Radera pass", onSelect: deleteSession, danger: true }]} />
       </header>
 
       {message && (
@@ -314,9 +316,6 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
         <button onClick={() => setPicker(true)} className="btn-ghost mt-3 w-full">+ Lägg till övning</button>
       )}
 
-      {ended && (
-        <button onClick={deleteSession} className="mt-8 w-full py-3 text-sm text-danger">Radera pass</button>
-      )}
 
       {/* Inmatningspanel – fast längst ner för tummen */}
       {!ended && active && (
