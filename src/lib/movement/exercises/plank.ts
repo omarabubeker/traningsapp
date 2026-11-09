@@ -3,11 +3,11 @@ import { P, type Cue, type MovementRule, type PoseFrame, type Vec3 } from "../ty
 
 // Planka. Rekommenderad vinkel: från sidan, telefonen på golvet eller låg höjd.
 // Hålltid räknas bara när kroppen är i plankposition och linjen är rak.
-// Ett fel som varar längre än 2 s pausar timern.
+// Ett fel som varar längre än 2 s pausar timern. Huvudläget bedöms inte (näsan ligger
+// naturligt under axlarna i neutralt läge, vilket gav falsklarm vid armhävningar).
 
 const HORIZONTAL_MAX = 35; // kroppen (axel→fotled) högst så här många grader från vågrätt
 const LINE_DEV = 0.06; // höftens avvikelse från linjen axel–fotled, andel av kroppslängden
-const HEAD_DROP = 0.12; // m näsan under axellinjen
 const FAULT_GRACE_MS = 2000;
 
 type State = { faultSince: number | null; lastT: number | null; inPosition: boolean };
@@ -32,7 +32,6 @@ export const plank: MovementRule<State> = {
   faultLabels: {
     sag: "Höften sjunker",
     pike: "Höften för högt",
-    head: "Huvudet hänger",
   },
   init: () => ({ faultSince: null, lastT: null, inPosition: false }),
   ready: (f) => {
@@ -56,15 +55,12 @@ export const plank: MovementRule<State> = {
     const tt = Math.max(0, Math.min(1, ((hip.x - sh.x) * body.x + (hip.z - sh.z) * body.z) / (body.x ** 2 + body.z ** 2 || 1e-6)));
     const lineY = sh.y + tt * body.y;
     const dev = (hip.y - lineY) / bodyLen;
-    const headDrop = w[P.nose].y - sh.y;
 
     const faults: string[] = [];
     if (dev > LINE_DEV) faults.push("sag");
     if (dev < -LINE_DEV) faults.push("pike");
-    if (headDrop > HEAD_DROP) faults.push("head");
     if (faults.includes("sag")) cues.push({ id: "sag", text: "Lyft höften lite", priority: 1 });
     if (faults.includes("pike")) cues.push({ id: "pike", text: "Sänk höften", priority: 1 });
-    if (faults.includes("head")) cues.push({ id: "head", text: "Håll huvudet i linje", priority: 2 });
 
     const faultSince = faults.length ? (s.faultSince ?? f.t) : null;
     const paused = faultSince !== null && f.t - faultSince > FAULT_GRACE_MS;

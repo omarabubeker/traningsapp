@@ -3,7 +3,8 @@ import { P, type Cue, type MovementRule, type PoseFrame, type RuleOutput, type V
 
 // Armhävningar. Filmas från sidan (telefonen på golvet eller låg höjd, 1,5–2 m bort).
 // Reps via armbågsvinkeln (axel–armbåge–handled) på den sida som syns bäst.
-// Kroppslinjen (axel–höft–fotled) bedöms som i plankan.
+// Kroppslinjen (axel–höft–fotled) bedöms som i plankan. Huvudläget bedöms inte:
+// näsan ligger naturligt under axlarna när man tittar ner i golvet, så det gav falsklarm.
 // Startvärden – kalibreras mot riktiga inspelningar.
 
 const TOP_ELBOW = 150; // raka armar
@@ -13,7 +14,6 @@ const LOCKOUT_ELBOW = 155; // armarna ska sträckas ut i toppen
 const REP_MIN_ELBOW = 120; // annars ingen rep (halv rörelse)
 const HORIZONTAL_MAX = 40; // kroppen högst så här många grader från vågrätt
 const LINE_DEV = 0.07; // höftens avvikelse från linjen, andel av kroppslängden
-const HEAD_DROP = 0.12; // m näsan under axellinjen
 const MIN_REP_MS = 600;
 const MAX_REP_MS = 8000;
 const FAULT_MS = 300;
@@ -60,8 +60,7 @@ function measure(f: PoseFrame) {
   const tilt = (Math.asin(Math.min(1, Math.abs(body.y) / bodyLen)) * 180) / Math.PI;
   const t = Math.max(0, Math.min(1, ((s.hip.x - s.sh.x) * body.x + (s.hip.z - s.sh.z) * body.z) / (body.x ** 2 + body.z ** 2 || 1e-6)));
   const dev = (s.hip.y - (s.sh.y + t * body.y)) / bodyLen; // y nedåt: positivt = höften sjunker
-  const head = f.world[P.nose].y - s.sh.y;
-  return { elbow, tilt, dev, head };
+  return { elbow, tilt, dev };
 }
 
 export const pushup: MovementRule<State> = {
@@ -78,7 +77,6 @@ export const pushup: MovementRule<State> = {
     no_lockout: "Armarna sträcks inte ut",
     sag: "Höften sjunker",
     pike: "Höften för högt",
-    head: "Huvudet hänger",
   },
   init: () => fresh(0),
   ready: (f) => {
@@ -92,7 +90,6 @@ export const pushup: MovementRule<State> = {
       armbåge: Math.round(m.elbow),
       "kropp mot golv": Math.round(m.tilt) + "°",
       höft: Math.round(m.dev * 100) + " %",
-      huvud: Math.round(m.head * 100) + " cm",
     };
     return out;
   },
@@ -117,10 +114,8 @@ function updatePushup(f: PoseFrame, s: State): RuleOutput<State> {
   s = { ...s, minElbow: Math.min(s.minElbow, m.elbow) };
   s = track(s, "sag", m.dev > LINE_DEV, f.t);
   s = track(s, "pike", m.dev < -LINE_DEV, f.t);
-  s = track(s, "head", m.head > HEAD_DROP, f.t);
   if (s.faults.includes("sag") && s.faultSince.sag !== undefined) cues.push({ id: "sag", text: "Spänn magen, lyft höften", priority: 1 });
   if (s.faults.includes("pike") && s.faultSince.pike !== undefined) cues.push({ id: "pike", text: "Sänk höften", priority: 1 });
-  if (s.faults.includes("head") && s.faultSince.head !== undefined) cues.push({ id: "head", text: "Huvudet i linje", priority: 2 });
 
   if (f.t - s.started > MAX_REP_MS) return { state: fresh(f.t), cues, phase: "Upp" };
 
