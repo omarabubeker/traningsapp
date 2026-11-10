@@ -40,7 +40,7 @@ export default async function PlanPage() {
               </p>
             </div>
             {p.focus && <p className="card text-sm"><span className="text-muted-foreground">Fokus: </span>{p.focus}</p>}
-            {p.items.map((it) => <PlanItemCard key={it.id} item={it} status={it.status} />)}
+            {p.items.map((it) => <PlanItemCard key={it.id} item={it} status={it.status} doneDay={it.doneDay} />)}
             {p.summary && (
               <details className="card text-sm">
                 <summary className="cursor-pointer text-muted-foreground">Coachens genomgång</summary>
