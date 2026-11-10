@@ -8,6 +8,7 @@ import { ActivityRow } from "@/components/ActivityRow";
 import { WeeklyVolumeChart, type WeekPoint } from "@/components/charts/WeeklyVolumeChart";
 import { TrendChart, type TrendPoint } from "@/components/charts/TrendChart";
 import { matchWatchToGym } from "@/lib/watchMerge";
+import { LopningTabs } from "./LopningTabs";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,8 @@ const COLS = "id, sport_type, name, start_time, distance_m, distance_override_m,
 const WEEKS = 16;
 const DAY = 864e5;
 
-export default async function LopningPage() {
+export default async function LopningPage({ searchParams }: { searchParams: Promise<{ flik?: string }> }) {
+  const { flik } = await searchParams;
   const { supabase } = await requireUser();
   const { days } = weekRange();
   const monday = Date.parse(days[0] + "T00:00:00Z");
@@ -56,45 +58,56 @@ export default async function LopningPage() {
     .map((a) => ({ t: Date.parse(a.start_time), value: Number(a.avg_hr), label: label(a) }));
 
   return (
-    <main className="space-y-5 pt-4">
+    <main className="space-y-4 pt-4">
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Löpning</h1>
+        <div>
+          <h1 className="text-2xl font-semibold">Löpning</h1>
+          <p className="text-sm text-muted-foreground">
+            Denna vecka <span className="font-medium text-foreground">{thisWeek.km.toLocaleString("sv-SE")} km</span> · {thisWeek.runs} pass
+          </p>
+        </div>
         <SyncButton />
       </header>
 
-      <section className="card">
-        <div className="mb-2 flex items-baseline justify-between">
-          <h2 className="text-sm text-muted-foreground">Km per vecka</h2>
-          <p className="text-sm">
-            Denna vecka <span className="font-semibold">{thisWeek.km.toLocaleString("sv-SE")} km</span>
-            <span className="text-muted-foreground"> · snitt {avg4.toLocaleString("sv-SE", { maximumFractionDigits: 1 })}</span>
-          </p>
-        </div>
-        <WeeklyVolumeChart data={weeks} />
-      </section>
+      <LopningTabs
+        initial={flik === "utveckling" ? "utveckling" : "pass"}
+        pass={
+          <>
+            {all.length === 0 && (
+              <p className="card text-muted-foreground">
+                Inga pass än. Synka från klockan eller <Link href="/installningar/import" className="text-brand">importera från Apple Hälsa</Link>.
+              </p>
+            )}
+            {all.slice(0, 30).map((a) => (
+              <ActivityRow key={a.id} a={a} />
+            ))}
+          </>
+        }
+        utveckling={
+          <>
+            <section className="card">
+              <div className="mb-2 flex items-baseline justify-between">
+                <h2 className="text-sm text-muted-foreground">Km per vecka</h2>
+                <p className="text-sm">
+                  Snitt 4 v <span className="font-semibold">{avg4.toLocaleString("sv-SE", { maximumFractionDigits: 1 })} km</span>
+                </p>
+              </div>
+              <WeeklyVolumeChart data={weeks} />
+            </section>
 
-      <section className="card">
-        <h2 className="text-sm text-muted-foreground">Snittempo per pass</h2>
-        <p className="mb-2 text-xs text-muted-foreground">Utomhus och rättade löpbandspass · högre upp = snabbare</p>
-        <TrendChart data={pace} color="var(--color-run)" name="Tempo" unit="pace" invert />
-      </section>
+            <section className="card">
+              <h2 className="text-sm text-muted-foreground">Snittempo per pass</h2>
+              <p className="mb-2 text-xs text-muted-foreground">Utomhus och rättade löpbandspass · högre upp = snabbare</p>
+              <TrendChart data={pace} color="var(--color-run)" name="Tempo" unit="pace" invert />
+            </section>
 
-      <section className="card">
-        <h2 className="mb-2 text-sm text-muted-foreground">Snittpuls per pass</h2>
-        <TrendChart data={hr} color="var(--color-run)" name="Puls" unit="bpm" />
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground">Senaste passen</h2>
-        {all.length === 0 && (
-          <p className="card text-muted-foreground">
-            Inga pass än. Synka från klockan eller <Link href="/installningar/import" className="text-brand">importera från Apple Hälsa</Link>.
-          </p>
-        )}
-        {all.slice(0, 30).map((a) => (
-          <ActivityRow key={a.id} a={a} />
-        ))}
-      </section>
+            <section className="card">
+              <h2 className="mb-2 text-sm text-muted-foreground">Snittpuls per pass</h2>
+              <TrendChart data={hr} color="var(--color-run)" name="Puls" unit="bpm" />
+            </section>
+          </>
+        }
+      />
     </main>
   );
 }

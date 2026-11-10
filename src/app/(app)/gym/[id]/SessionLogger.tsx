@@ -8,6 +8,7 @@ import { formatDate, formatKg, formatTime } from "@/lib/dates";
 import type { Exercise, GymSession, GymSet } from "@/lib/types";
 import { Stepper } from "./Stepper";
 import { MoreMenu } from "@/components/MoreMenu";
+import { GymSessionSkeleton } from "@/components/Skeletons";
 import { confirmDialog } from "@/components/ConfirmDialog";
 import { toast } from "sonner";
 import { ExercisePicker } from "./ExercisePicker";
@@ -263,7 +264,7 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
       </main>
     );
   }
-  if (!session) return <main className="pt-6 text-muted-foreground">Laddar pass…</main>;
+  if (!session) return <GymSessionSkeleton />;
 
   const exName = (id: string) => exercises.find((e) => e.id === id)?.name ?? "Övning";
   const groups = [...new Set(sets.map((s) => s.exercise_id))];
