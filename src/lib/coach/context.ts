@@ -3,7 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ageFrom, formatDate, isoDay, weekNumber } from "../dates";
 import { applyOverride, formatDuration, formatPace, isRun, SPORT_LABEL } from "../running";
 import { intervalsConfigured, listWellness } from "../intervals";
-import { itemStatus } from "./plan";
+import { matchWeek } from "./plan";
+import { doneSessions } from "../sessions";
 import { daysToRace } from "../race";
 import { MOVEMENTS } from "../movement/registry";
 import type { MovementKey } from "../movement/types";
@@ -82,7 +83,7 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
       .order("started_at"),
     supabase
       .from("plans")
-      .select("id, week_start, focus, plan_items(date, kind, title, description)")
+      .select("id, week_start, focus, plan_items(id, date, kind, title, description, target)")
       .eq("status", "active")
       .gte("week_start", addDays(thisMonday, -7))
       .order("week_start"),
@@ -204,23 +205,22 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
   }
 
   // --- Plan mot utfört ---------------------------------------------------------
-  const doneDays = {
-    run: new Set(runs.map((a) => a.day)),
-    gym: new Set([...gymSessions.map((g) => g.day), ...activities.filter((a) => a.sport_type === "Strength").map((a) => a.day)]),
-    any: new Set([...activities.map((a) => a.day), ...gymSessions.map((g) => g.day)]),
-  };
-  type P = { week_start: string; focus: string | null; plan_items: Pick<PlanItem, "date" | "kind" | "title" | "description">[] };
+  // Planen matchas per vecka: ett pass som flyttats till en annan dag samma vecka räknas som gjort.
+  const sessions = doneSessions(activities, gymSessions.map((g) => g.started_at));
+  type P = { week_start: string; focus: string | null; plan_items: Pick<PlanItem, "id" | "date" | "kind" | "title" | "description" | "target">[] };
   const planRows = (plans ?? []) as P[];
   let missed = 0;
   if (planRows.length) {
     lines.push("", "## Plan mot utfört");
     for (const p of planRows) {
       lines.push(`Vecka ${weekNumber(p.week_start)}${p.focus ? ` – fokus: ${p.focus}` : ""}`);
+      const match = matchWeek(p.plan_items, sessions, p.week_start, today);
       for (const it of [...p.plan_items].sort((a, b) => a.date.localeCompare(b.date))) {
-        const st = itemStatus(it, today, doneDays);
+        const { status: st, doneDay } = match.get(it.id)!;
         if (st === "missed") missed++;
-        const label = { done: "✓ gjort", missed: "✗ missat", today: "→ idag", upcoming: "kommande", rest: "vila" }[st];
-        lines.push(`- ${formatDate(it.date + "T12:00:00Z", { weekday: "short", day: "numeric", month: "short" })} ${it.title} [${label}]`);
+        const moved = st === "done" && doneDay && doneDay !== it.date ? ` (gjort ${formatDate(doneDay + "T12:00:00Z", { weekday: "short" })})` : "";
+        const label = { done: "✓ gjort", missed: "✗ missat", today: "→ idag", upcoming: "kommande", rest: "vila", pending: "kvar i veckan" }[st];
+        lines.push(`- ${formatDate(it.date + "T12:00:00Z", { weekday: "short", day: "numeric", month: "short" })} ${it.title} [${label}${moved}]`);
       }
     }
   } else {

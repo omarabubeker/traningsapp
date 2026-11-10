@@ -7,6 +7,8 @@ import { loadPlans } from "@/lib/coach/planData";
 import { daysToRace } from "@/lib/race";
 import { matchWatchToGym } from "@/lib/watchMerge";
 import { PlanItemCard } from "@/components/PlanItemCard";
+import { GoalsSummary } from "@/components/goals/GoalsSummary";
+import { loadGoals } from "@/lib/goalsData";
 import { requireUser } from "@/lib/supabase/server";
 import { WEEKDAYS_SHORT, formatKg, formatTime, isoDay, weekNumber, weekRange } from "@/lib/dates";
 
@@ -44,7 +46,7 @@ export default async function Overview() {
     .filter((a) => days.includes(a.day));
   const runKm = activities.filter((a) => isRun(a.sport_type)).reduce((s, a) => s + (a.distance_m ?? 0) / 1000, 0);
 
-  const { plans } = await loadPlans(supabase);
+  const [{ plans }, goals] = await Promise.all([loadPlans(supabase), loadGoals(supabase)]);
   const todayItems = plans.flatMap((p) => p.items).filter((i) => i.date === today);
   const nextItem = plans.flatMap((p) => p.items).find((i) => i.date > today && i.kind !== "rest");
 
@@ -92,7 +94,7 @@ export default async function Overview() {
           <Link href="/plan" className="text-sm text-brand">Hela veckan →</Link>
         </div>
         {todayItems.length > 0 ? (
-          todayItems.map((it) => <PlanItemCard key={it.id} item={it} status={it.status} showDate={false} />)
+          todayItems.map((it) => <PlanItemCard key={it.id} item={it} status={it.status} doneDay={it.doneDay} showDate={false} />)
         ) : plans.length ? (
           <p className="card text-sm text-muted-foreground">
             Inget planerat idag.{nextItem ? ` Nästa: ${nextItem.title}.` : ""}
@@ -101,6 +103,8 @@ export default async function Overview() {
           <Link href="/coach" className="card block text-sm text-muted-foreground">Ingen plan än – gör en veckoavstämning med coachen →</Link>
         )}
       </section>
+
+      <GoalsSummary goals={goals} />
 
       <section className="card">
         <ol className="grid grid-cols-7 gap-1 text-center">

@@ -21,9 +21,10 @@ const STATUS_STYLE: Record<ItemStatus, string> = {
   today: "text-text",
   upcoming: "text-muted-foreground",
   rest: "text-muted-foreground",
+  pending: "text-gym",
 };
 
-export function PlanItemCard({ item, status, showDate = true }: { item: PlanItem; status: ItemStatus; showDate?: boolean }) {
+export function PlanItemCard({ item, status, doneDay, showDate = true }: { item: PlanItem; status: ItemStatus; doneDay?: string; showDate?: boolean }) {
   const t = (item.target ?? {}) as Target;
   if (item.kind === "rest") {
     return (
@@ -51,6 +52,7 @@ export function PlanItemCard({ item, status, showDate = true }: { item: PlanItem
         <span className={`shrink-0 text-xs ${STATUS_STYLE[status]}`}>
           {status === "done" ? "✓ " : status === "missed" ? "✗ " : ""}
           {STATUS_LABEL[status]}
+          {status === "done" && doneDay && doneDay !== item.date && ` ${formatDate(doneDay + "T12:00:00Z", { weekday: "short" })}`}
         </span>
       </div>
       {showDate && (
