@@ -3,7 +3,7 @@ import { Moon, Sun, CircleHalf } from "@phosphor-icons/react/dist/ssr";
 import { setPref, usePref, type ThemePref } from "@/lib/theme";
 
 const OPTIONS: { value: ThemePref; label: string; Icon: typeof Sun }[] = [
-  { value: "auto", label: "Automatiskt", Icon: CircleHalf },
+  { value: "auto", label: "Auto", Icon: CircleHalf },
   { value: "light", label: "Ljust", Icon: Sun },
   { value: "dark", label: "Mörkt", Icon: Moon },
 ];

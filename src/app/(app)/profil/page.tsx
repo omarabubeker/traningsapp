@@ -25,7 +25,7 @@ export default async function ProfilPage() {
       <section className="card space-y-4">
         <CardHead icon={CircleHalf} tone="brand" title="Utseende" />
         <ThemeSelect />
-        <p className="text-xs text-muted-foreground">Automatiskt följer telefonens ljusa eller mörka läge.</p>
+        <p className="text-xs text-muted-foreground">Auto följer telefonens ljusa eller mörka läge.</p>
       </section>
       <Link href="/installningar" className="card flex items-center gap-3 active:bg-secondary">
         <IconBadge icon={Gear} tone="muted" />
