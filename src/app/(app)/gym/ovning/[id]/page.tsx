@@ -4,6 +4,9 @@ import { requireUser } from "@/lib/supabase/server";
 import { formatDate, formatKg, isoDay } from "@/lib/dates";
 import { bestSet, e1rm } from "@/lib/gym";
 import { TrendChart, type TrendPoint } from "@/components/charts/TrendChart";
+import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
+import { BigValue, CardHead } from "@/components/CardParts";
+import { ChartLineUp } from "@phosphor-icons/react/dist/ssr";
 
 export const dynamic = "force-dynamic";
 
@@ -41,24 +44,27 @@ export default async function OvningPage({ params }: { params: Promise<{ id: str
   return (
     <main className="space-y-7 pt-3">
       <header className="flex items-center gap-3">
-        <Link href="/gym" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
+        <Link href="/gym" className="-ml-2 flex size-10 items-center justify-center rounded-full text-foreground active:bg-secondary" aria-label="Tillbaka"><CaretLeft size={22} weight="bold" /></Link>
         <div>
-          <h1 className="text-xl font-semibold">{ex.name}</h1>
+          <h1 className="h-detail">{ex.name}</h1>
           {ex.muscle_group && <p className="text-xs text-muted-foreground">{ex.muscle_group}</p>}
         </div>
       </header>
 
-      <section className="card">
-        <div className="mb-2 flex items-baseline justify-between">
-          <h2 className="text-sm text-muted-foreground">{usesWeight ? "Uppskattat 1RM per pass" : "Flest reps per pass"}</h2>
-          {best && <p className="text-sm">Bästa <span className="font-semibold">{usesWeight ? `${Math.round(best.value)} kg` : `${best.value} st`}</span></p>}
-        </div>
+      <section className="card space-y-4">
+        <CardHead icon={ChartLineUp} tone="gym" title={usesWeight ? "Uppskattat 1RM per pass" : "Flest reps per pass"} />
+        {best && (
+          <div className="space-y-1.5">
+            <BigValue value={usesWeight ? Math.round(best.value) : best.value} unit={usesWeight ? "kg" : "reps"} />
+            <p className="text-sm text-muted-foreground">bästa hittills</p>
+          </div>
+        )}
         <TrendChart data={points} color="var(--color-gym)" name={usesWeight ? "1RM" : "Reps"} unit={usesWeight ? "kg" : "reps"} />
-        {usesWeight && <p className="mt-2 text-xs text-muted-foreground">Räknat från bästa arbetssetet varje pass (vikt × (1 + reps/30)).</p>}
+        {usesWeight && <p className="text-xs text-muted-foreground">Räknat från bästa arbetssetet varje pass (vikt × (1 + reps/30)).</p>}
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Alla pass</h2>
+        <h2 className="h-section">Alla pass</h2>
         {sessions.length === 0 && <p className="card text-sm text-muted-foreground">Inga set loggade än.</p>}
         {[...sessions].reverse().map((s) => (
           <div key={s.date} className="card flex items-start justify-between gap-3 text-sm">

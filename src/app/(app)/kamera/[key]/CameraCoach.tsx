@@ -13,6 +13,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import type { MovementKey, PoseFrame } from "@/lib/movement/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 
 type Phase = "setup" | "loading" | "live" | "paused" | "summary" | "error";
 type Live = {
@@ -400,8 +401,8 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
     <main className="pt-3">
       {!showCamera && (
         <header className="mb-4 flex items-center gap-3">
-          <Link href="/kamera" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
-          <h1 className="text-xl font-semibold">{rule.name}</h1>
+          <Link href="/kamera" className="-ml-2 flex size-10 items-center justify-center rounded-full text-foreground active:bg-secondary" aria-label="Tillbaka"><CaretLeft size={22} weight="bold" /></Link>
+          <h1 className="h-detail">{rule.name}</h1>
         </header>
       )}
 

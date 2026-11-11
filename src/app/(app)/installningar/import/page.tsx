@@ -7,6 +7,7 @@ import { parseAppleHealthExport, toActivityRows, type ActivityRow } from "@/lib/
 import { SPORT_LABEL } from "@/lib/running";
 import { formatDate } from "@/lib/dates";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 
 type Phase =
   | { kind: "idle" }
@@ -66,8 +67,8 @@ export default function ImportPage() {
   return (
     <main className="space-y-7 pt-3">
       <header className="flex items-center gap-3">
-        <Link href="/installningar" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
-        <h1 className="text-xl font-semibold">Importera från Apple Hälsa</h1>
+        <Link href="/installningar" className="-ml-2 flex size-10 items-center justify-center rounded-full text-foreground active:bg-secondary" aria-label="Tillbaka"><CaretLeft size={22} weight="bold" /></Link>
+        <h1 className="h-detail">Importera från Apple Hälsa</h1>
       </header>
 
       {phase.kind === "idle" && (
@@ -89,7 +90,7 @@ export default function ImportPage() {
         <section className="card space-y-3">
           <p>Läser filen… {phase.pct} %</p>
           <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-            <div className="h-full bg-brand transition-all" style={{ width: `${phase.pct}%` }} />
+            <div className="h-full bg-primary transition-all" style={{ width: `${phase.pct}%` }} />
           </div>
           <p className="text-sm text-muted-foreground">{phase.workouts} pass hittade hittills</p>
         </section>
@@ -101,7 +102,7 @@ export default function ImportPage() {
         <section className="card space-y-3">
           <p>Sparar {phase.done} av {phase.total}…</p>
           <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-            <div className="h-full bg-brand transition-all" style={{ width: `${(phase.done / phase.total) * 100}%` }} />
+            <div className="h-full bg-primary transition-all" style={{ width: `${(phase.done / phase.total) * 100}%` }} />
           </div>
         </section>
       )}

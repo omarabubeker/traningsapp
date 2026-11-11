@@ -7,6 +7,9 @@ import { STREAK_SHARE, type RecordItem } from "@/lib/goals";
 import { streakText } from "@/components/goals/GoalsSummary";
 import { WeekRings } from "@/components/goals/WeekRings";
 import { Badge } from "@/components/ui/badge";
+import { BigValue, CardHead } from "@/components/CardParts";
+import { Check, Fire, FlagCheckered } from "@phosphor-icons/react/dist/ssr";
+import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 
 export const dynamic = "force-dynamic";
 
@@ -23,21 +26,19 @@ export default async function MalPage() {
   return (
     <main className="space-y-7 pt-3">
       <header className="flex items-center gap-3">
-        <Link href="/" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
-        <h1 className="text-2xl font-semibold">Mål och rekord</h1>
+        <Link href="/" className="-ml-2 flex size-10 items-center justify-center rounded-full text-foreground active:bg-secondary" aria-label="Tillbaka"><CaretLeft size={22} weight="bold" /></Link>
+        <h1 className="h-detail">Mål och rekord</h1>
       </header>
 
       {/* Vägen till maran */}
       <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Vägen till maran</h2>
+        <h2 className="h-section">Vägen till maran</h2>
         <div className="card space-y-4">
           <div className="space-y-2">
-            <div className="flex items-baseline justify-between text-sm">
-              <span><span className="text-lg font-semibold">{doneCount}</span> av {g.milestones.length} milstolpar</span>
-              {raceDays > 0 && <span className="text-muted-foreground">{raceDays} dagar kvar</span>}
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted">
-              <div className="h-full rounded-full bg-brand" style={{ width: `${(doneCount / g.milestones.length) * 100}%` }} />
+            <CardHead icon={FlagCheckered} tone="brand" title="Milstolpar" right={raceDays > 0 ? `${raceDays} dagar kvar` : undefined} />
+            <BigValue value={doneCount} unit={`av ${g.milestones.length}`} />
+            <div className="h-2 overflow-hidden rounded-full bg-secondary">
+              <div className="h-full rounded-full bg-primary" style={{ width: `${(doneCount / g.milestones.length) * 100}%` }} />
             </div>
           </div>
           <ol className="space-y-3">
@@ -45,11 +46,11 @@ export default async function MalPage() {
               <li key={m.key} className="flex items-start gap-3">
                 <span
                   className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs ${
-                    m.day ? "bg-brand text-primary-foreground" : m.key === nextKey ? "border-2 border-brand" : "border border-border"
+                    m.day ? "bg-primary text-primary-foreground" : m.key === nextKey ? "border-2 border-brand" : "border border-border"
                   }`}
                   aria-hidden
                 >
-                  {m.day ? "✓" : ""}
+                  {m.day ? <Check size={14} weight="bold" /> : null}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className={`block ${m.day ? "" : m.key === nextKey ? "font-medium" : "text-muted-foreground"}`}>{m.label}</span>
@@ -66,13 +67,13 @@ export default async function MalPage() {
 
       {/* Veckan och sviten */}
       <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Veckosvit</h2>
+        <h2 className="h-section">Veckosvit</h2>
         <div className="card space-y-4">
           {g.rings && <WeekRings rings={g.rings} />}
           <div className={`flex items-center gap-4 ${g.rings ? "border-t border-border pt-4" : ""}`}>
-            <span className="text-4xl" aria-hidden>{g.streak.current > 0 ? "🔥" : "○"}</span>
-            <div>
-              <p className="text-lg font-semibold">{g.streak.current} {g.streak.current === 1 ? "vecka" : "veckor"} i rad</p>
+            <Fire size={44} weight={g.streak.current > 0 ? "fill" : "duotone"} className={g.streak.current > 0 ? "shrink-0 text-streak" : "shrink-0 text-muted-foreground"} />
+            <div className="space-y-1">
+              <BigValue value={g.streak.current} unit={`${g.streak.current === 1 ? "vecka" : "veckor"} i rad`} />
               <p className="text-xs text-muted-foreground">{g.streak.current > 0 ? `Bästa svit: ${g.streak.best} ${g.streak.best === 1 ? "vecka" : "veckor"}` : streakText(0)}</p>
             </div>
           </div>
@@ -108,7 +109,7 @@ function Records({ title, items }: { title: string; items: RecordItem[] }) {
   if (!items.length) return null;
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-medium text-muted-foreground">{title}</h2>
+      <h2 className="h-section">{title}</h2>
       <ul className="card divide-y divide-border p-0">
         {items.map((r) => {
           const body = (

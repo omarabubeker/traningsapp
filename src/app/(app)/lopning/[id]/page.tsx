@@ -7,6 +7,9 @@ import type { Activity } from "@/lib/types";
 import { DistanceEditor } from "./DistanceEditor";
 import { RouteMapLoader } from "./RouteMapLoader";
 import { ActivityMenu } from "./DeleteActivity";
+import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
+import { BigValue, CardHead } from "@/components/CardParts";
+import { PersonSimpleRun, Timer } from "@phosphor-icons/react/dist/ssr";
 
 export const dynamic = "force-dynamic";
 
@@ -42,9 +45,9 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
   return (
     <main className="space-y-7 pt-3">
       <header className="flex items-center gap-3">
-        <Link href="/lopning" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
+        <Link href="/lopning" className="-ml-2 flex size-10 items-center justify-center rounded-full text-foreground active:bg-secondary" aria-label="Tillbaka"><CaretLeft size={22} weight="bold" /></Link>
         <div className="flex-1">
-          <h1 className="text-lg font-semibold">{displayName(a)}</h1>
+          <h1 className="h-detail">{displayName(a)}</h1>
           <p className="inline-block text-xs text-muted-foreground first-letter:uppercase">
             {formatDate(a.start_time, { weekday: "long", day: "numeric", month: "long" })} · {formatTime(a.start_time)}
             {a.indoor && " · inomhus"}
@@ -54,12 +57,9 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
       </header>
 
       <section className="card space-y-5">
-        <div>
-          <p className="text-xs text-muted-foreground">Distans</p>
-          <p className="text-4xl font-semibold tracking-tight tabular-nums">
-            {a.distance_m ? formatKm(a.distance_m) : "–"}
-            <span className="ml-1 text-lg font-normal text-muted-foreground">km</span>
-          </p>
+        <div className="space-y-2">
+          <CardHead icon={PersonSimpleRun} tone="run" title="Distans" />
+          <BigValue value={a.distance_m ? formatKm(a.distance_m) : "–"} unit="km" className="text-[2.75rem]" />
         </div>
         <div className="grid grid-cols-3 divide-x divide-border">
           <Big label="Tid" value={formatDuration(a.moving_time_s ?? a.elapsed_time_s)} />
@@ -89,10 +89,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
 
       {splits.length > 0 && (
         <section className="card space-y-3">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-sm text-muted-foreground">Tempo per {factor === 1 ? "km" : "split"}</h2>
-            <span className="text-xs text-muted-foreground">längre stapel = snabbare</span>
-          </div>
+          <CardHead icon={Timer} tone="run" title={`Tempo per ${factor === 1 ? "km" : "split"}`} right="längre = snabbare" />
           <ol className="space-y-1.5 text-sm tabular-nums">
             {splits.map((s) => (
               <li key={s.km} className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center gap-3">
@@ -126,10 +123,10 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
 function Big({ label, value, unit }: { label: string; value: string; unit?: string }) {
   return (
     <div className="px-3 first:pl-0 last:pr-0">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-xl font-semibold tabular-nums">
+      <p className="text-[13px] font-semibold text-muted-foreground">{label}</p>
+      <p className="num-lg mt-1">
         {value}
-        {unit && <span className="ml-0.5 text-xs font-normal text-muted-foreground">{unit}</span>}
+        {unit && <span className="ml-0.5 text-xs font-bold text-muted-foreground">{unit}</span>}
       </p>
     </div>
   );

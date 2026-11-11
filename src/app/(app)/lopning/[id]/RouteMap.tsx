@@ -18,11 +18,13 @@ export default function RouteMap({ route }: { route: [number, number][] }) {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         className: "map-tiles-dark",
       }).addTo(map);
-      const line = L.polyline(route, { color: "#7aa7e0", weight: 4, opacity: 0.95, lineJoin: "round" }).addTo(map);
+      const css = getComputedStyle(document.documentElement);
+      const v = (n: string) => css.getPropertyValue(n).trim();
+      const line = L.polyline(route, { color: v("--run"), weight: 4, opacity: 0.95, lineJoin: "round" }).addTo(map);
       const dot = (p: [number, number], fill: string) =>
-        L.circleMarker(p, { radius: 6, color: "#161a1d", weight: 2, fillColor: fill, fillOpacity: 1 }).addTo(map!);
-      dot(route[0], "#7cc4a4");
-      dot(route[route.length - 1], "#e8ecee");
+        L.circleMarker(p, { radius: 6, color: v("--card"), weight: 2, fillColor: fill, fillOpacity: 1 }).addTo(map!);
+      dot(route[0], v("--brand"));
+      dot(route[route.length - 1], v("--foreground"));
       map.fitBounds(line.getBounds(), { padding: [20, 20] });
       L.control.zoom({ position: "bottomright" }).addTo(map);
     });

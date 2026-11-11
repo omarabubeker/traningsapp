@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
 import { formatDate, isoDay, weekNumber, weekRange } from "@/lib/dates";
-import { applyOverride, formatKm, isRun } from "@/lib/running";
+import { applyOverride, formatKm, formatPace, isRun } from "@/lib/running";
+import { BigValue, CardHead, EmptyState } from "@/components/CardParts";
+import { ChartBar, Heartbeat, PersonSimpleRun, Timer } from "@phosphor-icons/react/dist/ssr";
 import type { Activity } from "@/lib/types";
 import { SyncButton } from "@/components/SyncButton";
 import { ActivityRow } from "@/components/ActivityRow";
@@ -61,7 +63,7 @@ export default async function LopningPage({ searchParams }: { searchParams: Prom
     <main className="space-y-6 pt-4">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Löpning</h1>
+          <h1 className="h-page">Löpning</h1>
           <p className="text-sm text-muted-foreground">
             Denna vecka <span className="font-medium text-foreground">{thisWeek.km.toLocaleString("sv-SE")} km</span> · {thisWeek.runs} pass
           </p>
@@ -74,9 +76,9 @@ export default async function LopningPage({ searchParams }: { searchParams: Prom
         pass={
           <>
             {all.length === 0 && (
-              <p className="card text-muted-foreground">
-                Inga pass än. Synka från klockan eller <Link href="/installningar/import" className="text-brand">importera från Apple Hälsa</Link>.
-              </p>
+              <EmptyState icon={PersonSimpleRun} tone="run" title="Inga pass än">
+                Synka från klockan eller <Link href="/installningar/import" className="font-medium text-brand">importera från Apple Hälsa</Link>.
+              </EmptyState>
             )}
             {all.slice(0, 30).map((a) => (
               <ActivityRow key={a.id} a={a} />
@@ -85,25 +87,36 @@ export default async function LopningPage({ searchParams }: { searchParams: Prom
         }
         utveckling={
           <>
-            <section className="card">
-              <div className="mb-2 flex items-baseline justify-between">
-                <h2 className="text-sm text-muted-foreground">Km per vecka</h2>
-                <p className="text-sm">
-                  Snitt 4 v <span className="font-semibold">{avg4.toLocaleString("sv-SE", { maximumFractionDigits: 1 })} km</span>
-                </p>
+            <section className="card space-y-4">
+              <CardHead icon={ChartBar} tone="run" title="Km per vecka" right="16 veckor" />
+              <div className="space-y-1.5">
+                <BigValue value={thisWeek.km.toLocaleString("sv-SE", { maximumFractionDigits: 1 })} unit="km" />
+                <p className="text-sm text-muted-foreground">denna vecka · snitt 4 v {avg4.toLocaleString("sv-SE", { maximumFractionDigits: 1 })} km</p>
               </div>
               <WeeklyVolumeChart data={weeks} />
             </section>
 
-            <section className="card">
-              <h2 className="text-sm text-muted-foreground">Snittempo per pass</h2>
-              <p className="mb-2 text-xs text-muted-foreground">Utomhus och rättade löpbandspass · högre upp = snabbare</p>
+            <section className="card space-y-4">
+              <CardHead icon={Timer} tone="run" title="Snittempo per pass" />
+              {pace.length > 0 && (
+                <div className="space-y-1.5">
+                  <BigValue value={formatPace(pace.at(-1)!.value)} unit="/km" />
+                  <p className="text-sm text-muted-foreground">senaste passet · högre upp = snabbare</p>
+                </div>
+              )}
               <TrendChart data={pace} color="var(--color-run)" name="Tempo" unit="pace" invert />
+              <p className="text-xs text-muted-foreground">Utomhus och rättade löpbandspass.</p>
             </section>
 
-            <section className="card">
-              <h2 className="mb-2 text-sm text-muted-foreground">Snittpuls per pass</h2>
-              <TrendChart data={hr} color="var(--color-run)" name="Puls" unit="bpm" />
+            <section className="card space-y-4">
+              <CardHead icon={Heartbeat} tone="danger" title="Snittpuls per pass" />
+              {hr.length > 0 && (
+                <div className="space-y-1.5">
+                  <BigValue value={hr.at(-1)!.value} unit="bpm" />
+                  <p className="text-sm text-muted-foreground">senaste passet</p>
+                </div>
+              )}
+              <TrendChart data={hr} color="var(--color-danger)" name="Puls" unit="bpm" />
             </section>
           </>
         }

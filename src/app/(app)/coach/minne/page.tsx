@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
 import type { Memory } from "@/lib/types";
 import { MemoryList } from "./MemoryList";
+import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 
 export const dynamic = "force-dynamic";
 
@@ -16,8 +17,8 @@ export default async function MinnePage() {
   return (
     <main className="space-y-4 pt-3">
       <header className="flex items-center gap-3">
-        <Link href="/coach" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
-        <h1 className="text-xl font-semibold">Coachens minne</h1>
+        <Link href="/coach" className="-ml-2 flex size-10 items-center justify-center rounded-full text-foreground active:bg-secondary" aria-label="Tillbaka"><CaretLeft size={22} weight="bold" /></Link>
+        <h1 className="h-detail">Coachens minne</h1>
       </header>
       <p className="text-sm text-muted-foreground">
         Det här kommer coachen ihåg från era samtal. Ta bort det som inte stämmer, eller lägg till något den ska veta.

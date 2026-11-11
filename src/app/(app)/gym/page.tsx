@@ -4,6 +4,8 @@ import { StartSessionButton } from "@/components/StartSessionButton";
 import { formatDate, formatKg, formatTime, isoDay } from "@/lib/dates";
 import { bestSet, e1rm } from "@/lib/gym";
 import { Button } from "@/components/ui/button";
+import { EmptyState, IconBadge } from "@/components/CardParts";
+import { Barbell, Camera, CaretRight } from "@phosphor-icons/react/dist/ssr";
 
 export const dynamic = "force-dynamic";
 
@@ -58,26 +60,26 @@ export default async function GymPage() {
 
   return (
     <main className="space-y-7 pt-4">
-      <h1 className="text-2xl font-semibold">Gym</h1>
+      <h1 className="h-page">Gym</h1>
 
       {active ? (
         <Button asChild className="w-full"><Link href={`/gym/${active.id}`}>Fortsätt pågående pass</Link></Button>
       ) : (
         <StartSessionButton />
       )}
-      <Link href="/kamera" className="card flex items-center gap-3">
-        <span className="text-2xl" aria-hidden>📷</span>
-        <span className="flex-1">
-          <span className="block font-medium">Teknik med kamera</span>
+      <Link href="/kamera" className="card flex items-center gap-3 active:bg-secondary">
+        <IconBadge icon={Camera} tone="brand" />
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold">Teknik med kamera</span>
           <span className="block text-sm text-muted-foreground">Knäböj, utfallssteg, planka, armhävningar och marklyft med feedback i realtid</span>
         </span>
-        <span className="text-muted-foreground">→</span>
+        <CaretRight size={14} weight="bold" className="shrink-0 text-muted-foreground" />
       </Link>
 
       {exercises.length > 0 && (
         <section className="space-y-3">
           <div>
-            <h2 className="font-medium">Dina övningar</h2>
+            <h2 className="h-section">Dina övningar</h2>
             <p className="text-sm text-muted-foreground">Tryck på en övning för att se hela utvecklingen.</p>
           </div>
           <ul className="space-y-3">
@@ -111,21 +113,21 @@ export default async function GymPage() {
       )}
 
       <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Senaste passen</h2>
-        {sessions.length === 0 && <p className="card text-muted-foreground">Inga pass loggade än.</p>}
+        <h2 className="h-section">Senaste passen</h2>
+        {sessions.length === 0 && <EmptyState icon={Barbell} tone="gym" title="Inga pass loggade än">Tryck på Starta gympass för att logga ditt första pass.</EmptyState>}
         {sessions.map((s) => {
           const names = [...new Map(s.gym_sets.map((x) => [x.exercise_id, x.exercises?.name ?? "?"])).values()];
           return (
-            <Link key={s.id} href={`/gym/${s.id}`} className="card block">
-              <div className="flex items-baseline justify-between">
-                <span className="font-medium inline-block first-letter:uppercase">{formatDate(s.started_at)}</span>
-                <span className="text-sm text-muted-foreground">
-                  {s.ended_at ? `${formatTime(s.started_at)}–${formatTime(s.ended_at)}` : "pågår"}
-                </span>
-              </div>
-              <p className="mt-1 truncate text-sm text-muted-foreground">
-                {names.length ? names.join(" · ") : "Inga set"} {s.gym_sets.length > 0 && `(${s.gym_sets.length} set)`}
-              </p>
+            <Link key={s.id} href={`/gym/${s.id}`} className="card flex items-center gap-3 py-4 active:bg-secondary">
+              <IconBadge icon={Barbell} tone="gym" />
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold first-letter:uppercase">{formatDate(s.started_at)}</span>
+                <span className="block truncate text-sm text-muted-foreground">{names.length ? names.join(" · ") : "Inga set"}</span>
+              </span>
+              <span className="shrink-0 text-right tabular-nums">
+                <span className="block font-semibold">{s.gym_sets.length} set</span>
+                <span className="block text-sm text-muted-foreground">{s.ended_at ? formatTime(s.started_at) : "pågår"}</span>
+              </span>
             </Link>
           );
         })}

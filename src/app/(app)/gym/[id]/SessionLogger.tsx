@@ -13,6 +13,7 @@ import { confirmDialog } from "@/components/ConfirmDialog";
 import { toast } from "sonner";
 import { ExercisePicker } from "./ExercisePicker";
 import { Button } from "@/components/ui/button";
+import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 
 type Prev = { date: string; sets: GymSet[] };
 
@@ -276,9 +277,9 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
   return (
     <main className="pt-3">
       <header className="mb-4 flex items-center justify-between gap-3">
-        <Link href="/gym" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
+        <Link href="/gym" className="-ml-2 flex size-10 items-center justify-center rounded-full text-foreground active:bg-secondary" aria-label="Tillbaka"><CaretLeft size={22} weight="bold" /></Link>
         <div className="flex-1">
-          <h1 className="text-lg font-semibold inline-block first-letter:uppercase">{formatDate(session.started_at)}</h1>
+          <h1 className="h-detail inline-block first-letter:uppercase">{formatDate(session.started_at)}</h1>
           <p className="text-xs text-muted-foreground">
             {ended ? `Avslutat ${formatTime(session.ended_at!)}` : `Startat ${formatTime(session.started_at)}`}
             {pendingCount > 0 && <span className="ml-2 text-gym">· {pendingCount} väntar på nät</span>}
@@ -313,7 +314,7 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
               onClick={() => !ended && !isActive && selectExercise(exId)}
             >
               <div className="flex items-baseline justify-between">
-                <h2 className="font-medium">{exName(exId)}</h2>
+                <h2 className="h-card">{exName(exId)}</h2>
                 <span className="text-xs text-muted-foreground">{exSets.length} set</span>
               </div>
               {exSets.length > 0 && (

@@ -44,7 +44,7 @@ export function ProfileForm({ initial, userId }: { initial: Profile | null; user
 
   return (
     <form onSubmit={save} className="card space-y-4">
-      <h2 className="font-medium">Om mig</h2>
+      <h2 className="h-card">Om mig</h2>
       <div>
         <label className="label" htmlFor="name">Förnamn (för hälsningen)</label>
         <Input id="name" autoComplete="given-name" maxLength={40} value={p.display_name} onChange={set("display_name")} />
