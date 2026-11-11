@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { StartSessionButton } from "@/components/StartSessionButton";
 import { formatDate, formatKg, formatTime, isoDay } from "@/lib/dates";
 import { bestSet, e1rm } from "@/lib/gym";
+import { monotonePath } from "@/lib/svgPath";
 import { Button } from "@/components/ui/button";
 import { EmptyState, IconBadge } from "@/components/CardParts";
 import { Barbell, Camera, CaretRight } from "@phosphor-icons/react/dist/ssr";
@@ -92,7 +93,7 @@ export default async function GymPage() {
                       {e.bw ? `${e.last.best.reps} reps` : `${formatKg(Number(e.last.best.weight_kg))} kg × ${e.last.best.reps}`} · {ago(e.last.day)}
                     </span>
                   </span>
-                  {e.points.length > 1 && <Sparkline values={e.points.map((p) => p.score)} />}
+                  {e.points.length > 1 && <Sparkline id={`sp-${e.id}`} values={e.points.map((p) => p.score)} />}
                   <span className="w-14 shrink-0 text-right text-sm tabular-nums">
                     {e.change == null ? (
                       <span className="text-xs text-muted-foreground">{e.sessions} pass</span>
@@ -136,18 +137,25 @@ export default async function GymPage() {
   );
 }
 
-/** Liten trendkurva (bästa set per pass). */
-function Sparkline({ values }: { values: number[] }) {
-  const [w, h, pad] = [64, 28, 3];
+/** Liten trendkurva (bästa set per pass): mjuk linje, gradientyta, senaste punkten markerad. */
+function Sparkline({ values, id }: { values: number[]; id: string }) {
+  const [w, h, pad] = [72, 32, 4];
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const pts = values.map((v, i) => [pad + (i * (w - 2 * pad)) / (values.length - 1), max > min ? h - pad - ((v - min) * (h - 2 * pad)) / (max - min) : h / 2] as const);
-  const d = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const pts = values.map((v, i) => [pad + (i * (w - 2 * pad)) / (values.length - 1), max > min ? h - pad - ((v - min) * (h - 2 * pad)) / (max - min) : h / 2] as [number, number]);
+  const line = monotonePath(pts);
   const [lx, ly] = pts.at(-1)!;
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="shrink-0" aria-hidden>
-      <path d={d} fill="none" stroke="var(--color-gym)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" strokeOpacity={0.85} />
-      <circle cx={lx} cy={ly} r={2.5} fill="var(--color-gym)" />
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="shrink-0 overflow-visible" aria-hidden>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--color-gym)" stopOpacity={0.3} />
+          <stop offset="100%" stopColor="var(--color-gym)" stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <path d={`${line} L${pts.at(-1)![0]},${h} L${pts[0][0]},${h} Z`} fill={`url(#${id})`} />
+      <path d={line} fill="none" stroke="var(--color-gym)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={lx} cy={ly} r={3.5} fill="var(--color-gym)" stroke="var(--color-surface)" strokeWidth={1.5} />
     </svg>
   );
 }

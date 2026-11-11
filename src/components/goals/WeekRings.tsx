@@ -4,15 +4,21 @@ import type { WeekRings as Rings } from "@/lib/goals";
 const R = [42, 31, 20];
 const STROKE = 9;
 
-function Arc({ r, share, color }: { r: number; share: number; color: string }) {
+function Arc({ r, share, color, id }: { r: number; share: number; color: string; id: string }) {
   const c = 2 * Math.PI * r;
   const s = Math.max(0, Math.min(1, share));
   return (
     <>
-      <circle cx="50" cy="50" r={r} fill="none" stroke={color} strokeOpacity={0.18} strokeWidth={STROKE} />
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.6} />
+          <stop offset="100%" stopColor={color} />
+        </linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r={r} fill="none" stroke={color} strokeOpacity={0.16} strokeWidth={STROKE} />
       {s > 0 && (
         <circle
-          cx="50" cy="50" r={r} fill="none" stroke={color} strokeWidth={STROKE} strokeLinecap="round"
+          cx="50" cy="50" r={r} fill="none" stroke={`url(#${id})`} strokeWidth={STROKE} strokeLinecap="round"
           strokeDasharray={`${c * s} ${c}`} transform="rotate(-90 50 50)"
         />
       )}
@@ -33,7 +39,7 @@ export function WeekRings({ rings }: { rings: Rings }) {
   return (
     <div className="flex items-center gap-5">
       <svg viewBox="0 0 100 100" className="size-28 shrink-0" role="img" aria-label="Veckans ringar">
-        {rows.map((r, i) => <Arc key={r.label} r={R[i]} share={r.s} color={r.color} />)}
+        {rows.map((r, i) => <Arc key={r.label} id={`ring-${i}`} r={R[i]} share={r.s} color={r.color} />)}
       </svg>
       <ul className="flex-1 space-y-2">
         {rows.map((r) => (

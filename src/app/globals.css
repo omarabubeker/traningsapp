@@ -18,6 +18,7 @@
   --color-run: var(--run);
   --color-gym: var(--gym);
   --color-streak: var(--streak);
+  --color-heart: var(--heart);
   --color-danger: var(--destructive);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
@@ -48,6 +49,7 @@
   --run: #1c86d0;
   --gym: #dd760f;
   --streak: #e5541b;
+  --heart: #d63a6e;
   --card-shadow: 0 1px 2px rgb(18 20 16 / 0.05), 0 1px 1px rgb(18 20 16 / 0.03);
   --nav-glass: rgb(255 255 255 / 0.8);
   --chart-1: var(--run);
@@ -92,6 +94,7 @@
   --run: #5ac8fa;
   --gym: #ff9f43;
   --streak: #ff7a45;
+  --heart: #ff6b93;
   --card-shadow: none;
   --nav-glass: rgb(28 30 32 / 0.72);
 }

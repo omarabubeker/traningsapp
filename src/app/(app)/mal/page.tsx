@@ -84,7 +84,7 @@ export default async function MalPage() {
                 const ok = w.done / w.total >= STREAK_SHARE;
                 return (
                   <li key={w.weekStart} className="space-y-1">
-                    <span className={`flex h-9 items-center justify-center rounded-lg text-xs tabular-nums ${ok ? "bg-brand/20 text-brand" : "bg-muted text-muted-foreground"}`}>
+                    <span className={`flex h-9 items-center justify-center rounded-lg text-[11px] font-semibold tabular-nums ${ok ? "bg-brand/20 text-brand" : "bg-muted text-muted-foreground"}`}>
                       {pct}%
                     </span>
                     <span className="block text-[10px] text-muted-foreground">v{weekNumber(w.weekStart)}</span>

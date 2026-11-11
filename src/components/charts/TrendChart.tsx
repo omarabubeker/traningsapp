@@ -1,5 +1,6 @@
 "use client";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useId } from "react";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AXIS, GRID, TooltipBox } from "./ChartTooltip";
 
 export type TrendPoint = { t: number; value: number; label: string; detail?: string };
@@ -16,8 +17,9 @@ type Props = {
 };
 
 const monthFmt = new Intl.DateTimeFormat("sv-SE", { month: "short", timeZone: "Europe/Stockholm" });
+const dayFmt = new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "short", timeZone: "Europe/Stockholm" });
 
-/** En serie över tid: 2px linje, punkter med ring i ytfärgen, tooltip vid hovring. */
+/** En serie över tid: mjuk 2px-kurva med gradientyta, senaste punkten markerad, tooltip vid hovring. */
 const FORMATS: Record<Props["unit"], (v: number) => string> = {
   pace: (v) => `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, "0")}`,
   bpm: (v) => `${Math.round(v)}`,
@@ -27,6 +29,7 @@ const FORMATS: Record<Props["unit"], (v: number) => string> = {
 
 export function TrendChart({ data, color, name, unit, invert = false, height = 176 }: Props) {
   const format = FORMATS[unit];
+  const gid = `g${useId().replace(/:/g, "")}`;
   if (data.length < 2) return <p className="py-6 text-center text-sm text-muted-foreground">För lite data än.</p>;
   const values = data.map((d) => d.value);
   // Jämna skalsteg: 30 s / 1 min för tempo, 10/20 för puls, 5/10/20 för kg.
@@ -36,11 +39,27 @@ export function TrendChart({ data, color, name, unit, invert = false, height = 1
     unit === "pace" ? (span > 150 ? 60 : 30) : unit === "bpm" ? (span > 60 ? 20 : 10) : span > 80 ? 20 : span > 30 ? 10 : 5;
   const lo = Math.floor(min / step) * step;
   const hi = Math.ceil(max / step) * step + (Math.ceil(max / step) * step === max ? step : 0);
+  // En etikett per månad (den 1:a), i stället för upprepade månadsnamn.
+  const [t0, t1] = [data[0].t, data[data.length - 1].t];
+  const monthTicks: number[] = [];
+  for (let d = new Date(t0); d.getTime() <= t1; d.setMonth(d.getMonth() + 1)) {
+    const first = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+    if (first >= t0) monthTicks.push(first);
+  }
+  const byMonth = monthTicks.length >= 2;
+  // Kort period: tre datum (start, mitt, slut) i stället för månader.
+  const xTicks = byMonth ? (monthTicks.length > 5 ? monthTicks.filter((_, i) => i % 2 === 0) : monthTicks) : [t0, Math.round((t0 + t1) / 2), t1];
   const ticks = Array.from({ length: Math.round((hi - lo) / step) + 1 }, (_, i) => lo + i * step);
   return (
     <div className="w-full" style={{ height }}>
       <ResponsiveContainer>
-        <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -6 }}>
+        <AreaChart data={data} margin={{ top: 10, right: byMonth ? 10 : 20, bottom: 0, left: -6 }}>
+          <defs>
+            <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.32} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
           <CartesianGrid {...GRID} />
           <XAxis
             dataKey="t"
@@ -48,7 +67,9 @@ export function TrendChart({ data, color, name, unit, invert = false, height = 1
             scale="time"
             domain={["dataMin", "dataMax"]}
             {...AXIS}
-            tickFormatter={(t) => monthFmt.format(new Date(t)).replace(".", "")}
+            tickFormatter={(t) => (byMonth ? monthFmt : dayFmt).format(new Date(t)).replace(".", "")}
+            ticks={xTicks}
+            interval={0}
             minTickGap={24}
           />
           <YAxis
@@ -69,17 +90,29 @@ export function TrendChart({ data, color, name, unit, invert = false, height = 1
               ) : null;
             }}
           />
-          <Line
+          <Area
             dataKey="value"
+            type="monotone"
+            baseValue={invert ? hi : lo}
             stroke={color}
             strokeWidth={2}
             strokeLinejoin="round"
             strokeLinecap="round"
-            dot={{ r: 3.5, fill: color, stroke: "var(--color-surface)", strokeWidth: 2 }}
+            fill={`url(#${gid})`}
+            dot={(p: { cx?: number; cy?: number; index?: number }) =>
+              p.index === data.length - 1 && p.cx != null && p.cy != null ? (
+                <g key="last">
+                  <circle cx={p.cx} cy={p.cy} r={8} fill={color} fillOpacity={0.2} />
+                  <circle cx={p.cx} cy={p.cy} r={4.5} fill={color} stroke="var(--color-surface)" strokeWidth={2} />
+                </g>
+              ) : (
+                <g key={p.index} />
+              )
+            }
             activeDot={{ r: 6, fill: color, stroke: "var(--color-surface)", strokeWidth: 2 }}
             isAnimationActive={false}
           />
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );
