@@ -6,10 +6,12 @@ import type { Activity } from "@/lib/types";
 import { loadPlans } from "@/lib/coach/planData";
 import { daysToRace } from "@/lib/race";
 import { matchWatchToGym } from "@/lib/watchMerge";
-import { TodayPlan } from "@/components/TodayPlan";
-import { EmptyState, IconBadge, SectionHead, StatCard } from "@/components/CardParts";
-import { Barbell, CalendarCheck, PersonSimpleRun } from "@phosphor-icons/react/dist/ssr";
-import { GoalsSummary } from "@/components/goals/GoalsSummary";
+import { TodayHero } from "@/components/TodayHero";
+import { WeekRings } from "@/components/goals/WeekRings";
+import { MiniBars } from "@/components/goals/MiniBars";
+import { streakText } from "@/lib/goals";
+import { CardHead, EmptyState, IconBadge, SectionHead, StatCard } from "@/components/CardParts";
+import { Barbell, CalendarCheck, Fire, Medal as MedalIcon, PersonSimpleRun, Target, Trophy } from "@phosphor-icons/react/dist/ssr";
 import { loadGoals } from "@/lib/goalsData";
 import { requireUser } from "@/lib/supabase/server";
 import { WEEKDAYS_SHORT, formatDate, formatKg, formatTime, greeting, isoDay, weekRange } from "@/lib/dates";
@@ -70,6 +72,15 @@ export default async function Overview() {
   const volume = work.reduce((sum, x) => sum + x.reps * Number(x.weight_kg), 0);
   const active = sessions.find((s) => !s.ended_at);
 
+  // "Pass 3 av 5": dagens pass placerat bland veckans planerade (vila räknas inte).
+  const weekWork = plans.flatMap((p) => p.items).filter((i) => i.kind !== "rest" && days.includes(i.date));
+  const order = Object.fromEntries(weekWork.map((i, n) => [i.id, `Pass ${n + 1} av ${weekWork.length}`]));
+  const kmPerDay = days.map((d) => activities.filter((a) => a.day === d && isRun(a.sport_type)).reduce((t, a) => t + (a.distance_m ?? 0) / 1000, 0));
+  const todayIdx = days.indexOf(today);
+  const fresh = goals.records.filter((r) => r.isNew).slice(0, 3);
+  const doneMs = goals.milestones.filter((m) => m.day).length;
+  const nextMs = goals.milestones.find((m) => !m.day);
+
   return (
     <main className="space-y-7 pt-4">
       <header>
@@ -94,42 +105,59 @@ export default async function Overview() {
       <section className="space-y-3">
         <SectionHead title="Idag" href="/plan" link="Hela veckan" />
         {todayItems.length > 0 ? (
-          <TodayPlan items={todayItems} />
+          <TodayHero items={todayItems} order={order} />
         ) : plans.length ? (
-          <p className="card text-sm text-muted-foreground">
-            Inget planerat idag.{nextItem ? ` Nästa: ${nextItem.title}.` : ""}
-          </p>
+          <EmptyState icon={CalendarCheck} title="Inget planerat idag">
+            {nextItem ? `Nästa: ${nextItem.title}.` : "Veckans plan är klar."}
+          </EmptyState>
         ) : (
-          <Link href="/coach" className="card block text-sm text-muted-foreground">Ingen plan än – gör en veckoavstämning med coachen →</Link>
+          <Link href="/coach" className="block">
+            <EmptyState icon={CalendarCheck} tone="brand" title="Ingen plan än">
+              Gör en veckoavstämning med coachen för att få veckans pass.
+            </EmptyState>
+          </Link>
         )}
       </section>
 
-      <GoalsSummary goals={goals} />
-
-      <section className="card">
-        <ol className="grid grid-cols-7 gap-1 text-center">
-          {days.map((d, i) => {
-            const gym = sessions.some((s) => s.day === d);
-            const ran = activities.some((a) => a.day === d && isRun(a.sport_type));
-            return (
-              <li key={d} className="flex flex-col items-center gap-2">
-                <span className={`text-xs ${d === today ? "text-text" : "text-muted-foreground"}`}>{WEEKDAYS_SHORT[i]}</span>
-                <span
-                  className={`flex h-9 w-9 items-center justify-center rounded-full text-sm ${
-                    ran && gym ? "bg-brand/20 text-brand" : ran ? "bg-run/20 text-run" : gym ? "bg-gym/20 text-gym" : d === today ? "border border-line" : "text-muted-foreground"
-                  }`}
-                >
-                  {Number(d.slice(8))}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-      </section>
-
-      <section className="grid grid-cols-2 gap-3">
-        <StatCard icon={PersonSimpleRun} tone="run" title="Löpning" value={runKm.toLocaleString("sv-SE", { maximumFractionDigits: 1 })} unit="km" sub="denna vecka" href="/lopning" />
-        <StatCard icon={Barbell} tone="gym" title="Gym" value={sessions.length} unit={sessions.length === 1 ? "pass" : "pass"} sub={`${formatKg(Math.round(volume / 100) / 10)} t lyft`} href="/gym" />
+      <section className="space-y-3">
+        <SectionHead title="Veckan" href="/mal" link="Mål och rekord" />
+        {goals.rings && (
+          <Link href="/mal" className="card block space-y-4 active:bg-secondary">
+            <CardHead icon={Target} tone="brand" title="Veckans ringar" chevron />
+            <WeekRings rings={goals.rings} />
+          </Link>
+        )}
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard icon={PersonSimpleRun} tone="run" title="Löpning" value={runKm.toLocaleString("sv-SE", { maximumFractionDigits: 1 })} unit="km" href="/lopning">
+            <MiniBars values={kmPerDay} highlight={todayIdx} labels={WEEKDAYS_SHORT.map((d) => d[0])} />
+          </StatCard>
+          <StatCard icon={Barbell} tone="gym" title="Gym" value={sessions.length} unit="pass" sub={`${formatKg(Math.round(volume / 100) / 10)} ton lyft`} href="/gym" />
+          <StatCard
+            icon={Fire}
+            tone="streak"
+            title="Svit"
+            value={goals.streak.current}
+            unit={goals.streak.current === 1 ? "vecka" : "veckor"}
+            sub={goals.streak.current > 0 ? "i rad med minst 80 % av planen" : streakText(0)}
+            href="/mal"
+          />
+          {nextMs ? (
+            <StatCard icon={MedalIcon} tone="brand" title="Milstolpe" value={doneMs} unit={`av ${goals.milestones.length}`} sub={`Nästa: ${nextMs.label}`} href="/mal" />
+          ) : (
+            <StatCard icon={MedalIcon} tone="brand" title="Milstolpe" value={doneMs} unit={`av ${goals.milestones.length}`} sub="Alla klara!" href="/mal" />
+          )}
+        </div>
+        {fresh.length > 0 && (
+          <Link href="/mal" className="card block space-y-3 border-gym/50 active:bg-secondary">
+            <CardHead icon={Trophy} tone="gym" title={fresh.length === 1 ? "Nytt rekord!" : "Nya rekord!"} chevron />
+            {fresh.map((r) => (
+              <p key={r.key} className="flex items-baseline justify-between gap-2">
+                <span className="text-sm text-muted-foreground">{r.label}</span>
+                <span className="num-lg">{r.value}</span>
+              </p>
+            ))}
+          </Link>
+        )}
       </section>
 
       <section className="space-y-3">

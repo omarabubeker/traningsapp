@@ -34,8 +34,8 @@
   --primary: #c8ec3c; /* lime – fyllda ytor (knappar, hjältekort) */
   --primary-foreground: #141a05;
   --primary-2: #9fd23a; /* andra stoppet i lime-gradienten */
-  --brand: #4f6d00; /* lime som text/linjer – mörkare för läsbarhet på ljus botten */
-  --brand-strong: #3f5800;
+  --brand: #1d7f33; /* grön för text/linjer i ljust läge (ren lime syns inte på vitt), kontrast 5,1:1 */
+  --brand-strong: #166a2a;
   --secondary: #eceee8;
   --secondary-foreground: #121410;
   --muted: #eceee8;
@@ -45,7 +45,7 @@
   --destructive: #d23b3b;
   --border: #e2e5dd;
   --input: #d7dbd1;
-  --ring: #6f8f12;
+  --ring: #1d7f33;
   --run: #1c86d0;
   --gym: #dd760f;
   --streak: #e5541b;
@@ -125,6 +125,13 @@ textarea {
   box-shadow: var(--card-shadow);
 }
 
+/* Hjältekort (dagens pass): lime-gradient med mjuk ljusreflex. */
+@utility hero-gradient {
+  background:
+    radial-gradient(120% 140% at 100% 0%, var(--primary-2) 0%, transparent 55%),
+    linear-gradient(135deg, var(--primary), var(--primary-2));
+}
+
 /* Typskala – använd dessa i stället för egna storlekar, så att allt linjerar. */
 @utility h-page {
   font-size: 1.75rem; /* 28 */
@@ -185,7 +192,7 @@ html.kb .bottom-nav {
   display: none;
 }
 html.kb .chat-composer {
-  bottom: 0;
+  padding-bottom: 0.5rem;
 }
 
 /* iOS ger datumfält en egen minsta bredd så att de sticker ut ur rutnätet. */
