@@ -7,7 +7,8 @@ import { STREAK_SHARE, streakText, type RecordItem } from "@/lib/goals";
 import { WeekRings } from "@/components/goals/WeekRings";
 import { Badge } from "@/components/ui/badge";
 import { BigValue, CardHead } from "@/components/CardParts";
-import { Check, Fire, FlagCheckered } from "@phosphor-icons/react/dist/ssr";
+import { Fire, FlagCheckered } from "@phosphor-icons/react/dist/ssr";
+import { MEDAL_TEXT, Medal } from "@/components/goals/Medal";
 import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 
 export const dynamic = "force-dynamic";
@@ -40,17 +41,10 @@ export default async function MalPage() {
               <div className="h-full rounded-full bg-primary" style={{ width: `${(doneCount / g.milestones.length) * 100}%` }} />
             </div>
           </div>
-          <ol className="space-y-3">
+          <ol className="space-y-2.5">
             {g.milestones.map((m) => (
-              <li key={m.key} className="flex items-start gap-3">
-                <span
-                  className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs ${
-                    m.day ? "bg-primary text-primary-foreground" : m.key === nextKey ? "border-2 border-brand" : "border border-border"
-                  }`}
-                  aria-hidden
-                >
-                  {m.day ? <Check size={14} weight="bold" /> : null}
-                </span>
+              <li key={m.key} className="flex items-center gap-3">
+                <Medal id={`m-${m.key}`} size={44} earned={!!m.day} next={m.key === nextKey} text={MEDAL_TEXT[m.key]} />
                 <span className="min-w-0 flex-1">
                   <span className={`block ${m.day ? "" : m.key === nextKey ? "font-medium" : "text-muted-foreground"}`}>{m.label}</span>
                   <span className="block text-xs text-muted-foreground">{m.detail}</span>

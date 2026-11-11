@@ -10,6 +10,8 @@ import { TodayHero } from "@/components/TodayHero";
 import { WeekRings } from "@/components/goals/WeekRings";
 import { MiniBars } from "@/components/goals/MiniBars";
 import { streakText } from "@/lib/goals";
+import { Celebrate, type CelebrationEvent } from "@/components/goals/Celebrate";
+import { MEDAL_TEXT } from "@/components/goals/Medal";
 import { CardHead, EmptyState, IconBadge, SectionHead, StatCard } from "@/components/CardParts";
 import { Barbell, CalendarCheck, Fire, Medal as MedalIcon, PersonSimpleRun, Target, Trophy } from "@phosphor-icons/react/dist/ssr";
 import { loadGoals } from "@/lib/goalsData";
@@ -81,8 +83,21 @@ export default async function Overview() {
   const doneMs = goals.milestones.filter((m) => m.day).length;
   const nextMs = goals.milestones.find((m) => !m.day);
 
+  // Händelser att fira (visas en gång var): nya milstolpar, nya rekord och stängda ringar.
+  const weekAgo = new Date(Date.parse(today + "T12:00:00Z") - 6 * 864e5).toISOString().slice(0, 10);
+  const r = goals.rings;
+  const ringsClosed = !!r && r.km.target > 0 && r.km.done >= r.km.target && r.gym.done >= r.gym.target && r.plan.total > 0 && r.plan.done >= r.plan.total;
+  const events: CelebrationEvent[] = [
+    ...goals.milestones
+      .filter((m) => m.day && m.day >= weekAgo)
+      .map((m) => ({ key: `milstolpe:${m.key}`, kind: "milestone" as const, title: "Ny milstolpe!", text: `${m.label} – ${doneMs} av ${goals.milestones.length} på vägen till maran.`, medalText: MEDAL_TEXT[m.key] })),
+    ...fresh.map((rec) => ({ key: `rekord:${rec.key}:${rec.day}`, kind: "record" as const, title: "Nytt rekord!", text: `${rec.label}: ${rec.value}${rec.previous ? ` (tidigare ${rec.previous})` : ""}` })),
+    ...(ringsClosed ? [{ key: `ringar:${days[0]}`, kind: "rings" as const, title: "Alla ringar stängda!", text: "Du har gjort hela veckans plan. Starkt jobbat." }] : []),
+  ];
+
   return (
     <main className="space-y-7 pt-4">
+      <Celebrate events={events} />
       <header>
         <p className="inline-block text-sm text-muted-foreground first-letter:uppercase">
           {formatDate(today + "T12:00:00Z", { weekday: "long", day: "numeric", month: "long" })}
