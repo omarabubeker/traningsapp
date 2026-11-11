@@ -34,8 +34,8 @@
   --primary: #c8ec3c; /* lime – fyllda ytor (knappar, hjältekort) */
   --primary-foreground: #141a05;
   --primary-2: #9fd23a; /* andra stoppet i lime-gradienten */
-  --brand: #4f6d00; /* lime som text/linjer – mörkare för läsbarhet på ljus botten */
-  --brand-strong: #3f5800;
+  --brand: #1d7f33; /* grön för text/linjer i ljust läge (ren lime syns inte på vitt), kontrast 5,1:1 */
+  --brand-strong: #166a2a;
   --secondary: #eceee8;
   --secondary-foreground: #121410;
   --muted: #eceee8;
@@ -45,7 +45,7 @@
   --destructive: #d23b3b;
   --border: #e2e5dd;
   --input: #d7dbd1;
-  --ring: #6f8f12;
+  --ring: #1d7f33;
   --run: #1c86d0;
   --gym: #dd760f;
   --streak: #e5541b;
