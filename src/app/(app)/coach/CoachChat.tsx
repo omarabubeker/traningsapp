@@ -131,7 +131,7 @@ export function CoachChat({ current, previous: prevInitial, configured }: Props)
         </div>
       )}
 
-      <section className="flex-1 space-y-4 pb-32">
+      <section className="flex-1 space-y-4 pb-40">
         {messages.length === 0 && (
           <div className="card space-y-4">
             <p className="text-sm text-muted-foreground">
@@ -161,7 +161,7 @@ export function CoachChat({ current, previous: prevInitial, configured }: Props)
         <div ref={bottom} />
       </section>
 
-      <div className="chat-composer fixed inset-x-0 bottom-[calc(3.4rem+max(env(safe-area-inset-bottom),0.75rem))] z-10 border-t border-line bg-bg/95 pb-2 backdrop-blur">
+      <div className="chat-composer fixed inset-x-0 bottom-0 z-10 border-t border-line bg-bg/95 pb-[calc(4.75rem+max(env(safe-area-inset-bottom),0.75rem))] backdrop-blur">
         <div className="mx-auto max-w-md px-4 pt-3 pb-1">
           <form
             onSubmit={(e) => {

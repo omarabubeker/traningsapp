@@ -64,6 +64,7 @@ export function StatCard({
   href,
   aside,
   right,
+  children,
 }: {
   icon?: Icon;
   tone?: Tone;
@@ -74,6 +75,7 @@ export function StatCard({
   href?: string;
   aside?: ReactNode;
   right?: ReactNode;
+  children?: ReactNode;
 }) {
   const body = (
     <>
@@ -85,9 +87,10 @@ export function StatCard({
         </div>
         {aside && <div className="shrink-0">{aside}</div>}
       </div>
+      {children}
     </>
   );
-  const cls = "card flex flex-col justify-between gap-4";
+  const cls = "card flex flex-col gap-4";
   return href ? (
     <Link href={href} className={`${cls} active:bg-secondary`}>{body}</Link>
   ) : (

@@ -125,6 +125,13 @@ textarea {
   box-shadow: var(--card-shadow);
 }
 
+/* Hjältekort (dagens pass): lime-gradient med mjuk ljusreflex. */
+@utility hero-gradient {
+  background:
+    radial-gradient(120% 140% at 100% 0%, var(--primary-2) 0%, transparent 55%),
+    linear-gradient(135deg, var(--primary), var(--primary-2));
+}
+
 /* Typskala – använd dessa i stället för egna storlekar, så att allt linjerar. */
 @utility h-page {
   font-size: 1.75rem; /* 28 */
@@ -185,7 +192,7 @@ html.kb .bottom-nav {
   display: none;
 }
 html.kb .chat-composer {
-  bottom: 0;
+  padding-bottom: 0.5rem;
 }
 
 /* iOS ger datumfält en egen minsta bredd så att de sticker ut ur rutnätet. */

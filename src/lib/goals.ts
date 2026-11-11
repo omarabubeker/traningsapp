@@ -7,7 +7,11 @@ import { formatPace } from "./running";
 import { HALF_PACE, MARATHON_PACE } from "./race";
 import type { PlanItem } from "./types";
 
-export const STREAK_SHARE = 0.8; // andel av planen som krävs för att veckan ska räknas
+export const STREAK_SHARE = 0.8;
+
+export function streakText(current: number) {
+  return current === 0 ? "Gör minst 80 % av veckans plan för att starta en svit" : `${current} ${current === 1 ? "vecka" : "veckor"} i rad med minst 80 % av planen`;
+} // andel av planen som krävs för att veckan ska räknas
 
 export function mondayOfIso(day: string) {
   const d = new Date(day + "T00:00:00Z");
