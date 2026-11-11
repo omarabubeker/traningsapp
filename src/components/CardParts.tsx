@@ -4,13 +4,14 @@ import { CaretRight } from "@phosphor-icons/react/dist/ssr";
 import type { IconProps } from "@phosphor-icons/react";
 
 export type Icon = ComponentType<IconProps>;
-export type Tone = "brand" | "run" | "gym" | "streak" | "danger" | "muted";
+export type Tone = "brand" | "run" | "gym" | "streak" | "heart" | "danger" | "muted";
 
 export const TONE_TEXT: Record<Tone, string> = {
   brand: "text-brand",
   run: "text-run",
   gym: "text-gym",
   streak: "text-streak",
+  heart: "text-heart",
   danger: "text-danger",
   muted: "text-muted-foreground",
 };
@@ -19,6 +20,7 @@ const TONE_BG: Record<Tone, string> = {
   run: "bg-run/15",
   gym: "bg-gym/15",
   streak: "bg-streak/15",
+  heart: "bg-heart/15",
   danger: "bg-danger/15",
   muted: "bg-secondary",
 };

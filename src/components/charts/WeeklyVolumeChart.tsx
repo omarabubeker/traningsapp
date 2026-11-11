@@ -26,14 +26,18 @@ export function WeeklyVolumeChart({ data }: { data: WeekPoint[] }) {
               ) : null
             }
           />
+          <defs>
+            <linearGradient id="km-now" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--color-run)" stopOpacity={1} />
+              <stop offset="100%" stopColor="var(--color-run)" stopOpacity={0.7} />
+            </linearGradient>
+          </defs>
           <Bar
             dataKey="km"
             maxBarSize={22}
-            radius={[4, 4, 0, 0]}
-            fill="var(--color-run)"
-            fillOpacity={0.9}
             isAnimationActive={false}
             shape={(props: unknown) => {
+              // Som i Hälsa: tidigare veckor gråa, innevarande vecka i löpfärg. 4px rundade toppar mot baslinjen.
               const p = props as { x: number; y: number; width: number; height: number; payload: WeekPoint };
               const r = Math.min(4, p.height);
               const { x, y, width: w, height: h } = p;
@@ -41,8 +45,8 @@ export function WeeklyVolumeChart({ data }: { data: WeekPoint[] }) {
               return (
                 <path
                   d={`M${x},${y + h} V${y + r} Q${x},${y} ${x + r},${y} H${x + w - r} Q${x + w},${y} ${x + w},${y + r} V${y + h} Z`}
-                  fill="var(--color-run)"
-                  fillOpacity={p.payload.current ? 1 : 0.55}
+                  fill={p.payload.current ? "url(#km-now)" : "var(--color-muted-foreground)"}
+                  fillOpacity={p.payload.current ? 1 : 0.28}
                 />
               );
             }}

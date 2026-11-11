@@ -6,6 +6,7 @@ import type { WeightEntry } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { confirmDialog } from "@/components/ConfirmDialog";
+import { monotonePath } from "@/lib/svgPath";
 
 export function WeightLog({ initial }: { initial: WeightEntry[] }) {
   const [entries, setEntries] = useState(initial);
@@ -75,13 +76,21 @@ function Sparkline({ entries }: { entries: WeightEntry[] }) {
   const vals = pts.map((p) => Number(p.weight_kg));
   const min = Math.min(...vals) - 0.5;
   const max = Math.max(...vals) + 0.5;
-  const w = 300, h = 60;
-  const d = vals
-    .map((v, i) => `${i ? "L" : "M"}${((i / (vals.length - 1)) * w).toFixed(1)},${(h - ((v - min) / (max - min)) * h).toFixed(1)}`)
-    .join(" ");
+  const [w, h, pad] = [300, 64, 6];
+  const xy = vals.map((v, i) => [pad + (i / (vals.length - 1)) * (w - 2 * pad), pad + (1 - (v - min) / (max - min)) * (h - 2 * pad)] as [number, number]);
+  const line = monotonePath(xy);
+  const [lx, ly] = xy.at(-1)!;
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="h-16 w-full" preserveAspectRatio="none" aria-label="Viktkurva">
-      <path d={d} fill="none" stroke="var(--color-brand)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
+    <svg viewBox={`0 0 ${w} ${h}`} className="h-16 w-full overflow-visible" aria-label="Viktkurva">
+      <defs>
+        <linearGradient id="weight-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--color-brand)" stopOpacity={0.28} />
+          <stop offset="100%" stopColor="var(--color-brand)" stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <path d={`${line} L${lx},${h} L${xy[0][0]},${h} Z`} fill="url(#weight-fill)" />
+      <path d={line} fill="none" stroke="var(--color-brand)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={lx} cy={ly} r={4} fill="var(--color-brand)" stroke="var(--color-surface)" strokeWidth={2} />
     </svg>
   );
 }

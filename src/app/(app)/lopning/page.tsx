@@ -109,14 +109,14 @@ export default async function LopningPage({ searchParams }: { searchParams: Prom
             </section>
 
             <section className="card space-y-4">
-              <CardHead icon={Heartbeat} tone="danger" title="Snittpuls per pass" />
+              <CardHead icon={Heartbeat} tone="heart" title="Snittpuls per pass" />
               {hr.length > 0 && (
                 <div className="space-y-1.5">
                   <BigValue value={hr.at(-1)!.value} unit="bpm" />
                   <p className="text-sm text-muted-foreground">senaste passet</p>
                 </div>
               )}
-              <TrendChart data={hr} color="var(--color-danger)" name="Puls" unit="bpm" />
+              <TrendChart data={hr} color="var(--color-heart)" name="Puls" unit="bpm" />
             </section>
           </>
         }
