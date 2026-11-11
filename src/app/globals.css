@@ -4,65 +4,102 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Lugn, mörk palett. Appen är alltid i mörkt läge. */
-@theme {
-  --color-bg: #0e1113;
-  --color-surface: #161a1d;
-  --color-surface-2: #1e2327;
-  --color-line: #2a3035;
-  --color-text: #e8ecee;
-  --color-brand: #7cc4a4;
-  --color-brand-strong: #5fb08d;
-  --color-run: #7aa7e0;
-  --color-gym: #d8a76a;
-  --color-danger: #e07a7a;
+/* Lime-paletten. Ljust läge på :root, mörkt på .dark (sätts av temaskriptet i layout.tsx
+   efter telefonens läge eller valet på Profil). Appens egna namn (bg, surface, brand …)
+   pekar på samma variabler som shadcns. */
+@theme inline {
+  --color-bg: var(--background);
+  --color-surface: var(--card);
+  --color-surface-2: var(--secondary);
+  --color-line: var(--border);
+  --color-text: var(--foreground);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-run: var(--run);
+  --color-gym: var(--gym);
+  --color-streak: var(--streak);
+  --color-danger: var(--destructive);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
-/* Appens mörka palett i shadcns variabler. Appen är alltid i mörkt läge, så samma
-   värden gäller både :root och .dark. Grön accentfärg heter "brand" (shadcns "accent"
-   är hovringsbakgrund). */
-:root,
+:root {
+  color-scheme: light;
+  --background: #f2f3ef;
+  --foreground: #121410;
+  --card: #ffffff;
+  --card-foreground: #121410;
+  --popover: #ffffff;
+  --popover-foreground: #121410;
+  --primary: #c8ec3c; /* lime – fyllda ytor (knappar, hjältekort) */
+  --primary-foreground: #141a05;
+  --primary-2: #9fd23a; /* andra stoppet i lime-gradienten */
+  --brand: #4f6d00; /* lime som text/linjer – mörkare för läsbarhet på ljus botten */
+  --brand-strong: #3f5800;
+  --secondary: #eceee8;
+  --secondary-foreground: #121410;
+  --muted: #eceee8;
+  --muted-foreground: #646a60;
+  --accent: #eceee8;
+  --accent-foreground: #121410;
+  --destructive: #d23b3b;
+  --border: #e2e5dd;
+  --input: #d7dbd1;
+  --ring: #6f8f12;
+  --run: #1c86d0;
+  --gym: #dd760f;
+  --streak: #e5541b;
+  --card-shadow: 0 1px 2px rgb(18 20 16 / 0.05), 0 1px 1px rgb(18 20 16 / 0.03);
+  --nav-glass: rgb(255 255 255 / 0.8);
+  --chart-1: var(--run);
+  --chart-2: var(--gym);
+  --chart-3: var(--brand);
+  --chart-4: var(--muted-foreground);
+  --chart-5: var(--destructive);
+  --radius: 0.75rem;
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--secondary);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
 .dark {
   color-scheme: dark;
-  --background: #0e1113;
-  --foreground: #e8ecee;
-  --card: #161a1d;
-  --card-foreground: #e8ecee;
-  --popover: #161a1d;
-  --popover-foreground: #e8ecee;
-  --primary: #7cc4a4;
-  --primary-foreground: #0b1a13;
-  --secondary: #1e2327;
-  --secondary-foreground: #e8ecee;
-  --muted: #1e2327;
-  --muted-foreground: #8d979e;
-  --accent: #1e2327;
-  --accent-foreground: #e8ecee;
-  --destructive: #e07a7a;
-  --border: #2a3035;
-  --input: #2a3035;
-  --ring: #7cc4a4;
-  --chart-1: #7aa7e0;
-  --chart-2: #d8a76a;
-  --chart-3: #7cc4a4;
-  --chart-4: #8d979e;
-  --chart-5: #e07a7a;
-  --radius: 0.625rem;
-  --sidebar: #161a1d;
-  --sidebar-foreground: #e8ecee;
-  --sidebar-primary: #7cc4a4;
-  --sidebar-primary-foreground: #0b1a13;
-  --sidebar-accent: #1e2327;
-  --sidebar-accent-foreground: #e8ecee;
-  --sidebar-border: #2a3035;
-  --sidebar-ring: #7cc4a4;
+  --background: #0a0b0a;
+  --foreground: #f3f5f0;
+  --card: #17181a;
+  --card-foreground: #f3f5f0;
+  --popover: #1e2022;
+  --popover-foreground: #f3f5f0;
+  --primary: #d4f25a;
+  --primary-foreground: #141a05;
+  --primary-2: #a6e04a;
+  --brand: #d4f25a;
+  --brand-strong: #bfe03f;
+  --secondary: #222427;
+  --secondary-foreground: #f3f5f0;
+  --muted: #222427;
+  --muted-foreground: #8d938b;
+  --accent: #222427;
+  --accent-foreground: #f3f5f0;
+  --destructive: #ff6b6b;
+  --border: #2a2c2f;
+  --input: #303336;
+  --ring: #d4f25a;
+  --run: #5ac8fa;
+  --gym: #ff9f43;
+  --streak: #ff7a45;
+  --card-shadow: none;
+  --nav-glass: rgb(28 30 32 / 0.72);
 }
 
 html,
 body {
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--background);
+  color: var(--foreground);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
 }
@@ -81,7 +118,54 @@ textarea {
 
 /* Enkelt kort för listor och sektioner (samma färger som shadcns Card). */
 @utility card {
-  @apply rounded-2xl border border-border bg-card p-5 text-card-foreground;
+  @apply rounded-[22px] border border-border bg-card p-5 text-card-foreground;
+  box-shadow: var(--card-shadow);
+}
+
+/* Typskala – använd dessa i stället för egna storlekar, så att allt linjerar. */
+@utility h-page {
+  font-size: 1.75rem; /* 28 */
+  line-height: 2.125rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+@utility h-section {
+  font-size: 1.25rem; /* 20 */
+  line-height: 1.625rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+@utility h-detail {
+  font-size: 1.375rem; /* 22 – undersidor med tillbakapil */
+  line-height: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+@utility h-card {
+  font-size: 0.9375rem; /* 15 – rubrik inne i ett kort */
+  line-height: 1.375rem;
+  font-weight: 600;
+}
+@utility num-xl {
+  font-size: 2.125rem; /* 34 – kortets huvudsiffra */
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+@utility num-lg {
+  font-size: 1.375rem; /* 22 */
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+@utility unit {
+  font-size: 0.9375rem; /* enhet efter en stor siffra */
+  font-weight: 700;
+  letter-spacing: 0;
+  margin-left: 0.2em;
+  color: var(--muted-foreground);
 }
 @utility label {
   @apply mb-1 block text-sm text-muted-foreground;
@@ -113,7 +197,7 @@ input[type="date"]::-webkit-date-and-time-value {
 }
 
 /* Mörk karta: OSM-rutorna inverteras och tonas ner så att de passar temat. */
-.map-tiles-dark {
+.dark .map-tiles-dark {
   filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
 }
 .leaflet-container {
@@ -121,7 +205,7 @@ input[type="date"]::-webkit-date-and-time-value {
   font-family: var(--font-sans);
 }
 .leaflet-control-attribution {
-  background: rgb(14 17 19 / 0.7) !important;
+  background: color-mix(in srgb, var(--background) 75%, transparent) !important;
   color: var(--color-muted-foreground) !important;
   font-size: 10px;
 }

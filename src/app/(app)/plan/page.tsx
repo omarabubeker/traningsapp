@@ -5,6 +5,7 @@ import { weekNumber } from "@/lib/dates";
 import { PlanItemCard } from "@/components/PlanItemCard";
 import { Markdown } from "@/components/Markdown";
 import { Button } from "@/components/ui/button";
+import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +16,8 @@ export default async function PlanPage() {
   return (
     <main className="space-y-7 pt-3">
       <header className="flex items-center gap-3">
-        <Link href="/coach" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
-        <h1 className="text-2xl font-semibold">Plan</h1>
+        <Link href="/coach" className="-ml-2 flex size-10 items-center justify-center rounded-full text-foreground active:bg-secondary" aria-label="Tillbaka"><CaretLeft size={22} weight="bold" /></Link>
+        <h1 className="h-detail">Plan</h1>
       </header>
 
       {plans.length === 0 && (
@@ -34,7 +35,7 @@ export default async function PlanPage() {
         return (
           <section key={p.id} className="space-y-3">
             <div>
-              <h2 className="text-lg font-semibold">Vecka {weekNumber(p.week_start)}</h2>
+              <h2 className="h-section">Vecka {weekNumber(p.week_start)}</h2>
               <p className="text-sm text-muted-foreground">
                 {runs.length} löppass{km ? ` · ca ${Math.round(km)} km` : ""} · {p.items.filter((i) => i.kind === "gym").length} gympass · {done}/{planned} klara
               </p>

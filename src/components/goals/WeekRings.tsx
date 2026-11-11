@@ -1,3 +1,4 @@
+import { Check } from "@phosphor-icons/react/dist/ssr";
 import type { WeekRings as Rings } from "@/lib/goals";
 
 const R = [42, 31, 20];
@@ -25,25 +26,23 @@ const sv = (n: number) => n.toLocaleString("sv-SE", { maximumFractionDigits: 1 }
 /** Tre ringar för veckan (löp-km, gympass, planen), i stil med klockans aktivitetsringar. */
 export function WeekRings({ rings }: { rings: Rings }) {
   const rows = [
-    { label: "Löpning", color: "var(--color-run)", text: rings.km.target ? `${sv(rings.km.done)} / ${sv(rings.km.target)} km` : `${sv(rings.km.done)} km`, s: share(rings.km.done, rings.km.target) },
-    { label: "Gym", color: "var(--color-gym)", text: `${rings.gym.done} / ${rings.gym.target} pass`, s: share(rings.gym.done, rings.gym.target) },
-    { label: "Planen", color: "var(--color-brand)", text: `${rings.plan.done} / ${rings.plan.total} pass`, s: share(rings.plan.done, rings.plan.total) },
+    { label: "Löpning", color: "var(--color-run)", value: rings.km.target ? `${sv(rings.km.done)}/${sv(rings.km.target)}` : sv(rings.km.done), unit: "km", s: share(rings.km.done, rings.km.target) },
+    { label: "Gym", color: "var(--color-gym)", value: `${rings.gym.done}/${rings.gym.target}`, unit: "pass", s: share(rings.gym.done, rings.gym.target) },
+    { label: "Planen", color: "var(--color-brand)", value: `${rings.plan.done}/${rings.plan.total}`, unit: "pass", s: share(rings.plan.done, rings.plan.total) },
   ];
   return (
     <div className="flex items-center gap-5">
       <svg viewBox="0 0 100 100" className="size-28 shrink-0" role="img" aria-label="Veckans ringar">
         {rows.map((r, i) => <Arc key={r.label} r={R[i]} share={r.s} color={r.color} />)}
       </svg>
-      <ul className="flex-1 space-y-2 text-sm">
+      <ul className="flex-1 space-y-2">
         {rows.map((r) => (
-          <li key={r.label} className="flex items-baseline justify-between gap-2">
-            <span className="flex items-center gap-2">
-              <span className="size-2.5 rounded-full" style={{ background: r.color }} />
-              {r.label}
-            </span>
-            <span className="tabular-nums">
-              {r.text}
-              {r.s >= 1 && <span className="ml-1 text-brand">✓</span>}
+          <li key={r.label} style={{ color: r.color }}>
+            <span className="block text-[13px] font-semibold leading-4">{r.label}</span>
+            <span className="num-lg">
+              {r.value}
+              <span className="ml-1 text-xs font-bold uppercase">{r.unit}</span>
+              {r.s >= 1 && <Check size={16} weight="bold" className="ml-1 inline align-[-1px]" />}
             </span>
           </li>
         ))}

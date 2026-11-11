@@ -39,7 +39,7 @@ export function WeightLog({ initial }: { initial: WeightEntry[] }) {
   return (
     <section className="card space-y-4">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-medium">Vikt</h2>
+        <h2 className="h-card">Vikt</h2>
         {latest && <p className="text-2xl font-semibold">{formatKg(latest.weight_kg)} <span className="text-base text-muted-foreground">kg</span></p>}
       </div>
       <Sparkline entries={entries} />

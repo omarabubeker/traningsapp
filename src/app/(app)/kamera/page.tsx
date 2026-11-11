@@ -6,6 +6,7 @@ import { bestSwedishVoice, loadSettings, onVoicesReady, saveSettings, speak, swe
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { NativeSelect } from "@/components/ui/native-select";
+import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 
 const ICON: Record<string, string> = { squat: "🏋️", lunge: "🦵", plank: "🧘", pushup: "💪", deadlift: "🏋️‍♂️" };
 
@@ -32,9 +33,9 @@ export default function KameraPage() {
   return (
     <main className="space-y-7 pt-3">
       <header className="flex items-center gap-3">
-        <Link href="/gym" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
+        <Link href="/gym" className="-ml-2 flex size-10 items-center justify-center rounded-full text-foreground active:bg-secondary" aria-label="Tillbaka"><CaretLeft size={22} weight="bold" /></Link>
         <div>
-          <h1 className="text-2xl font-semibold">Teknik med kamera</h1>
+          <h1 className="h-detail">Teknik med kamera</h1>
           <p className="text-xs text-muted-foreground">Allt analyseras i telefonen. Ingen bild eller video sparas eller skickas.</p>
         </div>
       </header>
@@ -54,7 +55,7 @@ export default function KameraPage() {
 
       {settings && (
         <section className="card space-y-4">
-          <h2 className="font-medium">Inställningar</h2>
+          <h2 className="h-card">Inställningar</h2>
           <div className="flex items-center justify-between gap-3">
             <label htmlFor="voice-on">Röstfeedback</label>
             <Switch id="voice-on" checked={settings.voice} onCheckedChange={(v) => update({ voice: v })} />

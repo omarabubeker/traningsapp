@@ -1,12 +1,14 @@
 "use client"
 
+import { useIsDark } from "@/lib/theme"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
 const Toaster = ({ ...props }: ToasterProps) => {
+  const dark = useIsDark()
   return (
     <Sonner
-      theme="dark"
+      theme={dark ? "dark" : "light"}
       position="top-center"
       offset={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
       mobileOffset={{ top: "calc(env(safe-area-inset-top) + 12px)" }}

@@ -97,7 +97,7 @@ export function CoachChat({ current, previous: prevInitial, configured }: Props)
   return (
     <main className="flex min-h-[calc(100dvh-6rem)] flex-col pt-4">
       <header className="mb-3 flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Coach</h1>
+        <h1 className="h-page">Coach</h1>
         <div className="flex gap-2">
           <Button asChild variant="secondary" size="sm"><Link href="/plan">Plan</Link></Button>
           <Button asChild variant="secondary" size="sm"><Link href="/coach/minne">Minne</Link></Button>

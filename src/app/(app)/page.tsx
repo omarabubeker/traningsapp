@@ -7,6 +7,8 @@ import { loadPlans } from "@/lib/coach/planData";
 import { daysToRace } from "@/lib/race";
 import { matchWatchToGym } from "@/lib/watchMerge";
 import { TodayPlan } from "@/components/TodayPlan";
+import { EmptyState, IconBadge, SectionHead, StatCard } from "@/components/CardParts";
+import { Barbell, CalendarCheck, PersonSimpleRun } from "@phosphor-icons/react/dist/ssr";
 import { GoalsSummary } from "@/components/goals/GoalsSummary";
 import { loadGoals } from "@/lib/goalsData";
 import { requireUser } from "@/lib/supabase/server";
@@ -75,24 +77,22 @@ export default async function Overview() {
           {formatDate(today + "T12:00:00Z", { weekday: "long", day: "numeric", month: "long" })}
           {raceDays > 0 && <> · <span className="text-foreground tabular-nums">{raceDays}</span> dagar till maran</>}
         </p>
-        <h1 className="text-2xl font-semibold">{greeting()}{name ? `, ${name}` : ""}</h1>
+        <h1 className="h-page">{greeting()}{name ? `, ${name}` : ""}</h1>
       </header>
 
       {active && (
-        <Link href={`/gym/${active.id}`} className="card flex items-center justify-between border-brand/50">
-          <span>
-            <span className="block font-medium">Pågående gympass</span>
-            <span className="text-sm text-muted-foreground">Startat {formatTime(active.started_at)}</span>
+        <Link href={`/gym/${active.id}`} className="card flex items-center gap-3 border-gym/50 py-4">
+          <IconBadge icon={Barbell} tone="gym" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">Pågående gympass</span>
+            <span className="block text-sm text-muted-foreground">Startat {formatTime(active.started_at)}</span>
           </span>
-          <span className="text-brand">Fortsätt →</span>
+          <span className="text-sm font-semibold text-brand">Fortsätt</span>
         </Link>
       )}
 
       <section className="space-y-3">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-sm font-medium text-muted-foreground">Idag</h2>
-          <Link href="/plan" className="text-sm text-brand">Hela veckan →</Link>
-        </div>
+        <SectionHead title="Idag" href="/plan" link="Hela veckan" />
         {todayItems.length > 0 ? (
           <TodayPlan items={todayItems} />
         ) : plans.length ? (
@@ -127,30 +127,31 @@ export default async function Overview() {
         </ol>
       </section>
 
-      <section className="grid grid-cols-3 gap-3">
-        <Stat label="Löpning" value={`${runKm.toLocaleString("sv-SE", { maximumFractionDigits: 1 })} km`} />
-        <Stat label="Gympass" value={String(sessions.length)} />
-        <Stat label="Gymvolym" value={`${formatKg(Math.round(volume / 100) / 10)} t`} />
+      <section className="grid grid-cols-2 gap-3">
+        <StatCard icon={PersonSimpleRun} tone="run" title="Löpning" value={runKm.toLocaleString("sv-SE", { maximumFractionDigits: 1 })} unit="km" sub="denna vecka" href="/lopning" />
+        <StatCard icon={Barbell} tone="gym" title="Gym" value={sessions.length} unit={sessions.length === 1 ? "pass" : "pass"} sub={`${formatKg(Math.round(volume / 100) / 10)} t lyft`} href="/gym" />
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Veckans pass</h2>
-        {sessions.length === 0 && shownActivities.length === 0 && <p className="card text-muted-foreground">Inga pass än den här veckan.</p>}
+        <h2 className="h-section">Veckans pass</h2>
+        {sessions.length === 0 && shownActivities.length === 0 && <EmptyState icon={CalendarCheck} title="Inga pass än den här veckan" />}
         {shownActivities.map((a) => (
           <ActivityRow key={a.id} a={a} />
         ))}
         {sessions.map((s) => (
-          <Link key={s.id} href={`/gym/${s.id}`} className="card flex items-center justify-between">
-            <span>
-              <span className="mr-2 inline-block h-2 w-2 rounded-full bg-gym align-middle" />
-              <span className="font-medium">Gym</span>
-              <span className="ml-2 text-sm text-muted-foreground">
+          <Link key={s.id} href={`/gym/${s.id}`} className="card flex items-center gap-3 py-4 active:bg-secondary">
+            <IconBadge icon={Barbell} tone="gym" />
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">Gym</span>
+              <span className="block text-sm text-muted-foreground">
                 {WEEKDAYS_SHORT[days.indexOf(s.day)]} {formatTime(s.started_at)}
               </span>
             </span>
-            <span className="text-right text-sm text-muted-foreground">
-              {new Set(s.gym_sets.map((x) => x.exercise_id)).size} övn · {s.gym_sets.length} set
-              {watchFor(s.id)?.avg_hr ? <span className="block text-xs">♥ {watchFor(s.id)!.avg_hr} · klockan</span> : null}
+            <span className="shrink-0 text-right tabular-nums">
+              <span className="block font-semibold">{s.gym_sets.length} set</span>
+              <span className="block text-sm text-muted-foreground">
+                {watchFor(s.id)?.avg_hr ? `♥ ${watchFor(s.id)!.avg_hr}` : `${new Set(s.gym_sets.map((x) => x.exercise_id)).size} övningar`}
+              </span>
             </span>
           </Link>
         ))}
@@ -161,11 +162,3 @@ export default async function Overview() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="card p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-xl font-semibold">{value}</p>
-    </div>
-  );
-}
