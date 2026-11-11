@@ -81,7 +81,7 @@ textarea {
 
 /* Enkelt kort för listor och sektioner (samma färger som shadcns Card). */
 @utility card {
-  @apply rounded-2xl border border-border bg-card p-4 text-card-foreground;
+  @apply rounded-2xl border border-border bg-card p-5 text-card-foreground;
 }
 @utility label {
   @apply mb-1 block text-sm text-muted-foreground;

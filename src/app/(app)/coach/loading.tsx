@@ -3,7 +3,7 @@ import { SkeletonPage } from "@/components/Skeletons";
 
 export default function Loading() {
   return (
-    <SkeletonPage className="space-y-4 pt-4">
+    <SkeletonPage className="space-y-6 pt-4">
       <div className="flex items-center justify-between">
         <Skeleton className="h-8 w-24" />
         <div className="flex gap-2">

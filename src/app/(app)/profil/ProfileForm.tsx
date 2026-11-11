@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 export function ProfileForm({ initial, userId }: { initial: Profile | null; userId: string }) {
   const [p, setP] = useState({
+    display_name: initial?.display_name ?? "",
     height_cm: initial?.height_cm?.toString() ?? "",
     birth_date: initial?.birth_date ?? "",
     resting_hr: initial?.resting_hr?.toString() ?? "",
@@ -29,6 +30,7 @@ export function ProfileForm({ initial, userId }: { initial: Profile | null; user
     setStatus("saving");
     const { error } = await supabaseBrowser().from("profile").upsert({
       user_id: userId,
+      display_name: p.display_name.trim() || null,
       height_cm: num(p.height_cm),
       birth_date: p.birth_date || null,
       resting_hr: num(p.resting_hr),
@@ -43,6 +45,10 @@ export function ProfileForm({ initial, userId }: { initial: Profile | null; user
   return (
     <form onSubmit={save} className="card space-y-4">
       <h2 className="font-medium">Om mig</h2>
+      <div>
+        <label className="label" htmlFor="name">Förnamn (för hälsningen)</label>
+        <Input id="name" autoComplete="given-name" maxLength={40} value={p.display_name} onChange={set("display_name")} />
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="label" htmlFor="height">Längd (cm)</label>

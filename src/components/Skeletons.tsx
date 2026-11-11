@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 /** Laddningsplattor: grå platshållare i samma form som sidorna, så att inget hoppar när datan kommer. */
 
-export function SkeletonPage({ children, className = "space-y-5 pt-4" }: { children: React.ReactNode; className?: string }) {
+export function SkeletonPage({ children, className = "space-y-7 pt-4" }: { children: React.ReactNode; className?: string }) {
   return (
     <main className={className} aria-busy="true" aria-label="Laddar">
       {children}

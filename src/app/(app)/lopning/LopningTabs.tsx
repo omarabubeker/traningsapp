@@ -9,15 +9,15 @@ export function LopningTabs({ initial, pass, utveckling }: { initial: LopningTab
   return (
     <Tabs
       defaultValue={initial}
-      onValueChange={(v) => window.history.replaceState(null, "", v === "utveckling" ? "/lopning?flik=utveckling" : "/lopning")}
+      onValueChange={(v) => window.history.replaceState(null, "", v === "pass" ? "/lopning?flik=pass" : "/lopning")}
       className="gap-4"
     >
       <TabsList className="w-full">
-        <TabsTrigger value="pass">Pass</TabsTrigger>
         <TabsTrigger value="utveckling">Utveckling</TabsTrigger>
+        <TabsTrigger value="pass">Pass</TabsTrigger>
       </TabsList>
-      <TabsContent value="pass" className="space-y-2">{pass}</TabsContent>
-      <TabsContent value="utveckling" className="space-y-5">{utveckling}</TabsContent>
+      <TabsContent value="utveckling" className="space-y-6">{utveckling}</TabsContent>
+      <TabsContent value="pass" className="space-y-3">{pass}</TabsContent>
     </Tabs>
   );
 }

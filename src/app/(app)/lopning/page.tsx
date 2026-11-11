@@ -58,7 +58,7 @@ export default async function LopningPage({ searchParams }: { searchParams: Prom
     .map((a) => ({ t: Date.parse(a.start_time), value: Number(a.avg_hr), label: label(a) }));
 
   return (
-    <main className="space-y-4 pt-4">
+    <main className="space-y-6 pt-4">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Löpning</h1>
@@ -70,7 +70,7 @@ export default async function LopningPage({ searchParams }: { searchParams: Prom
       </header>
 
       <LopningTabs
-        initial={flik === "utveckling" ? "utveckling" : "pass"}
+        initial={flik === "pass" ? "pass" : "utveckling"}
         pass={
           <>
             {all.length === 0 && (

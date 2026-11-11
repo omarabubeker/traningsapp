@@ -21,14 +21,14 @@ export default async function MalPage() {
   const raceDays = daysToRace(g.today);
 
   return (
-    <main className="space-y-6 pt-3">
+    <main className="space-y-7 pt-3">
       <header className="flex items-center gap-3">
         <Link href="/" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
         <h1 className="text-2xl font-semibold">Mål och rekord</h1>
       </header>
 
       {/* Vägen till maran */}
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground">Vägen till maran</h2>
         <div className="card space-y-4">
           <div className="space-y-2">
@@ -65,7 +65,7 @@ export default async function MalPage() {
       </section>
 
       {/* Veckan och sviten */}
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground">Veckosvit</h2>
         <div className="card space-y-4">
           {g.rings && <WeekRings rings={g.rings} />}
@@ -107,7 +107,7 @@ export default async function MalPage() {
 function Records({ title, items }: { title: string; items: RecordItem[] }) {
   if (!items.length) return null;
   return (
-    <section className="space-y-2">
+    <section className="space-y-3">
       <h2 className="text-sm font-medium text-muted-foreground">{title}</h2>
       <ul className="card divide-y divide-border p-0">
         {items.map((r) => {

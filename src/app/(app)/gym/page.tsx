@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
 import { StartSessionButton } from "@/components/StartSessionButton";
-import { formatDate, formatKg, formatTime } from "@/lib/dates";
-import { bestSet } from "@/lib/gym";
+import { formatDate, formatKg, formatTime, isoDay } from "@/lib/dates";
+import { bestSet, e1rm } from "@/lib/gym";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
@@ -28,19 +28,36 @@ export default async function GymPage() {
     .eq("archived", false)
     .order("name");
   type Ex = { id: string; name: string; is_bodyweight: boolean; gym_sets: { reps: number; weight_kg: number; is_warmup: boolean; created_at: string }[] };
+  const DAY = 864e5;
+  const now = Date.parse(isoDay() + "T12:00:00Z");
   const exercises = ((exData ?? []) as Ex[])
-    .map((e) => ({ ...e, gym_sets: e.gym_sets ?? [] }))
+    .map((e) => ({ ...e, gym_sets: (e.gym_sets ?? []).filter((x) => !x.is_warmup) }))
     .filter((e) => e.gym_sets.length)
     .map((e) => {
-      const latest = [...e.gym_sets].sort((a, b) => b.created_at.localeCompare(a.created_at));
-      const lastDay = latest[0]?.created_at.slice(0, 10);
-      return { ...e, last: latest[0]?.created_at, best: bestSet(latest.filter((x) => x.created_at.slice(0, 10) === lastDay), e.is_bodyweight) };
+      // Bästa set per träningsdag → poäng (uppskattat 1RM, eller reps för kroppsvikt)
+      const byDay = new Map<string, typeof e.gym_sets>();
+      for (const x of e.gym_sets) byDay.set(x.created_at.slice(0, 10), [...(byDay.get(x.created_at.slice(0, 10)) ?? []), x]);
+      const days = [...byDay.keys()].sort();
+      const bw = e.is_bodyweight && e.gym_sets.every((x) => Number(x.weight_kg) === 0);
+      const score = (x: { reps: number; weight_kg: number }) => (bw ? x.reps : e1rm(Number(x.weight_kg), x.reps));
+      const points = days.map((d) => {
+        const b = bestSet(byDay.get(d)!, e.is_bodyweight)!;
+        return { day: d, best: b, score: score(b) };
+      });
+      const last = points.at(-1)!;
+      const monthAgo = [...points].reverse().find((p) => Date.parse(p.day) <= now - 28 * DAY);
+      const change = monthAgo ? last.score - monthAgo.score : null;
+      return { id: e.id, name: e.name, bw, last, points: points.slice(-8), change, sessions: points.length };
     })
-    .sort((a, b) => (b.last ?? "").localeCompare(a.last ?? ""));
+    .sort((a, b) => b.last.day.localeCompare(a.last.day));
+  const ago = (day: string) => {
+    const d = Math.round((now - Date.parse(day + "T12:00:00Z")) / DAY);
+    return d <= 0 ? "idag" : d === 1 ? "igår" : d < 7 ? `${d} dagar sedan` : d < 14 ? "förra veckan" : `${Math.round(d / 7)} veckor sedan`;
+  };
   const active = sessions.find((s) => !s.ended_at);
 
   return (
-    <main className="space-y-5 pt-4">
+    <main className="space-y-7 pt-4">
       <h1 className="text-2xl font-semibold">Gym</h1>
 
       {active ? (
@@ -58,22 +75,42 @@ export default async function GymPage() {
       </Link>
 
       {exercises.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-medium text-muted-foreground">Övningar och utveckling</h2>
-          <div className="card divide-y divide-line p-0">
-            {exercises.map((e) => (
-              <Link key={e.id} href={`/gym/ovning/${e.id}`} className="flex items-center justify-between px-4 py-3">
-                <span>{e.name}</span>
-                <span className="text-sm text-muted-foreground tabular-nums">
-                  {e.best ? `${formatKg(e.best.weight_kg)} kg × ${e.best.reps}` : ""} →
-                </span>
-              </Link>
-            ))}
+        <section className="space-y-3">
+          <div>
+            <h2 className="font-medium">Dina övningar</h2>
+            <p className="text-sm text-muted-foreground">Tryck på en övning för att se hela utvecklingen.</p>
           </div>
+          <ul className="space-y-3">
+            {exercises.map((e) => (
+              <li key={e.id}>
+                <Link href={`/gym/ovning/${e.id}`} className="card flex items-center gap-4 active:bg-surface-2">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{e.name}</span>
+                    <span className="block text-sm text-muted-foreground tabular-nums">
+                      {e.bw ? `${e.last.best.reps} reps` : `${formatKg(Number(e.last.best.weight_kg))} kg × ${e.last.best.reps}`} · {ago(e.last.day)}
+                    </span>
+                  </span>
+                  {e.points.length > 1 && <Sparkline values={e.points.map((p) => p.score)} />}
+                  <span className="w-14 shrink-0 text-right text-sm tabular-nums">
+                    {e.change == null ? (
+                      <span className="text-xs text-muted-foreground">{e.sessions} pass</span>
+                    ) : e.change > 0.5 ? (
+                      <span className="text-brand">↑ {e.bw ? Math.round(e.change) : formatKg(Math.round(e.change * 2) / 2)}{e.bw ? "" : " kg"}</span>
+                    ) : e.change < -0.5 ? (
+                      <span className="text-muted-foreground">↓ {e.bw ? Math.round(-e.change) : formatKg(Math.round(-e.change * 2) / 2)}{e.bw ? "" : " kg"}</span>
+                    ) : (
+                      <span className="text-muted-foreground">→ stabil</span>
+                    )}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">Kurvan visar bästa set de senaste passen. Pilen jämför med för en månad sedan (uppskattat 1RM).</p>
         </section>
       )}
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground">Senaste passen</h2>
         {sessions.length === 0 && <p className="card text-muted-foreground">Inga pass loggade än.</p>}
         {sessions.map((s) => {
@@ -94,5 +131,21 @@ export default async function GymPage() {
         })}
       </section>
     </main>
+  );
+}
+
+/** Liten trendkurva (bästa set per pass). */
+function Sparkline({ values }: { values: number[] }) {
+  const [w, h, pad] = [64, 28, 3];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const pts = values.map((v, i) => [pad + (i * (w - 2 * pad)) / (values.length - 1), max > min ? h - pad - ((v - min) * (h - 2 * pad)) / (max - min) : h / 2] as const);
+  const d = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const [lx, ly] = pts.at(-1)!;
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="shrink-0" aria-hidden>
+      <path d={d} fill="none" stroke="var(--color-gym)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" strokeOpacity={0.85} />
+      <circle cx={lx} cy={ly} r={2.5} fill="var(--color-gym)" />
+    </svg>
   );
 }

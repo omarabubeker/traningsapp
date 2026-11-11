@@ -15,7 +15,7 @@ export default async function ProfilPage() {
   ]);
 
   return (
-    <main className="space-y-6 pt-4">
+    <main className="space-y-7 pt-4">
       <h1 className="text-2xl font-semibold">Profil</h1>
       <WeightLog initial={(weights ?? []) as WeightEntry[]} />
       <ProfileForm initial={profile as Profile | null} userId={user.id} />

@@ -14,7 +14,7 @@ export function GoalsSummary({ goals }: { goals: Goals }) {
   const done = goals.milestones.filter((m) => m.day).length;
   const next = goals.milestones.find((m) => !m.day);
   return (
-    <section className="space-y-2">
+    <section className="space-y-3">
       <div className="flex items-baseline justify-between">
         <h2 className="text-sm font-medium text-muted-foreground">Veckans mål</h2>
         <Link href="/mal" className="text-sm text-brand">Mål och rekord →</Link>
