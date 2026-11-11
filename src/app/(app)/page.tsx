@@ -6,11 +6,11 @@ import type { Activity } from "@/lib/types";
 import { loadPlans } from "@/lib/coach/planData";
 import { daysToRace } from "@/lib/race";
 import { matchWatchToGym } from "@/lib/watchMerge";
-import { PlanItemCard } from "@/components/PlanItemCard";
+import { TodayPlan } from "@/components/TodayPlan";
 import { GoalsSummary } from "@/components/goals/GoalsSummary";
 import { loadGoals } from "@/lib/goalsData";
 import { requireUser } from "@/lib/supabase/server";
-import { WEEKDAYS_SHORT, formatKg, formatTime, isoDay, weekNumber, weekRange } from "@/lib/dates";
+import { WEEKDAYS_SHORT, formatDate, formatKg, formatTime, greeting, isoDay, weekRange } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +22,7 @@ type Row = {
 };
 
 export default async function Overview() {
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   const { days, today, from, to } = weekRange();
   const raceDays = daysToRace(today);
 
@@ -46,7 +46,12 @@ export default async function Overview() {
     .filter((a) => days.includes(a.day));
   const runKm = activities.filter((a) => isRun(a.sport_type)).reduce((s, a) => s + (a.distance_m ?? 0) / 1000, 0);
 
-  const [{ plans }, goals] = await Promise.all([loadPlans(supabase), loadGoals(supabase)]);
+  const [{ plans }, goals, { data: prof }] = await Promise.all([
+    loadPlans(supabase),
+    loadGoals(supabase),
+    supabase.from("profile").select("display_name").eq("user_id", user.id).maybeSingle(),
+  ]);
+  const name = (prof as { display_name: string | null } | null)?.display_name?.trim();
   const todayItems = plans.flatMap((p) => p.items).filter((i) => i.date === today);
   const nextItem = plans.flatMap((p) => p.items).find((i) => i.date > today && i.kind !== "rest");
 
@@ -64,18 +69,13 @@ export default async function Overview() {
   const active = sessions.find((s) => !s.ended_at);
 
   return (
-    <main className="space-y-5 pt-4">
-      <header className="flex items-end justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">Vecka {weekNumber(today)}</p>
-          <h1 className="text-2xl font-semibold">Översikt</h1>
-        </div>
-        {raceDays > 0 && (
-          <p className="text-right text-sm leading-tight">
-            <span className="block text-xl font-semibold tabular-nums">{raceDays}</span>
-            <span className="text-muted-foreground">dagar till maran</span>
-          </p>
-        )}
+    <main className="space-y-7 pt-4">
+      <header>
+        <p className="inline-block text-sm text-muted-foreground first-letter:uppercase">
+          {formatDate(today + "T12:00:00Z", { weekday: "long", day: "numeric", month: "long" })}
+          {raceDays > 0 && <> · <span className="text-foreground tabular-nums">{raceDays}</span> dagar till maran</>}
+        </p>
+        <h1 className="text-2xl font-semibold">{greeting()}{name ? `, ${name}` : ""}</h1>
       </header>
 
       {active && (
@@ -88,13 +88,13 @@ export default async function Overview() {
         </Link>
       )}
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-sm font-medium text-muted-foreground">Idag enligt planen</h2>
+          <h2 className="text-sm font-medium text-muted-foreground">Idag</h2>
           <Link href="/plan" className="text-sm text-brand">Hela veckan →</Link>
         </div>
         {todayItems.length > 0 ? (
-          todayItems.map((it) => <PlanItemCard key={it.id} item={it} status={it.status} doneDay={it.doneDay} showDate={false} />)
+          <TodayPlan items={todayItems} />
         ) : plans.length ? (
           <p className="card text-sm text-muted-foreground">
             Inget planerat idag.{nextItem ? ` Nästa: ${nextItem.title}.` : ""}
@@ -133,7 +133,7 @@ export default async function Overview() {
         <Stat label="Gymvolym" value={`${formatKg(Math.round(volume / 100) / 10)} t`} />
       </section>
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground">Veckans pass</h2>
         {sessions.length === 0 && shownActivities.length === 0 && <p className="card text-muted-foreground">Inga pass än den här veckan.</p>}
         {shownActivities.map((a) => (

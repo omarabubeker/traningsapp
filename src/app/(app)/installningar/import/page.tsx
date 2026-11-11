@@ -64,7 +64,7 @@ export default function ImportPage() {
   }
 
   return (
-    <main className="space-y-5 pt-3">
+    <main className="space-y-7 pt-3">
       <header className="flex items-center gap-3">
         <Link href="/installningar" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
         <h1 className="text-xl font-semibold">Importera från Apple Hälsa</h1>

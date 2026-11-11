@@ -53,3 +53,13 @@ export function ageFrom(birthDate: string | null): number | null {
 export function formatKg(n: number) {
   return Number(n).toLocaleString("sv-SE", { maximumFractionDigits: 2 });
 }
+
+/** Hälsning efter tid på dygnet (svensk tid). */
+export function greeting(now: Date = new Date()) {
+  const h = Number(new Intl.DateTimeFormat("sv-SE", { timeZone: TZ, hour: "2-digit", hour12: false }).format(now));
+  if (h >= 5 && h < 10) return "God morgon";
+  if (h >= 10 && h < 12) return "God förmiddag";
+  if (h >= 12 && h < 18) return "God eftermiddag";
+  if (h >= 18 && h < 23) return "God kväll";
+  return "God natt";
+}

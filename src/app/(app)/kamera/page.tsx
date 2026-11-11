@@ -30,7 +30,7 @@ export default function KameraPage() {
   const best = bestSwedishVoice(null);
 
   return (
-    <main className="space-y-5 pt-3">
+    <main className="space-y-7 pt-3">
       <header className="flex items-center gap-3">
         <Link href="/gym" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
         <div>
@@ -39,7 +39,7 @@ export default function KameraPage() {
         </div>
       </header>
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         {MOVEMENT_LIST.map((m) => (
           <Link key={m.key} href={`/kamera/${m.key}`} className="card flex items-start gap-3">
             <span className="text-2xl" aria-hidden>{ICON[m.key]}</span>

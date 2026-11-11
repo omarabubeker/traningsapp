@@ -27,7 +27,7 @@ export default async function Installningar() {
   const last = state?.last_result as { fetched?: number; created?: number } | null;
 
   return (
-    <main className="space-y-5 pt-3">
+    <main className="space-y-7 pt-3">
       <header className="flex items-center gap-3">
         <Link href="/profil" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
         <h1 className="text-2xl font-semibold">Inställningar</h1>

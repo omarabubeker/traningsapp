@@ -8,6 +8,8 @@ import type { Conversation } from "@/lib/coach/conversation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { confirmDialog } from "@/components/ConfirmDialog";
+import { ZapIcon } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export type ChatMessage = { id: string; role: "user" | "assistant"; kind: "chat" | "weekly"; content: string; created_at: string };
 
@@ -129,11 +131,20 @@ export function CoachChat({ current, previous: prevInitial, configured }: Props)
         </div>
       )}
 
-      <section className="flex-1 space-y-3 pb-40">
+      <section className="flex-1 space-y-4 pb-32">
         {messages.length === 0 && (
-          <p className="card text-sm text-muted-foreground">
-            Fråga coachen om din träning, berätta hur du mår, eller tryck på Veckoavstämning för att få nästa veckas plan.
-          </p>
+          <div className="card space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Fråga coachen om din träning, berätta hur du mår, eller tryck på Veckoavstämning för att få nästa veckas plan.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {QUICK.map((q) => (
+                <button key={q} onClick={() => send(q)} disabled={!!busy || !configured} className="rounded-full border border-line px-3.5 py-2 text-sm active:bg-surface-2 disabled:opacity-50">
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
         {messages.map((m) =>
           m.role === "user" ? (
@@ -151,21 +162,29 @@ export function CoachChat({ current, previous: prevInitial, configured }: Props)
       </section>
 
       <div className="chat-composer fixed inset-x-0 bottom-[calc(3.4rem+max(env(safe-area-inset-bottom),0.75rem))] z-10 border-t border-line bg-bg/95 pb-2 backdrop-blur">
-        <div className="mx-auto max-w-md space-y-2 px-4 pt-2">
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-            {QUICK.map((q) => (
-              <button key={q} onClick={() => send(q)} disabled={!!busy || !configured} className="shrink-0 rounded-full border border-line px-3 py-1.5 text-sm text-muted-foreground active:bg-surface-2 disabled:opacity-50">
-                {q}
-              </button>
-            ))}
-          </div>
+        <div className="mx-auto max-w-md px-4 pt-3 pb-1">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               send(input);
             }}
-            className="flex gap-2"
+            className="flex items-center gap-2"
           >
+            {messages.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" aria-label="Snabbsvar" disabled={!!busy || !configured}>
+                    <ZapIcon className="size-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="top" align="start" className="min-w-56">
+                  <DropdownMenuLabel>Snabbsvar</DropdownMenuLabel>
+                  {QUICK.map((q) => (
+                    <DropdownMenuItem key={q} onSelect={() => send(q)} className="px-3 py-2.5 text-base">{q}</DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}

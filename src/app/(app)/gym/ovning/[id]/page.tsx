@@ -39,7 +39,7 @@ export default async function OvningPage({ params }: { params: Promise<{ id: str
   const best = points.reduce<TrendPoint | null>((m, p) => (!m || p.value > m.value ? p : m), null);
 
   return (
-    <main className="space-y-5 pt-3">
+    <main className="space-y-7 pt-3">
       <header className="flex items-center gap-3">
         <Link href="/gym" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
         <div>
@@ -57,7 +57,7 @@ export default async function OvningPage({ params }: { params: Promise<{ id: str
         {usesWeight && <p className="mt-2 text-xs text-muted-foreground">Räknat från bästa arbetssetet varje pass (vikt × (1 + reps/30)).</p>}
       </section>
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground">Alla pass</h2>
         {sessions.length === 0 && <p className="card text-sm text-muted-foreground">Inga set loggade än.</p>}
         {[...sessions].reverse().map((s) => (

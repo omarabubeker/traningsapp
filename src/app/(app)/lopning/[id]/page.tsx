@@ -30,10 +30,17 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
         { ...s, pace_s: Math.round(s.pace_s / factor), label: ((ends[i] * factor) / 1000).toFixed(2).replace(".", ",") },
   );
   const full = splits.filter((s) => s.dist_m >= 900);
+  const paces = full.map((s) => s.pace_s);
+  const [minP, maxP] = [Math.min(...paces), Math.max(...paces)];
+  // Stapelns längd: snabbaste split 100 %, långsammaste 45 %.
+  const barWidth = (p: number) => (maxP > minP ? 45 + (55 * (maxP - Math.min(p, maxP))) / (maxP - minP) : 80);
+  const { data: prof } = await supabase.from("profile").select("max_hr").maybeSingle();
+  const maxHr = (prof as { max_hr: number | null } | null)?.max_hr ?? null;
+  const zone = a.avg_hr && maxHr ? hrZone(a.avg_hr, maxHr) : null;
   const fastest = full.length > 1 && new Set(full.map((s) => s.pace_s)).size > 1 ? Math.min(...full.map((s) => s.pace_s)) : null;
 
   return (
-    <main className="space-y-5 pt-3">
+    <main className="space-y-7 pt-3">
       <header className="flex items-center gap-3">
         <Link href="/lopning" className="-ml-2 px-2 py-2 text-muted-foreground" aria-label="Tillbaka">←</Link>
         <div className="flex-1">
@@ -46,13 +53,32 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
         <ActivityMenu id={a.id} />
       </header>
 
-      <section className="grid grid-cols-3 gap-3">
-        <Stat label="Distans" value={a.distance_m ? `${formatKm(a.distance_m)} km` : "–"} />
-        <Stat label="Tid" value={formatDuration(a.moving_time_s ?? a.elapsed_time_s)} />
-        <Stat label={run ? "Tempo" : "Snittfart"} value={run ? `${formatPace(a.avg_pace_s_per_km)}/km` : a.distance_m && a.moving_time_s ? `${((a.distance_m / a.moving_time_s) * 3.6).toFixed(1)} km/h` : "–"} />
-        <Stat label="Snittpuls" value={a.avg_hr ? `${a.avg_hr}` : "–"} />
-        <Stat label="Maxpuls" value={a.max_hr ? `${a.max_hr}` : "–"} />
-        <Stat label="Höjdmeter" value={a.elevation_gain_m != null ? `${Math.round(a.elevation_gain_m)} m` : "–"} />
+      <section className="card space-y-5">
+        <div>
+          <p className="text-xs text-muted-foreground">Distans</p>
+          <p className="text-4xl font-semibold tracking-tight tabular-nums">
+            {a.distance_m ? formatKm(a.distance_m) : "–"}
+            <span className="ml-1 text-lg font-normal text-muted-foreground">km</span>
+          </p>
+        </div>
+        <div className="grid grid-cols-3 divide-x divide-border">
+          <Big label="Tid" value={formatDuration(a.moving_time_s ?? a.elapsed_time_s)} />
+          <Big
+            label={run ? "Tempo" : "Snittfart"}
+            value={run ? formatPace(a.avg_pace_s_per_km) : a.distance_m && a.moving_time_s ? ((a.distance_m / a.moving_time_s) * 3.6).toFixed(1).replace(".", ",") : "–"}
+            unit={run ? "/km" : "km/h"}
+          />
+          <Big label="Snittpuls" value={a.avg_hr ? String(a.avg_hr) : "–"} unit={a.avg_hr ? "bpm" : undefined} />
+        </div>
+        {zone && <HrZones avg={a.avg_hr!} max={maxHr!} zone={zone} />}
+        <p className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-4 text-sm text-muted-foreground">
+          {a.max_hr ? <span>Maxpuls <span className="text-foreground">{a.max_hr}</span></span> : null}
+          {a.elevation_gain_m != null ? <span>Höjdmeter <span className="text-foreground">{Math.round(a.elevation_gain_m)} m</span></span> : null}
+          {a.calories ? <span>Energi <span className="text-foreground">{a.calories} kcal</span></span> : null}
+          {a.moving_time_s && a.elapsed_time_s && a.elapsed_time_s - a.moving_time_s > 60 ? (
+            <span>Total tid <span className="text-foreground">{formatDuration(a.elapsed_time_s)}</span></span>
+          ) : null}
+        </p>
       </section>
 
       {a.route && a.route.length > 1 && (
@@ -62,28 +88,27 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
       )}
 
       {splits.length > 0 && (
-        <section className="card">
-          <h2 className="mb-2 text-sm text-muted-foreground">Splits</h2>
-          <table className="w-full text-sm tabular-nums">
-            <thead className="text-xs text-muted-foreground">
-              <tr>
-                <th className="py-1 text-left font-normal">{factor === 1 ? "Km" : "Vid km"}</th>
-                <th className="text-right font-normal">Tempo</th>
-                <th className="text-right font-normal">Puls</th>
-                <th className="text-right font-normal">Höjd</th>
-              </tr>
-            </thead>
-            <tbody>
-              {splits.map((s) => (
-                <tr key={s.km} className="border-t border-line">
-                  <td className="py-2">{s.label}</td>
-                  <td className={`text-right ${s.pace_s === fastest ? "text-brand" : ""}`}>{formatPace(s.pace_s)}</td>
-                  <td className="text-right text-muted-foreground">{s.hr ?? "–"}</td>
-                  <td className="text-right text-muted-foreground">{s.elev_m != null ? `+${s.elev_m}` : "–"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <section className="card space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-sm text-muted-foreground">Tempo per {factor === 1 ? "km" : "split"}</h2>
+            <span className="text-xs text-muted-foreground">längre stapel = snabbare</span>
+          </div>
+          <ol className="space-y-1.5 text-sm tabular-nums">
+            {splits.map((s) => (
+              <li key={s.km} className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center gap-3">
+                <span className="text-muted-foreground">{s.label}</span>
+                <span className="relative h-7 overflow-hidden rounded-md bg-muted">
+                  <span
+                    className={`absolute inset-y-0 left-0 rounded-md ${s.pace_s === fastest ? "bg-brand/80" : "bg-run/45"}`}
+                    style={{ width: `${barWidth(s.pace_s)}%` }}
+                  />
+                  <span className="relative flex h-full items-center px-2 font-medium">{formatPace(s.pace_s)}</span>
+                </span>
+                <span className="text-right text-xs text-muted-foreground">{s.hr ?? "–"}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="text-right text-xs text-muted-foreground">puls per {factor === 1 ? "km" : "split"} till höger</p>
         </section>
       )}
 
@@ -98,11 +123,54 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Big({ label, value, unit }: { label: string; value: string; unit?: string }) {
   return (
-    <div className="card p-3">
+    <div className="px-3 first:pl-0 last:pr-0">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-lg font-semibold">{value}</p>
+      <p className="text-xl font-semibold tabular-nums">
+        {value}
+        {unit && <span className="ml-0.5 text-xs font-normal text-muted-foreground">{unit}</span>}
+      </p>
+    </div>
+  );
+}
+
+// Pulszoner som andel av maxpuls (enkel femzonsmodell).
+const ZONES = [
+  { name: "Zon 1", desc: "återhämtning", to: 0.6, color: "#6b7a86" },
+  { name: "Zon 2", desc: "lugn distans", to: 0.7, color: "var(--color-run)" },
+  { name: "Zon 3", desc: "medel", to: 0.8, color: "var(--color-brand)" },
+  { name: "Zon 4", desc: "tröskel", to: 0.9, color: "var(--color-gym)" },
+  { name: "Zon 5", desc: "max", to: 1.0, color: "var(--color-danger)" },
+];
+const ZONE_FROM = 0.5; // stapeln börjar vid 50 % av maxpuls
+
+function hrZone(avg: number, max: number) {
+  const share = avg / max;
+  return { share, ...(ZONES.find((z) => share < z.to) ?? ZONES[4]) };
+}
+
+function HrZones({ avg, max, zone }: { avg: number; max: number; zone: ReturnType<typeof hrZone> }) {
+  const pos = Math.max(0, Math.min(1, (zone.share - ZONE_FROM) / (1 - ZONE_FROM))) * 100;
+  return (
+    <div className="space-y-2">
+      <p className="text-sm">
+        <span className="font-medium">{zone.name}</span>
+        <span className="text-muted-foreground"> · {zone.desc} · {Math.round(zone.share * 100)} % av maxpuls ({max})</span>
+      </p>
+      <div className="relative pt-1">
+        <div className="flex h-2 gap-0.5 overflow-hidden rounded-full">
+          {ZONES.map((z, i) => {
+            const from = i === 0 ? ZONE_FROM : ZONES[i - 1].to;
+            return <span key={z.name} style={{ flex: `${Math.round((z.to - from) * 100)} 1 0%`, background: z.color, opacity: z.name === zone.name ? 1 : 0.3 }} />;
+          })}
+        </div>
+        <span
+          className="absolute top-0 size-4 -translate-x-1/2 rounded-full border-2 border-background"
+          style={{ left: `${pos}%`, background: zone.color }}
+          aria-label={`Snittpuls ${avg}`}
+        />
+      </div>
     </div>
   );
 }

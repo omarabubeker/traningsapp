@@ -3,7 +3,7 @@ import { SkeletonBackHeader, SkeletonPage, SkeletonStats } from "@/components/Sk
 
 export default function Loading() {
   return (
-    <SkeletonPage className="space-y-5 pt-3">
+    <SkeletonPage className="space-y-7 pt-3">
       <SkeletonBackHeader />
       <SkeletonStats count={6} />
       <div className="card p-2">

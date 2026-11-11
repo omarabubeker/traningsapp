@@ -1,5 +1,6 @@
 export type Profile = {
   user_id: string;
+  display_name: string | null;
   height_cm: number | null;
   birth_date: string | null;
   resting_hr: number | null;

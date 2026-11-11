@@ -2,7 +2,7 @@ import { SkeletonBackHeader, SkeletonChart, SkeletonPage, SkeletonRows, Skeleton
 
 export default function Loading() {
   return (
-    <SkeletonPage className="space-y-5 pt-3">
+    <SkeletonPage className="space-y-7 pt-3">
       <SkeletonBackHeader />
       <SkeletonChart />
       <div className="space-y-2">

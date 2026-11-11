@@ -3,7 +3,7 @@ import { SkeletonBackHeader, SkeletonPage, SkeletonRows, SkeletonSectionLabel } 
 
 export default function Loading() {
   return (
-    <SkeletonPage className="space-y-6 pt-3">
+    <SkeletonPage className="space-y-7 pt-3">
       <SkeletonBackHeader sub={false} />
       <div className="space-y-2">
         <SkeletonSectionLabel />
