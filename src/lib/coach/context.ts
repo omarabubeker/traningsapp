@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ageFrom, formatDate, isoDay, weekNumber } from "../dates";
 import { applyOverride, formatDuration, formatPace, isRun, SPORT_LABEL } from "../running";
-import { intervalsConfigured, listWellness } from "../intervals";
+import { getIntervalsCreds, listWellness } from "../intervals";
 import { matchWeek } from "./plan";
 import { doneSessions } from "../sessions";
 import { daysTo, distanceLabel, formatTime as raceTime, goalPace, type Goal } from "../goalDef";
@@ -228,9 +228,11 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
   }
 
   // --- Återhämtning från klockan (intervals.icu wellness) ------------------------
-  if (intervalsConfigured()) {
+  const { data: who } = await supabase.auth.getClaims();
+  const creds = await getIntervalsCreds(supabase, who?.claims?.email as string | undefined);
+  if (creds) {
     try {
-      const well = await listWellness(addDays(today, -13), today);
+      const well = await listWellness(creds, addDays(today, -13), today);
       const withData = well.filter((w) => w.restingHR || w.hrv || w.sleepSecs);
       if (withData.length) {
         const avg = (xs: (number | null)[]) => {

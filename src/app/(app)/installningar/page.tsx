@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
-import { intervalsConfigured } from "@/lib/intervals";
+import { getIntervalsCreds } from "@/lib/intervals";
+import { WatchConnect, type WatchStatus } from "@/components/WatchConnect";
 import { formatDate, formatTime } from "@/lib/dates";
 import { SyncButton } from "@/components/SyncButton";
 import { USD_TO_SEK } from "@/lib/coach/pricing";
@@ -10,7 +11,7 @@ import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 export const dynamic = "force-dynamic";
 
 export default async function Installningar() {
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const prevStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
@@ -24,7 +25,14 @@ export default async function Installningar() {
   const cur = rows.filter((r) => r.thisMonth);
   const byKind = (k: string) => cur.filter((r) => r.kind === k);
   const money = (usd: number) => `${(usd * USD_TO_SEK).toLocaleString("sv-SE", { maximumFractionDigits: 2 })} kr`;
-  const configured = intervalsConfigured();
+  const [{ data: conn }, creds] = await Promise.all([
+    supabase.from("watch_connections").select("athlete_id, athlete_name, brand").maybeSingle(),
+    getIntervalsCreds(supabase, user.email),
+  ]);
+  const configured = !!creds;
+  const watch: WatchStatus = conn
+    ? { source: "own", athleteId: conn.athlete_id, name: conn.athlete_name, brand: conn.brand }
+    : { source: creds ? "env" : null };
   const last = state?.last_result as { fetched?: number; created?: number } | null;
 
   return (
@@ -40,7 +48,7 @@ export default async function Installningar() {
             <h2 className="h-card">Klockan (intervals.icu)</h2>
             <p className="text-sm text-muted-foreground">
               {!configured
-                ? "Inte kopplad – lägg in INTERVALS_API_KEY och INTERVALS_ATHLETE_ID i Vercel."
+                ? "Inte kopplad än – följ stegen nedan."
                 : state?.last_sync_at
                   ? `Senast synkad ${formatDate(state.last_sync_at, { day: "numeric", month: "short" })} ${formatTime(state.last_sync_at)}${last?.fetched != null ? ` · ${last.fetched} pass i perioden` : ""}`
                   : "Kopplad, inte synkad än."}
@@ -48,8 +56,9 @@ export default async function Installningar() {
           </div>
           {configured && <SyncButton />}
         </div>
+        <WatchConnect status={watch} />
         <p className="text-xs text-muted-foreground">
-          Synkar automatiskt när du öppnar appen (högst var 10:e minut). Nya pass kommer via Apple Hälsa → Intervals.icu Companion → intervals.icu.
+          Synkar automatiskt när du öppnar appen (högst var 10:e minut). Passen går från klockan till intervals.icu och sedan hit.
         </p>
       </section>
 

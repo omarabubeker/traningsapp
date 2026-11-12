@@ -1,4 +1,5 @@
 import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { TrackPoint } from "./running";
 
 // Klient för intervals.icu (personlig API-nyckel, Basic auth "API_KEY:<nyckel>").
@@ -6,22 +7,37 @@ import type { TrackPoint } from "./running";
 
 const BASE = process.env.INTERVALS_BASE_URL ?? "https://intervals.icu/api/v1"; // går att peka om vid test
 
-export function intervalsConfigured() {
-  return !!process.env.INTERVALS_API_KEY && !!process.env.INTERVALS_ATHLETE_ID;
+/** En persons koppling till intervals.icu. */
+export type IntervalsCreds = { athleteId: string; apiKey: string };
+
+/** "12345" eller "i12345" → "i12345" (ofta glöms "i" bort). */
+export function normalizeAthleteId(id: string) {
+  const t = id.trim();
+  return /^i/i.test(t) ? "i" + t.slice(1) : `i${t}`;
 }
 
-function athleteId() {
-  const id = process.env.INTERVALS_ATHLETE_ID!.trim();
-  return /^i/i.test(id) ? id : `i${id}`; // ofta glöms "i" bort
+/**
+ * Den inloggades koppling: egen nyckel (krypterad i Supabase Vault) i första hand.
+ * Reserv för appens ägare: nyckeln i Vercels miljövariabler, tills den lagts in i appen.
+ */
+export async function getIntervalsCreds(supabase: SupabaseClient, email?: string | null): Promise<IntervalsCreds | null> {
+  const { data } = await supabase.rpc("intervals_credentials");
+  const row = (data as { athlete_id: string; api_key: string }[] | null)?.[0];
+  if (row?.api_key) return { athleteId: row.athlete_id, apiKey: row.api_key };
+  const owner = process.env.ALLOWED_EMAIL?.split(",")[0]?.trim().toLowerCase();
+  if (email && owner && email.toLowerCase() === owner && process.env.INTERVALS_API_KEY && process.env.INTERVALS_ATHLETE_ID) {
+    return { athleteId: normalizeAthleteId(process.env.INTERVALS_ATHLETE_ID), apiKey: process.env.INTERVALS_API_KEY.trim() };
+  }
+  return null;
 }
 
-async function call<T>(path: string, attempt = 0): Promise<T> {
-  const auth = Buffer.from(`API_KEY:${process.env.INTERVALS_API_KEY!.trim()}`).toString("base64");
+async function call<T>(creds: IntervalsCreds, path: string, attempt = 0): Promise<T> {
+  const auth = Buffer.from(`API_KEY:${creds.apiKey.trim()}`).toString("base64");
   const res = await fetch(BASE + path, { headers: { Authorization: `Basic ${auth}`, Accept: "application/json" }, cache: "no-store" });
   if (res.status === 429 && attempt < 3) {
     const wait = Math.min(10, Number(res.headers.get("retry-after")) || 2 ** attempt);
     await new Promise((r) => setTimeout(r, wait * 1000));
-    return call<T>(path, attempt + 1);
+    return call<T>(creds, path, attempt + 1);
   }
   if (!res.ok) throw new IntervalsError(res.status, await res.text().catch(() => ""));
   return res.json() as Promise<T>;
@@ -84,16 +100,17 @@ export function mapActivity(a: Raw): IntervalsActivity | null {
   };
 }
 
-export async function listActivities(oldest: string, newest: string) {
-  const raw = await call<Raw[]>(`/athlete/${athleteId()}/activities?oldest=${oldest}&newest=${newest}T23:59:59`);
+export async function listActivities(creds: IntervalsCreds, oldest: string, newest: string) {
+  const raw = await call<Raw[]>(creds, `/athlete/${creds.athleteId}/activities?oldest=${oldest}&newest=${newest}T23:59:59`);
   return raw.map(mapActivity).filter((x): x is IntervalsActivity => !!x);
 }
 
 type Stream = { type: string; data?: unknown[]; data2?: unknown[] };
 
 /** Hämtar tidsserier och gör om dem till spårpunkter. */
-export async function getTrack(activityId: string): Promise<TrackPoint[]> {
+export async function getTrack(creds: IntervalsCreds, activityId: string): Promise<TrackPoint[]> {
   const streams = await call<Stream[]>(
+    creds,
     `/activity/${encodeURIComponent(activityId)}/streams.json?types=time,distance,heartrate,altitude,latlng`,
   );
   const by = Object.fromEntries(streams.map((s) => [s.type, s]));
@@ -124,12 +141,18 @@ export async function getTrack(activityId: string): Promise<TrackPoint[]> {
 export type Wellness = { id: string; restingHR: number | null; hrv: number | null; sleepSecs: number | null };
 
 /** Dagliga återhämtningsvärden (vilopuls, HRV, sömn) – om de synkas från klockan. */
-export async function listWellness(oldest: string, newest: string): Promise<Wellness[]> {
-  const raw = await call<Raw[]>(`/athlete/${athleteId()}/wellness?oldest=${oldest}&newest=${newest}`);
+export async function listWellness(creds: IntervalsCreds, oldest: string, newest: string): Promise<Wellness[]> {
+  const raw = await call<Raw[]>(creds, `/athlete/${creds.athleteId}/wellness?oldest=${oldest}&newest=${newest}`);
   return raw.map((w) => ({
     id: String(w.id ?? ""),
     restingHR: num(w.restingHR),
     hrv: num(w.hrv) ?? num(w.hrvSDNN),
     sleepSecs: num(w.sleepSecs),
   }));
+}
+
+/** Kontrollerar en nyckel: hämtar profilen hos intervals.icu. Returnerar namnet. */
+export async function verifyCreds(creds: IntervalsCreds): Promise<{ name: string | null }> {
+  const a = await call<Raw>(creds, `/athlete/${creds.athleteId}`);
+  return { name: str(a.name) };
 }

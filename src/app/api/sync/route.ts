@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { IntervalsError, getTrack, intervalsConfigured, listActivities } from "@/lib/intervals";
+import { IntervalsError, getIntervalsCreds, getTrack, listActivities } from "@/lib/intervals";
 import { computeSplits, elevationGain, isRun, simplifyRoute, withDistance } from "@/lib/running";
 import { isoDay } from "@/lib/dates";
 
@@ -19,7 +19,8 @@ export async function POST() {
   const supabase = await supabaseServer();
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims?.sub) return NextResponse.json({ error: "Inte inloggad" }, { status: 401 });
-  if (!intervalsConfigured()) return NextResponse.json({ error: "intervals.icu är inte konfigurerat" }, { status: 400 });
+  const creds = await getIntervalsCreds(supabase, claims.claims.email as string | undefined);
+  if (!creds) return NextResponse.json({ error: "Klockan är inte kopplad – koppla den under Inställningar." }, { status: 400 });
 
   try {
     const { data: state } = await supabase.from("sync_state").select("*").eq("provider", "intervals").maybeSingle();
@@ -30,7 +31,7 @@ export async function POST() {
     const newest = isoDay(now);
 
     // 1. Sammanfattningar
-    const remote = await listActivities(oldest, newest);
+    const remote = await listActivities(creds, oldest, newest);
     const { data: localRows } = await supabase
       .from("activities")
       .select("id, external_id, distance_m, moving_time_s, deleted_at")
@@ -92,7 +93,7 @@ export async function POST() {
     if (others.length) await supabase.from("activities").update({ details_fetched: true }).in("id", others);
 
     for (const r of runs.slice(0, DETAILS_PER_CALL)) {
-      const track = withDistance(await getTrack(r.external_id));
+      const track = withDistance(await getTrack(creds, r.external_id));
       const patch: Record<string, unknown> = { details_fetched: true };
       if (track.length > 1) {
         patch.splits = computeSplits(track);
