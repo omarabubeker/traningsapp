@@ -55,6 +55,13 @@ export async function profileBlock(supabase: SupabaseClient) {
   } else if (age !== null) {
     lines.push(`- Maxpuls okänd (uppskattning 208 − 0,7 × ålder ≈ ${Math.round(208 - 0.7 * age)}, osäker)`);
   }
+  if (profile?.current_sessions || profile?.current_km)
+    lines.push(`- Utgångsläge (enligt introduktionen): ${profile.current_sessions ?? "?"} pass/vecka, ${profile.current_km ?? "?"} km löpning/vecka`);
+  if (profile?.gym_experience) lines.push(`- Gymvana: ${{ ny: "ny på gym", lite: "lite van", van: "van" }[profile.gym_experience]}`);
+  if (profile?.gym_access) lines.push(`- Gym: ${{ fullt: "fullt gym", hemma: "hemma (hantlar/enklare utrustning)", inget: "inget gym – kroppsvikt" }[profile.gym_access]}`);
+  if (profile?.sessions_per_week) lines.push(`- Vill träna: ${profile.sessions_per_week} pass/vecka`);
+  if (profile?.available_days?.length)
+    lines.push(`- Dagar som brukar fungera: ${profile.available_days.map((d) => ["måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag", "söndag"][d]).join(", ")}`);
   if (profile?.goals) lines.push(`- Mina mål (från profilen): ${profile.goals}`);
   if (profile?.injuries) lines.push(`- Skador/begränsningar (från profilen): ${profile.injuries}`);
   return lines.join("\n");

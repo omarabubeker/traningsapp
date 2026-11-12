@@ -11,16 +11,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-type Mode = { type: "edit"; goal: Goal } | { type: "new-primary"; replaces?: Goal | null } | { type: "new-sub" };
+export type Mode = { type: "edit"; goal: Goal } | { type: "new-primary"; replaces?: Goal | null } | { type: "new-sub" };
 
 const chip = (on: boolean) =>
   `rounded-full border px-3.5 py-2 text-sm font-semibold transition ${on ? "border-transparent bg-primary text-primary-foreground" : "border-border text-muted-foreground"}`;
 
 /** Bottenark för att sätta eller ändra ett mål (lopp eller allmänt). */
 export function GoalEditor({ mode, trigger }: { mode: Mode; trigger: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const heading = mode.type === "edit" ? "Ändra mål" : mode.type === "new-sub" ? "Nytt delmål" : "Nytt mål";
+  return (
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>{trigger}</DrawerTrigger>
+      <DrawerContent className="data-[vaul-drawer-direction=bottom]:max-h-[92dvh]">
+        <DrawerHeader className="text-left">
+          <DrawerTitle className="text-base">{heading}</DrawerTitle>
+          <DrawerDescription className="sr-only">Ange mål, datum och måltid</DrawerDescription>
+        </DrawerHeader>
+        <div className="pb-safe mx-auto w-full max-w-md overflow-y-auto px-4">
+          <GoalForm mode={mode} onSaved={() => setOpen(false)} />
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+/** Själva målformuläret (används i arket ovan och i introduktionen). */
+export function GoalForm({ mode, onSaved, submitLabel = "Spara" }: { mode: Mode; onSaved?: () => void; submitLabel?: string }) {
   const router = useRouter();
   const g = mode.type === "edit" ? mode.goal : null;
-  const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<"race" | "general">(mode.type === "new-sub" ? "general" : (g?.kind ?? "race"));
   const [km, setKm] = useState<number | null>(g?.distance_km ?? 42.195);
   const [customKm, setCustomKm] = useState(g?.distance_km && !DISTANCES.some((d) => Math.abs(d.km - g.distance_km!) < 0.05) ? String(g.distance_km).replace(".", ",") : "");
@@ -72,20 +91,12 @@ export function GoalEditor({ mode, trigger }: { mode: Mode; trigger: React.React
     setBusy(false);
     if (error) return toast.error("Kunde inte spara målet.");
     toast.success(mode.type === "new-sub" ? "Delmålet är tillagt" : "Målet är sparat");
-    setOpen(false);
     router.refresh();
+    onSaved?.();
   }
 
-  const heading = mode.type === "edit" ? "Ändra mål" : mode.type === "new-sub" ? "Nytt delmål" : "Nytt mål";
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-      <DrawerContent className="data-[vaul-drawer-direction=bottom]:max-h-[92dvh]">
-        <DrawerHeader className="text-left">
-          <DrawerTitle className="text-base">{heading}</DrawerTitle>
-          <DrawerDescription className="sr-only">Ange mål, datum och måltid</DrawerDescription>
-        </DrawerHeader>
-        <div className="pb-safe mx-auto w-full max-w-md space-y-5 overflow-y-auto px-4">
+        <div className="space-y-5">
           {mode.type !== "new-sub" && (
             <div className="grid grid-cols-2 gap-1 rounded-2xl bg-secondary p-1">
               {(["race", "general"] as const).map((k) => (
@@ -142,9 +153,7 @@ export function GoalEditor({ mode, trigger }: { mode: Mode; trigger: React.React
             </div>
           )}
 
-          <Button className="w-full" onClick={save} disabled={busy}>{busy ? "Sparar…" : "Spara"}</Button>
+          <Button className="w-full" onClick={save} disabled={busy}>{busy ? "Sparar…" : submitLabel}</Button>
         </div>
-      </DrawerContent>
-    </Drawer>
   );
 }

@@ -7,6 +7,13 @@ export type Profile = {
   max_hr: number | null;
   goals: string | null;
   injuries: string | null;
+  onboarded_at?: string | null;
+  current_sessions?: "0-1" | "2-3" | "4+" | null;
+  current_km?: "0" | "1-10" | "10-25" | "25-40" | "40+" | null;
+  gym_experience?: "ny" | "lite" | "van" | null;
+  sessions_per_week?: number | null;
+  available_days?: number[] | null;
+  gym_access?: "fullt" | "hemma" | "inget" | null;
   updated_at: string;
 };
 
