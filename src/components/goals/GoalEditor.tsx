@@ -53,6 +53,7 @@ export function GoalForm({ mode, onSaved, submitLabel = "Spara" }: { mode: Mode;
   const [focus, setFocus] = useState<Focus | null>(initialFocus);
   const [km, setKm] = useState<number | null>(g?.distance_km ?? 42.195);
   const [customKm, setCustomKm] = useState(g?.distance_km && !DISTANCES.some((d) => Math.abs(d.km - g.distance_km!) < 0.05) ? String(g.distance_km).replace(".", ",") : "");
+  const [otherKm, setOtherKm] = useState(customKm !== "");
   const [title, setTitle] = useState(g?.title ?? "");
   const [date, setDate] = useState(g?.race_date ?? "");
   const [time, setTime] = useState(g?.target_time_s ? formatTime(g.target_time_s) : "");
@@ -63,7 +64,7 @@ export function GoalForm({ mode, onSaved, submitLabel = "Spara" }: { mode: Mode;
   const [notes, setNotes] = useState(g?.notes ?? "");
   const [busy, setBusy] = useState(false);
 
-  const distance = customKm ? Number(customKm.replace(",", ".")) || null : km;
+  const distance = otherKm ? Number(customKm.replace(",", ".")) || null : km;
   const target = time.trim() ? parseTime(time) : null;
   const pace = focus === "run" && distance && target ? goalPace({ distance_km: distance, target_time_s: target }) : null;
   const exercise = (customLift.trim() || lift).trim();
@@ -75,6 +76,7 @@ export function GoalForm({ mode, onSaved, submitLabel = "Spara" }: { mode: Mode;
   }
   function pickDistance(d: number | null) {
     setKm(d);
+    setOtherKm(false);
     setCustomKm("");
     if (d && (!title || DISTANCES.some((x) => x.label === title))) setTitle(distanceLabel(d));
   }
@@ -83,7 +85,11 @@ export function GoalForm({ mode, onSaved, submitLabel = "Spara" }: { mode: Mode;
     if (!focus) return;
     const autoTitle = focus === "strength" ? `${exercise} ${kg.trim()} kg` : title.trim();
     if (!autoTitle.trim() || (focus === "strength" && (!exercise || !targetKg))) return toast.error(focus === "strength" ? "Välj övning och målvikt." : "Ge målet ett namn.");
-    if (focus === "run" && (!distance || !date)) return toast.error("Välj distans och datum för loppet.");
+    if (focus === "run" && !distance) return toast.error(otherKm ? "Skriv hur många km loppet är." : "Välj en distans.");
+    if (focus === "run" && !date) {
+      document.getElementById("goal-date")?.focus();
+      return toast.error("Välj vilket datum loppet är.");
+    }
     if (focus === "run" && time.trim() && !target) return toast.error("Skriv måltiden som t.ex. 3:59:59 eller 52:30.");
     setBusy(true);
     const sb = supabaseBrowser();
@@ -154,12 +160,15 @@ export function GoalForm({ mode, onSaved, submitLabel = "Spara" }: { mode: Mode;
             <p className="label">Distans</p>
             <div className="flex flex-wrap gap-2">
               {DISTANCES.map((d) => (
-                <button key={d.label} type="button" className={chip(!customKm && km !== null && Math.abs(km - d.km) < 0.05)} onClick={() => pickDistance(d.km)}>
+                <button key={d.label} type="button" className={chip(!otherKm && km !== null && Math.abs(km - d.km) < 0.05)} onClick={() => pickDistance(d.km)}>
                   {d.label}
                 </button>
               ))}
+              <button type="button" className={chip(otherKm)} onClick={() => setOtherKm(true)}>
+                Annan
+              </button>
             </div>
-            <Input inputMode="decimal" placeholder="Annan distans (km)" value={customKm} onChange={(e) => setCustomKm(e.target.value)} />
+            {otherKm && <Input inputMode="decimal" autoFocus placeholder="Antal km, t.ex. 15" value={customKm} onChange={(e) => setCustomKm(e.target.value)} />}
           </div>
           <div>
             <label className="label" htmlFor="goal-title">Namn på loppet</label>
@@ -167,7 +176,7 @@ export function GoalForm({ mode, onSaved, submitLabel = "Spara" }: { mode: Mode;
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label" htmlFor="goal-date">Datum</label>
+              <label className="label" htmlFor="goal-date">Datum för loppet</label>
               <Input id="goal-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
             <div>
