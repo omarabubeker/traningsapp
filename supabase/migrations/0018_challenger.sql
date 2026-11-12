@@ -23,17 +23,14 @@ create table if not exists public.challenge_members (
 alter table public.challenges enable row level security;
 alter table public.challenge_members enable row level security;
 
-drop policy if exists "alla inloggade läser" on public.challenges;
 create policy "alla inloggade läser" on public.challenges for select to authenticated using (true);
 
-drop policy if exists "egen rad" on public.challenge_members;
 create policy "egen rad" on public.challenge_members for all to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 
 -- Behörigheter sätts uttryckligen (projektet ger dem inte automatiskt).
 grant select on public.challenges to authenticated;
 grant select, insert, delete on public.challenge_members to authenticated;
-revoke all on public.challenges, public.challenge_members from anon;
 grant select, insert, update, delete on public.challenges, public.challenge_members to service_role;
 
 -- Framsteg för aktuella challenger: gruppens summa, antal deltagare och ens eget bidrag.

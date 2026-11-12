@@ -106,7 +106,7 @@ export default async function Overview() {
       .filter((c) => c.done && c.joined)
       .map((c) => {
         const t = formatAmount(c.metric, c.target);
-        return { key: `challenge:${c.id}`, kind: "race" as const, title: "Gruppmedalj!", text: `Ni klarade ${c.title} tillsammans – ${t.value} ${t.unit}. Grattis allihop!`, medalText: t.value.length <= 3 ? t.value : undefined };
+        return { key: `challenge:${c.id}`, kind: "race" as const, title: "Gruppmedalj!", text: `${c.title}: klart! Ni nådde ${t.value} ${t.unit} tillsammans. Grattis allihop!`, medalText: t.value.length <= 3 ? t.value : undefined };
       }),
     ...(ringsClosed ? [{ key: `ringar:${days[0]}`, kind: "rings" as const, title: "Alla ringar stängda!", text: "Du har gjort hela veckans plan. Starkt jobbat." }] : []),
   ];
