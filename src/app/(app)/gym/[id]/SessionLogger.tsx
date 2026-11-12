@@ -207,14 +207,14 @@ export function SessionLogger({ sessionId }: { sessionId: string }) {
     // Visas direkt; markeras som väntande tills kön skickats.
     enqueue({ kind: "upsertSet", row });
     setServerSets((xs) => [...xs, row]);
-    flush(supabase);
+    flush(supabase).then(() => router.refresh());
   }
 
   async function removeSet(s: GymSet) {
     if (!(await confirmDialog({ title: "Ta bort setet?", description: `${formatKg(s.weight_kg)} kg × ${s.reps}`, confirmLabel: "Ta bort", danger: true }))) return;
     setServerSets((xs) => xs.filter((x) => x.id !== s.id));
     enqueue({ kind: "deleteSet", id: s.id });
-    flush(supabase);
+    flush(supabase).then(() => router.refresh());
   }
 
   async function createExercise(name: string) {

@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PoseLandmarker } from "@mediapipe/tasks-vision";
@@ -44,6 +45,7 @@ const BONES: [number, number][] = [
 ];
 
 export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
+  const router = useRouter();
   const rule = MOVEMENTS[movementKey];
   const hold = rule.kind === "hold";
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -381,6 +383,7 @@ export function CameraCoach({ movementKey }: { movementKey: MovementKey }) {
     try {
       const id = await saveCameraSet(supabaseBrowser(), movementKey, s, Number(weight.replace(",", ".")) || 0, r.model);
       setSaved({ ok: true, sessionId: id });
+      router.refresh();
     } catch (e) {
       console.error(e);
       setSaved({ ok: false, error: "Kunde inte spara i gymloggen (kräver uppkoppling)." });

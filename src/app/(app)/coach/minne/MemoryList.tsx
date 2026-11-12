@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/dates";
@@ -18,12 +19,16 @@ const KIND: Record<Memory["kind"], string> = {
 
 export function MemoryList({ initial }: { initial: Memory[] }) {
   const [items, setItems] = useState(initial);
+  const router = useRouter();
   const [text, setText] = useState("");
   const [kind, setKind] = useState<Memory["kind"]>("preference");
 
   async function remove(id: string) {
     const { error } = await supabaseBrowser().from("coach_memory").update({ archived: true }).eq("id", id);
-    if (!error) setItems((xs) => xs.filter((x) => x.id !== id));
+    if (!error) {
+      setItems((xs) => xs.filter((x) => x.id !== id));
+      router.refresh();
+    }
   }
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -35,6 +40,7 @@ export function MemoryList({ initial }: { initial: Memory[] }) {
       .single();
     if (!error && data) {
       setItems((xs) => [data as Memory, ...xs]);
+      router.refresh();
       setText("");
     }
   }

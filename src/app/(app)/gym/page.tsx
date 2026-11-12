@@ -19,17 +19,11 @@ type Row = {
 
 export default async function GymPage() {
   const { supabase } = await requireUser();
-  const { data } = await supabase
-    .from("gym_sessions")
-    .select("id, started_at, ended_at, gym_sets(exercise_id, exercises(name))")
-    .order("started_at", { ascending: false })
-    .limit(30);
+  const [{ data }, { data: exData }] = await Promise.all([
+    supabase.from("gym_sessions").select("id, started_at, ended_at, gym_sets(exercise_id, exercises(name))").order("started_at", { ascending: false }).limit(30),
+    supabase.from("exercises").select("id, name, is_bodyweight, gym_sets(reps, weight_kg, is_warmup, created_at)").eq("archived", false).order("name"),
+  ]);
   const sessions = (data ?? []) as unknown as Row[];
-  const { data: exData } = await supabase
-    .from("exercises")
-    .select("id, name, is_bodyweight, gym_sets(reps, weight_kg, is_warmup, created_at)")
-    .eq("archived", false)
-    .order("name");
   type Ex = { id: string; name: string; is_bodyweight: boolean; gym_sets: { reps: number; weight_kg: number; is_warmup: boolean; created_at: string }[] };
   const DAY = 864e5;
   const now = Date.parse(isoDay() + "T12:00:00Z");

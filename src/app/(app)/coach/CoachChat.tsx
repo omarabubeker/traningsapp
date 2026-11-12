@@ -66,6 +66,7 @@ export function CoachChat({ current, previous: prevInitial, configured }: Props)
       setError(e instanceof Error ? e.message : "Något gick fel.");
     } finally {
       setBusy(null);
+      router.refresh();
     }
   }
 
