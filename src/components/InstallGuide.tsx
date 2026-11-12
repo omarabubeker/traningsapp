@@ -1,5 +1,5 @@
 "use client";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { CheckCircle, DeviceMobile, DotsThreeVertical, Export } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 
@@ -39,10 +39,44 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
   );
 }
 
-/** Instruktion för att lägga appen på hemskärmen – anpassad efter iPhone, Android eller dator. */
+function IosSteps() {
+  return (
+    <ol className="space-y-4">
+      <Step n={1}>
+        Tryck på <b>dela-knappen</b> <Export size={18} weight="bold" className="inline align-[-3px]" /> längst ner i Safari.
+      </Step>
+      <Step n={2}>Scrolla ner och välj <b>Lägg till på hemskärmen</b>.</Step>
+      <Step n={3}>Tryck <b>Lägg till</b>. Öppna sedan appen från hemskärmen.</Step>
+    </ol>
+  );
+}
+
+function AndroidSteps({ canPrompt }: { canPrompt: boolean }) {
+  return (
+    <div className="space-y-4">
+      {canPrompt && (
+        <Button className="w-full" onClick={() => deferred?.prompt()}>
+          Installera appen
+        </Button>
+      )}
+      <ol className="space-y-4">
+        <Step n={1}>
+          Tryck på menyn <DotsThreeVertical size={18} weight="bold" className="inline align-[-3px]" /> uppe till höger i Chrome.
+        </Step>
+        <Step n={2}>Välj <b>Installera app</b> eller <b>Lägg till på startskärmen</b>.</Step>
+      </ol>
+    </div>
+  );
+}
+
+const tab = (on: boolean) =>
+  `flex-1 rounded-full px-3 py-1.5 text-sm font-semibold transition ${on ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`;
+
+/** Instruktion för att lägga appen på hemskärmen – visar telefonens egen variant först, men går att växla. */
 export function InstallGuide() {
   const p = useSyncExternalStore(subscribe, platform, () => "unknown" as Platform);
   const canPrompt = useSyncExternalStore(subscribe, () => !!deferred, () => false);
+  const [pick, setPick] = useState<"ios" | "android" | null>(null);
 
   if (p === "standalone")
     return (
@@ -50,36 +84,24 @@ export function InstallGuide() {
         <CheckCircle size={22} weight="fill" /> Appen ligger redan på hemskärmen.
       </p>
     );
-  if (p === "ios")
-    return (
-      <ol className="space-y-4">
-        <Step n={1}>
-          Tryck på <b>dela-knappen</b> <Export size={18} weight="bold" className="inline align-[-3px]" /> längst ner i Safari.
-        </Step>
-        <Step n={2}>Scrolla ner och välj <b>Lägg till på hemskärmen</b>.</Step>
-        <Step n={3}>Tryck <b>Lägg till</b>. Öppna sedan appen från hemskärmen.</Step>
-      </ol>
-    );
-  if (p === "android")
-    return (
-      <div className="space-y-4">
-        {canPrompt && (
-          <Button className="w-full" onClick={() => deferred?.prompt()}>
-            Installera appen
-          </Button>
-        )}
-        <ol className="space-y-4">
-          <Step n={1}>
-            Tryck på menyn <DotsThreeVertical size={18} weight="bold" className="inline align-[-3px]" /> uppe till höger i Chrome.
-          </Step>
-          <Step n={2}>Välj <b>Installera app</b> eller <b>Lägg till på startskärmen</b>.</Step>
-        </ol>
-      </div>
-    );
+  const view = pick ?? (p === "android" ? "android" : "ios");
   return (
-    <p className="flex items-start gap-2 text-[15px] text-muted-foreground">
-      <DeviceMobile size={22} weight="duotone" className="shrink-0" />
-      Öppna appen på telefonen och lägg den på hemskärmen därifrån – då känns den som en vanlig app.
-    </p>
+    <div className="space-y-4">
+      {(p === "desktop" || p === "unknown") && (
+        <p className="flex items-start gap-2 text-[15px] text-muted-foreground">
+          <DeviceMobile size={22} weight="duotone" className="shrink-0" />
+          Öppna appen på telefonen och lägg den på hemskärmen därifrån – då känns den som en vanlig app.
+        </p>
+      )}
+      <div className="flex rounded-full bg-secondary p-1" role="tablist">
+        <button type="button" role="tab" aria-selected={view === "ios"} className={tab(view === "ios")} onClick={() => setPick("ios")}>
+          iPhone
+        </button>
+        <button type="button" role="tab" aria-selected={view === "android"} className={tab(view === "android")} onClick={() => setPick("android")}>
+          Android
+        </button>
+      </div>
+      {view === "ios" ? <IosSteps /> : <AndroidSteps canPrompt={canPrompt && p === "android"} />}
+    </div>
   );
 }
