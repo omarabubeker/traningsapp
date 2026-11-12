@@ -1,8 +1,9 @@
-import { Barbell, Check, ChatCircleText, Gauge, Lightning, Moon, PersonSimpleRun } from "@phosphor-icons/react/dist/ssr";
+import { Barbell, Check, ChatCircleText, Gauge, Lightning, Moon, PersonSimpleRun, Watch } from "@phosphor-icons/react/dist/ssr";
 import { formatDate } from "@/lib/dates";
 import type { ItemStatus } from "@/lib/coach/plan";
 import type { PlanItem } from "@/lib/types";
 import { IconBadge, type Icon, type Tone } from "./CardParts";
+import { MoveItem } from "./MoveItem";
 
 type Target = {
   distance_km?: number | null;
@@ -38,7 +39,7 @@ function StatusPill({ status, moved }: { status: ItemStatus; moved?: string }) {
 
 const sv = (n: number) => n.toLocaleString("sv-SE");
 
-export function PlanItemCard({ item, status, doneDay, showDate = true }: { item: PlanItem; status: ItemStatus; doneDay?: string; showDate?: boolean }) {
+export function PlanItemCard({ item, status, doneDay, showDate = true, today }: { item: PlanItem; status: ItemStatus; doneDay?: string; showDate?: boolean; today?: string }) {
   const t = (item.target ?? {}) as Target;
   if (item.kind === "rest") {
     return (
@@ -110,6 +111,19 @@ export function PlanItemCard({ item, status, doneDay, showDate = true }: { item:
           <ChatCircleText size={18} weight="duotone" className="mt-px shrink-0 text-brand" />
           <p className="text-muted-foreground">{item.description}</p>
         </div>
+      )}
+
+      {(item.watch_event_id || (today && status !== "done")) && (
+        <footer className="-mb-1 flex items-center justify-between gap-3">
+          {item.watch_event_id ? (
+            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Watch size={18} weight="duotone" /> Skickat till klockan
+            </span>
+          ) : (
+            <span />
+          )}
+          {today && status !== "done" && <MoveItem id={item.id} date={item.date} today={today} title={item.title} />}
+        </footer>
       )}
     </article>
   );

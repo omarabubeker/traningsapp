@@ -31,16 +31,22 @@ export async function getIntervalsCreds(supabase: SupabaseClient, email?: string
   return null;
 }
 
-async function call<T>(creds: IntervalsCreds, path: string, attempt = 0): Promise<T> {
+async function call<T>(creds: IntervalsCreds, path: string, init: { method?: string; body?: unknown } = {}, attempt = 0): Promise<T> {
   const auth = Buffer.from(`API_KEY:${creds.apiKey.trim()}`).toString("base64");
-  const res = await fetch(BASE + path, { headers: { Authorization: `Basic ${auth}`, Accept: "application/json" }, cache: "no-store" });
+  const res = await fetch(BASE + path, {
+    method: init.method ?? "GET",
+    headers: { Authorization: `Basic ${auth}`, Accept: "application/json", ...(init.body ? { "Content-Type": "application/json" } : {}) },
+    body: init.body ? JSON.stringify(init.body) : undefined,
+    cache: "no-store",
+  });
   if (res.status === 429 && attempt < 3) {
     const wait = Math.min(10, Number(res.headers.get("retry-after")) || 2 ** attempt);
     await new Promise((r) => setTimeout(r, wait * 1000));
-    return call<T>(creds, path, attempt + 1);
+    return call<T>(creds, path, init, attempt + 1);
   }
   if (!res.ok) throw new IntervalsError(res.status, await res.text().catch(() => ""));
-  return res.json() as Promise<T>;
+  const text = await res.text();
+  return (text ? JSON.parse(text) : null) as T;
 }
 
 export class IntervalsError extends Error {
@@ -155,4 +161,35 @@ export async function listWellness(creds: IntervalsCreds, oldest: string, newest
 export async function verifyCreds(creds: IntervalsCreds): Promise<{ name: string | null }> {
   const a = await call<Raw>(creds, `/athlete/${creds.athleteId}`);
   return { name: str(a.name) };
+}
+
+// ── Planerade pass i intervals-kalendern (som Companion-appen skickar vidare till klockan) ──
+
+export type PlannedWorkout = { date: string; name: string; description: string };
+
+const eventBody = (w: PlannedWorkout) => ({
+  category: "WORKOUT",
+  type: "Run",
+  name: w.name,
+  description: w.description,
+  start_date_local: `${w.date}T00:00:00`,
+});
+
+/** Skapar ett planerat löppass. Returnerar dess id i kalendern. */
+export async function createWorkoutEvent(creds: IntervalsCreds, w: PlannedWorkout): Promise<string> {
+  const e = await call<Raw>(creds, `/athlete/${creds.athleteId}/events`, { method: "POST", body: eventBody(w) });
+  return String(e?.id ?? "");
+}
+
+export async function updateWorkoutEvent(creds: IntervalsCreds, id: string, w: PlannedWorkout) {
+  await call(creds, `/athlete/${creds.athleteId}/events/${encodeURIComponent(id)}`, { method: "PUT", body: eventBody(w) });
+}
+
+/** Tar bort ett planerat pass (redan borttaget räknas som klart). */
+export async function deleteWorkoutEvent(creds: IntervalsCreds, id: string) {
+  try {
+    await call(creds, `/athlete/${creds.athleteId}/events/${encodeURIComponent(id)}`, { method: "DELETE" });
+  } catch (e) {
+    if (!(e instanceof IntervalsError && e.status === 404)) throw e;
+  }
 }

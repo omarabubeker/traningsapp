@@ -80,7 +80,7 @@ export function TodayHero({ items, order }: { items: PlanItemWithStatus[]; order
           </DrawerHeader>
           {open && (
             <div className="pb-safe mx-auto w-full max-w-md space-y-4 overflow-y-auto px-4">
-              <PlanItemCard item={open} status={open.status} doneDay={open.doneDay} showDate={false} />
+              <PlanItemCard item={open} status={open.status} doneDay={open.doneDay} showDate={false} today={open.date} />
               <Button asChild variant="secondary" className="w-full">
                 <Link href="/plan" onClick={() => setOpen(null)}>Hela veckans plan</Link>
               </Button>

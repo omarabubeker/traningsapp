@@ -5,6 +5,8 @@ import { profileBlock, trainingBlock } from "@/lib/coach/context";
 import { anthropic, buildSystem, claudeConfigured, friendlyError, logUsage, REVIEW_MODEL, systemInstructions } from "@/lib/coach/claude";
 import { formatDate } from "@/lib/dates";
 import { randomUUID } from "node:crypto";
+import { getIntervalsCreds } from "@/lib/intervals";
+import { syncPlanToWatch } from "@/lib/watchPlanSync";
 
 export const maxDuration = 180;
 
@@ -20,6 +22,7 @@ const PlanSchema = z.object({
       distance_km: z.number().nullable(),
       duration_min: z.number().nullable(),
       intensity: z.string().nullable(),
+      workout: z.string().nullable(),
       exercises: z.array(
         z.object({ name: z.string(), sets: z.number().int(), reps: z.string(), weight_kg: z.number().nullable() }),
       ),
@@ -68,7 +71,20 @@ ${first
 2. focus: en mening om nästa veckas fokus och var vi är i uppbyggnaden mot huvudmålet.
 3. items: ett pass per rad för dagarna ${dayList}. Använd exakt dessa datum.
    Ta med vilodagar (kind "rest"). Löppass: distance_km och/eller duration_min, intensity (t.ex. "lugnt, Z2, ca 6:20/km"
-   eller "6 × 3 min i Z4, 2 min vila"). Gym: exercises med set, reps och vikt utifrån mina senaste siffror
+   eller "6 × 3 min i Z4, 2 min vila"). workout: löppassets steg i intervals.icu-format, som skickas till klockan
+   (null för andra pass). Steg börjar med "- ", längd i minuter (10m), sekunder (30s), km (2km) eller meter (800mtr).
+   Mål: pulszon för lugna delar (Z2 HR) – det ger lugna larm på klockan – och tempo för kvalitet (5:00-5:10/km Pace).
+   Upprepning: en rad "6x" före stegen, tom rad efter. Rubriker på egna rader. Exempel:
+   Uppvärmning
+   - 10m Z2 HR
+
+   6x
+   - 800mtr 4:50-5:00/km Pace
+   - 2m Z1 HR
+
+   Nedvarvning
+   - 10m Z1 HR
+   Lugnt pass: "- 8km Z2 HR". Gym: exercises med set, reps och vikt utifrån mina senaste siffror
    (weight_kg null för kroppsvikt). description: kort syfte och genomförande, 1–2 meningar.
 4. memories: 0–3 viktiga beslut eller råd från denna avstämning som ska kommas ihåg.
 Följ progressionsreglerna i instruktionerna. Om träningsdatan är tunn: börja försiktigt.`;
@@ -111,11 +127,20 @@ Följ progressionsreglerna i instruktionerna. Om träningsdatan är tunn: börja
             distance_km: i.distance_km,
             duration_min: i.duration_min,
             intensity: i.intensity,
+            workout: i.kind === "run" ? i.workout : undefined,
             exercises: i.exercises.length ? i.exercises : undefined,
           },
           sort: n,
         })),
       );
+    }
+
+    // Skicka löppassen till klockan (via intervals-kalendern) om den är kopplad.
+    try {
+      const creds = await getIntervalsCreds(supabase, claims.claims.email as string | undefined);
+      if (creds) await syncPlanToWatch(supabase, creds);
+    } catch (e) {
+      console.error("Planen till klockan", e);
     }
 
     // Lägg avstämningen i chatten så att den syns och blir en del av historiken.
