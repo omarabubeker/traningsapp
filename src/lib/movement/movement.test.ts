@@ -111,10 +111,27 @@ describe("planka", () => {
     expect(holdMs / 1000).toBeGreaterThan(4.8);
   });
   it("pausar timern när höften sjunker längre än 2 s", () => {
-    const { holdMs, cues } = run(plank, [...seconds(2), ...seconds(5, { hipOffset: 0.15 })]);
+    const { holdMs, cues } = run(plank, [...seconds(2), ...seconds(5, { hipOffset: 0.25 })]);
     expect(cues).toContain("sag");
     expect(holdMs / 1000).toBeGreaterThan(3.8);
-    expect(holdMs / 1000).toBeLessThan(4.3); // 2 s rakt + 2 s nåd, sedan paus
+    expect(holdMs / 1000).toBeLessThan(4.4); // 2 s rakt + utjämning + 2 s nåd, sedan paus
+  });
+  it("klagar inte på en nästan rak kropp (höftvinkel ~170°, som i verklig inspelning)", () => {
+    // hipOffset 0.065 ger ~170° i höften; varierar lite som brus
+    const worlds = Array.from({ length: 150 }, (_, i) => plankPose({ hipOffset: (i % 2 ? 1 : -1) * 0.065 }));
+    const { holdMs, cues } = run(plank, worlds);
+    expect(cues).toHaveLength(0);
+    expect(holdMs / 1000).toBeGreaterThan(4.8);
+  });
+  it("säger till om uppskjuten höft", () => {
+    const { cues } = run(plank, [...seconds(1), ...seconds(3, { hipOffset: -0.2 })]);
+    expect(cues).toContain("pike");
+  });
+  it("tjatar inte medan man lägger sig i position (på knäna) och räknar ingen tid då", () => {
+    const { holdMs, cues } = run(plank, [...seconds(3, { hipOffset: -0.35 }), ...seconds(3)]);
+    expect(cues).toHaveLength(0);
+    expect(holdMs / 1000).toBeGreaterThan(2.8);
+    expect(holdMs / 1000).toBeLessThan(3.2);
   });
   it("räknar inte när man står upp", () => {
     const { holdMs } = run(plank, seconds(3, { tilt: 70 }));
@@ -232,7 +249,7 @@ describe("sammanställning av ett set", async () => {
   it("räknar hålltid och felsekunder för planka", () => {
     const sess = new TechniqueSession(plank as never);
     let state = plank.init();
-    const worlds = [...Array(90)].map(() => plankPose()).concat([...Array(60)].map(() => plankPose({ hipOffset: 0.15 })));
+    const worlds = [...Array(90)].map(() => plankPose()).concat([...Array(60)].map(() => plankPose({ hipOffset: 0.25 })));
     worlds.forEach((w, i) => {
       const out = plank.update(frame((i * 1000) / 30, w), state);
       state = out.state;

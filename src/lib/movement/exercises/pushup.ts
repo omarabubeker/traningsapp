@@ -1,22 +1,24 @@
-import { angle, len, sub } from "../geometry";
+import { angle, bodyLine, len, sub } from "../geometry";
 import { P, type Cue, type MovementRule, type PoseFrame, type RuleOutput, type Vec3 } from "../types";
 
 // Armhävningar. Filmas från sidan (telefonen på golvet eller låg höjd, 1,5–2 m bort).
 // Reps via armbågsvinkeln (axel–armbåge–handled) på den sida som syns bäst.
 // Kroppslinjen (axel–höft–fotled) bedöms som i plankan. Huvudläget bedöms inte:
 // näsan ligger naturligt under axlarna när man tittar ner i golvet, så det gav falsklarm.
-// Startvärden – kalibreras mot riktiga inspelningar.
+// Kalibrerat mot inspelningar (nov 2026): med raka armar i toppen mäter MediaPipe bara
+// 141–147° från sidan, och botten på en djup rep 65–88°. Rak kropp 167–173° i höften.
 
-const TOP_ELBOW = 150; // raka armar
-const DOWN_ELBOW = 130; // repen börjar
+const TOP_ELBOW = 133; // raka armar (toppen) – uppmätt 136–147° med raka armar
+const DOWN_ELBOW = 120; // repen börjar
 const DEPTH_ELBOW = 100; // godkänt djup
-const LOCKOUT_ELBOW = 155; // armarna ska sträckas ut i toppen
-const REP_MIN_ELBOW = 120; // annars ingen rep (halv rörelse)
+const LOCKOUT_ELBOW = 136; // armarna ska sträckas ut i toppen
+const REP_MIN_ELBOW = 115; // annars ingen rep (halv rörelse)
 const HORIZONTAL_MAX = 40; // kroppen högst så här många grader från vågrätt
-const LINE_DEV = 0.07; // höftens avvikelse från linjen, andel av kroppslängden
+const HIP_MIN = 158; // höftvinkel (axel–höft–fotled) under detta = höften sjunker/för högt
+const HIP_SMOOTH = 0.2; // utjämning av höftvinkeln (andel nytt värde per bildruta)
 const MIN_REP_MS = 600;
 const MAX_REP_MS = 8000;
-const FAULT_MS = 300;
+const FAULT_MS = 500;
 
 type Side = { sh: Vec3; el: Vec3; wr: Vec3; hip: Vec3; ank: Vec3 };
 type State = {
@@ -24,12 +26,13 @@ type State = {
   started: number;
   leftTop: number | null;
   minElbow: number;
+  hip: number | null; // utjämnad höftvinkel
   maxElbowTop: number; // utsträckning före repen
   faultSince: Record<string, number>;
   faults: string[];
 };
 
-const fresh = (t: number): State => ({ phase: "top", started: t, leftTop: null, minElbow: 180, maxElbowTop: 0, faultSince: {}, faults: [] });
+const fresh = (t: number, hip: number | null = null): State => ({ phase: "top", started: t, leftTop: null, minElbow: 180, hip, maxElbowTop: 0, faultSince: {}, faults: [] });
 
 function track(s: State, key: string, active: boolean, t: number): State {
   if (!active) {
@@ -58,9 +61,8 @@ function measure(f: PoseFrame) {
   const body = sub(s.ank, s.sh);
   const bodyLen = len(body) || 1e-6;
   const tilt = (Math.asin(Math.min(1, Math.abs(body.y) / bodyLen)) * 180) / Math.PI;
-  const t = Math.max(0, Math.min(1, ((s.hip.x - s.sh.x) * body.x + (s.hip.z - s.sh.z) * body.z) / (body.x ** 2 + body.z ** 2 || 1e-6)));
-  const dev = (s.hip.y - (s.sh.y + t * body.y)) / bodyLen; // y nedåt: positivt = höften sjunker
-  return { elbow, tilt, dev };
+  const line = bodyLine(s.sh, s.hip, s.ank);
+  return { elbow, tilt, hipAngle: line.hipAngle, hipDir: line.dir };
 }
 
 export const pushup: MovementRule<State> = {
@@ -89,7 +91,7 @@ export const pushup: MovementRule<State> = {
     out.debug = {
       armbåge: Math.round(m.elbow),
       "kropp mot golv": Math.round(m.tilt) + "°",
-      höft: Math.round(m.dev * 100) + " %",
+      höft: Math.round(m.hipAngle) + "°",
     };
     return out;
   },
@@ -99,29 +101,31 @@ function updatePushup(f: PoseFrame, s: State): RuleOutput<State> {
   const m = measure(f);
   const cues: Cue[] = [];
   if (m.tilt > HORIZONTAL_MAX) return { state: fresh(f.t), cues, phase: "Gå ner i armhävningsläge" };
+  const hip = s.hip === null ? m.hipAngle : s.hip + HIP_SMOOTH * (m.hipAngle - s.hip);
+  s = { ...s, hip };
 
   if (s.phase === "top") {
     const leaving = m.elbow < TOP_ELBOW;
     const leftTop = leaving ? (s.leftTop ?? f.t) : null;
     const maxElbowTop = leaving ? s.maxElbowTop : Math.max(s.maxElbowTop, m.elbow);
     if (m.elbow < DOWN_ELBOW) {
-      s = { ...fresh(leftTop ?? f.t), phase: "down", maxElbowTop: Math.max(maxElbowTop, s.maxElbowTop) };
+      s = { ...fresh(leftTop ?? f.t, hip), phase: "down", maxElbowTop: Math.max(maxElbowTop, s.maxElbowTop) };
     } else {
       return { state: { ...s, leftTop, maxElbowTop }, cues, phase: "Upp" };
     }
   }
 
   s = { ...s, minElbow: Math.min(s.minElbow, m.elbow) };
-  s = track(s, "sag", m.dev > LINE_DEV, f.t);
-  s = track(s, "pike", m.dev < -LINE_DEV, f.t);
+  s = track(s, "sag", hip < HIP_MIN && m.hipDir === "sag", f.t);
+  s = track(s, "pike", hip < HIP_MIN && m.hipDir === "pike", f.t);
   if (s.faults.includes("sag") && s.faultSince.sag !== undefined) cues.push({ id: "sag", text: "Spänn magen, lyft höften", priority: 1 });
   if (s.faults.includes("pike") && s.faultSince.pike !== undefined) cues.push({ id: "pike", text: "Sänk höften", priority: 1 });
 
-  if (f.t - s.started > MAX_REP_MS) return { state: fresh(f.t), cues, phase: "Upp" };
+  if (f.t - s.started > MAX_REP_MS) return { state: fresh(f.t, hip), cues, phase: "Upp" };
 
   if (m.elbow > TOP_ELBOW) {
     const real = s.minElbow < REP_MIN_ELBOW && f.t - s.started >= MIN_REP_MS;
-    const next = { ...fresh(f.t), maxElbowTop: m.elbow };
+    const next = { ...fresh(f.t, hip), maxElbowTop: m.elbow };
     if (!real) return { state: next, cues, phase: "Upp" };
     const faults = [...s.faults];
     if (s.minElbow > DEPTH_ELBOW) faults.unshift("shallow");
