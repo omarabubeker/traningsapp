@@ -15,6 +15,9 @@ import { Celebrate, type CelebrationEvent } from "@/components/goals/Celebrate";
 import { CardHead, EmptyState, IconBadge, SectionHead, StatCard } from "@/components/CardParts";
 import { Barbell, CalendarCheck, Fire, Medal as MedalIcon, PersonSimpleRun, Target, Trophy } from "@phosphor-icons/react/dist/ssr";
 import { loadGoals } from "@/lib/goalsData";
+import { loadChallenges } from "@/lib/challengesData";
+import { ChallengeCard } from "@/components/challenges/ChallengeCard";
+import { formatAmount } from "@/lib/challenges";
 import { requireUser } from "@/lib/supabase/server";
 import { WEEKDAYS_SHORT, formatDate, formatKg, formatTime, greeting, isoDay, weekRange } from "@/lib/dates";
 
@@ -32,7 +35,7 @@ export default async function Overview() {
   const { days, today, from, to } = weekRange();
 
   // Alla hämtningar startar samtidigt.
-  const [{ data }, { data: actData }, { plans }, goals, { data: prof }] = await Promise.all([
+  const [{ data }, { data: actData }, { plans }, goals, { data: prof }, challenges] = await Promise.all([
     supabase
       .from("gym_sessions")
       .select("id, started_at, ended_at, gym_sets(reps, weight_kg, is_warmup, exercise_id)")
@@ -49,6 +52,7 @@ export default async function Overview() {
     loadPlans(supabase),
     loadGoals(supabase),
     supabase.from("profile").select("display_name").eq("user_id", user.id).maybeSingle(),
+    loadChallenges(supabase, today),
   ]);
   const activities = ((actData ?? []) as Activity[])
     .map(applyOverride)
@@ -97,6 +101,13 @@ export default async function Overview() {
       .filter((h) => h.completed_at && h.completed_at >= weekAgo)
       .map((h) => ({ key: `mal:${h.id}`, kind: "race" as const, title: `${h.title} klart!`, text: h.result_time_s ? `Din tid: ${raceTime(h.result_time_s)}${h.target_time_s ? ` (mål ${raceTime(h.target_time_s)})` : ""}. Grattis!` : "Grattis till ett avklarat mål!", medalText: h.distance_km ? raceBadge(h.distance_km) : undefined })),
     ...fresh.map((rec) => ({ key: `rekord:${rec.key}:${rec.day}`, kind: "record" as const, title: "Nytt rekord!", text: `${rec.label}: ${rec.value}${rec.previous ? ` (tidigare ${rec.previous})` : ""}` })),
+    // Gruppmedalj: firas för alla som var med när gruppen nådde målet.
+    ...challenges
+      .filter((c) => c.done && c.joined)
+      .map((c) => {
+        const t = formatAmount(c.metric, c.target);
+        return { key: `challenge:${c.id}`, kind: "race" as const, title: "Gruppmedalj!", text: `Ni klarade ${c.title} tillsammans – ${t.value} ${t.unit}. Grattis allihop!`, medalText: t.value.length <= 3 ? t.value : undefined };
+      }),
     ...(ringsClosed ? [{ key: `ringar:${days[0]}`, kind: "rings" as const, title: "Alla ringar stängda!", text: "Du har gjort hela veckans plan. Starkt jobbat." }] : []),
   ];
 
@@ -190,6 +201,15 @@ export default async function Overview() {
           </Link>
         )}
       </section>
+
+      {challenges.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="h-section">Tillsammans</h2>
+          {challenges.map((c) => (
+            <ChallengeCard key={c.id} c={c} today={today} />
+          ))}
+        </section>
+      )}
 
       <section className="space-y-3">
         <h2 className="h-section">Veckans pass</h2>
