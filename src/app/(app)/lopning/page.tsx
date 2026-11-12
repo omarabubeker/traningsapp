@@ -24,13 +24,10 @@ export default async function LopningPage({ searchParams }: { searchParams: Prom
   const { days } = weekRange();
   const monday = Date.parse(days[0] + "T00:00:00Z");
   const since = new Date(monday - 26 * 7 * DAY).toISOString();
-  const { data } = await supabase
-    .from("activities")
-    .select(COLS)
-    .is("deleted_at", null)
-    .gte("start_time", since)
-    .order("start_time", { ascending: false });
-  const { data: gyms } = await supabase.from("gym_sessions").select("id, started_at, ended_at").gte("started_at", since);
+  const [{ data }, { data: gyms }] = await Promise.all([
+    supabase.from("activities").select(COLS).is("deleted_at", null).gte("start_time", since).order("start_time", { ascending: false }),
+    supabase.from("gym_sessions").select("id, started_at, ended_at").gte("started_at", since),
+  ]);
   const merged = matchWatchToGym((data ?? []) as Activity[], gyms ?? []);
   const all = ((data ?? []) as Activity[])
     .filter((a) => !merged.has(a.id)) // klockans styrkepass visas på gympasset i stället

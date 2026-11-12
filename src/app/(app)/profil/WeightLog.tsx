@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { formatDate, formatKg, isoDay } from "@/lib/dates";
@@ -10,6 +11,7 @@ import { monotonePath } from "@/lib/svgPath";
 
 export function WeightLog({ initial }: { initial: WeightEntry[] }) {
   const [entries, setEntries] = useState(initial);
+  const router = useRouter();
   const [value, setValue] = useState("");
   const [date, setDate] = useState(isoDay());
   const [error, setError] = useState<string | null>(null);
@@ -29,12 +31,16 @@ export function WeightLog({ initial }: { initial: WeightEntry[] }) {
     setError(null);
     setValue("");
     setEntries((xs) => [data, ...xs.filter((x) => x.measured_on !== data.measured_on)].sort((a, b) => b.measured_on.localeCompare(a.measured_on)));
+    router.refresh();
   }
 
   async function remove(id: string) {
     if (!(await confirmDialog({ title: "Ta bort mätningen?", confirmLabel: "Ta bort", danger: true }))) return;
     const { error } = await supabaseBrowser().from("weight_entries").delete().eq("id", id);
-    if (!error) setEntries((xs) => xs.filter((x) => x.id !== id));
+    if (!error) {
+      setEntries((xs) => xs.filter((x) => x.id !== id));
+      router.refresh();
+    }
   }
 
   return (

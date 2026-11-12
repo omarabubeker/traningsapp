@@ -32,31 +32,31 @@ export default async function Overview() {
   const { days, today, from, to } = weekRange();
   const raceDays = daysToRace(today);
 
-  const { data } = await supabase
-    .from("gym_sessions")
-    .select("id, started_at, ended_at, gym_sets(reps, weight_kg, is_warmup, exercise_id)")
-    .gte("started_at", from)
-    .lt("started_at", to)
-    .order("started_at");
-
-  const { data: actData } = await supabase
-    .from("activities")
-    .select("id, sport_type, name, start_time, distance_m, distance_override_m, moving_time_s, elapsed_time_s, avg_hr, calories, avg_pace_s_per_km, indoor, source")
-    .is("deleted_at", null)
-    .gte("start_time", from)
-    .lt("start_time", to)
-    .order("start_time");
+  // Alla hämtningar startar samtidigt.
+  const [{ data }, { data: actData }, { plans }, goals, { data: prof }] = await Promise.all([
+    supabase
+      .from("gym_sessions")
+      .select("id, started_at, ended_at, gym_sets(reps, weight_kg, is_warmup, exercise_id)")
+      .gte("started_at", from)
+      .lt("started_at", to)
+      .order("started_at"),
+    supabase
+      .from("activities")
+      .select("id, sport_type, name, start_time, distance_m, distance_override_m, moving_time_s, elapsed_time_s, avg_hr, calories, avg_pace_s_per_km, indoor, source")
+      .is("deleted_at", null)
+      .gte("start_time", from)
+      .lt("start_time", to)
+      .order("start_time"),
+    loadPlans(supabase),
+    loadGoals(supabase),
+    supabase.from("profile").select("display_name").eq("user_id", user.id).maybeSingle(),
+  ]);
   const activities = ((actData ?? []) as Activity[])
     .map(applyOverride)
     .map((a) => ({ ...a, day: isoDay(new Date(a.start_time)) }))
     .filter((a) => days.includes(a.day));
   const runKm = activities.filter((a) => isRun(a.sport_type)).reduce((s, a) => s + (a.distance_m ?? 0) / 1000, 0);
 
-  const [{ plans }, goals, { data: prof }] = await Promise.all([
-    loadPlans(supabase),
-    loadGoals(supabase),
-    supabase.from("profile").select("display_name").eq("user_id", user.id).maybeSingle(),
-  ]);
   const name = (prof as { display_name: string | null } | null)?.display_name?.trim();
   const todayItems = plans.flatMap((p) => p.items).filter((i) => i.date === today);
   const nextItem = plans.flatMap((p) => p.items).find((i) => i.date > today && i.kind !== "rest");

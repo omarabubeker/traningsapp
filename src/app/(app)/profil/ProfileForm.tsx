@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ageFrom } from "@/lib/dates";
@@ -8,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 export function ProfileForm({ initial, userId }: { initial: Profile | null; userId: string }) {
+  const router = useRouter();
   const [p, setP] = useState({
     display_name: initial?.display_name ?? "",
     height_cm: initial?.height_cm?.toString() ?? "",
@@ -40,6 +42,7 @@ export function ProfileForm({ initial, userId }: { initial: Profile | null; user
       updated_at: new Date().toISOString(),
     });
     setStatus(error ? "error" : "saved");
+    if (!error) router.refresh();
   }
 
   return (

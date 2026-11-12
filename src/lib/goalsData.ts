@@ -4,6 +4,7 @@ import { isoDay } from "./dates";
 import { applyOverride } from "./running";
 import { TRAINING_START } from "./race";
 import { loadDoneSessions, mondayOf, withStatus } from "./coach/planData";
+import { addDaysIso } from "./coach/plan";
 import { milestones, personalRecords, streak, weekRings, weekScore, type GymSetLike, type RunLike } from "./goals";
 import type { Plan, PlanItem } from "./types";
 
@@ -25,7 +26,7 @@ type GymRow = { reps: number; weight_kg: number | string; is_warmup: boolean; ex
 export async function loadGoals(supabase: SupabaseClient) {
   const today = isoDay();
   const monday = mondayOf(today);
-  const [{ data: planRows }, acts, sets] = await Promise.all([
+  const [{ data: planRows }, acts, sets, sessions] = await Promise.all([
     supabase.from("plans").select("*, plan_items(*)").eq("status", "active").order("week_start"),
     fetchAll((a, b) =>
       supabase
@@ -44,10 +45,9 @@ export async function loadGoals(supabase: SupabaseClient) {
         .order("created_at")
         .range(a, b),
     ),
+    loadDoneSessions(supabase, addDaysIso(monday, -26 * 7)),
   ]);
-  const rows = (planRows ?? []) as (Plan & { plan_items: PlanItem[] })[];
-  const firstWeek = rows[0]?.week_start ?? monday;
-  const sessions = await loadDoneSessions(supabase, firstWeek < monday ? firstWeek : monday);
+  const rows = ((planRows ?? []) as (Plan & { plan_items: PlanItem[] })[]).filter((p) => p.week_start >= addDaysIso(monday, -26 * 7));
   const plans = withStatus(rows, sessions, today);
 
   const current = plans.find((p) => p.week_start === monday) ?? null;
