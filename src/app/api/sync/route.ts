@@ -3,6 +3,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { IntervalsError, getIntervalsCreds, getTrack, listActivities } from "@/lib/intervals";
 import { computeSplits, elevationGain, isRun, simplifyRoute, withDistance } from "@/lib/running";
 import { isoDay } from "@/lib/dates";
+import { syncPlanToWatch } from "@/lib/watchPlanSync";
 
 export const maxDuration = 60;
 
@@ -105,7 +106,18 @@ export async function POST() {
     }
     const pending = Math.max(0, runs.length - DETAILS_PER_CALL);
 
-    const result = { fetched: remote.length, created, removed: removed.length, pending, at: now.toISOString() };
+    // 5. Planen till klockan (när passen är klara, så att gjorda pass räknas rätt).
+    let plan: { sent: number; removed: number } | { error: string } | null = null;
+    if (!pending) {
+      try {
+        plan = await syncPlanToWatch(supabase, creds);
+      } catch (e) {
+        console.error("Planen till klockan", e);
+        plan = { error: e instanceof Error ? e.message : "okänt fel" };
+      }
+    }
+
+    const result = { fetched: remote.length, created, removed: removed.length, pending, plan, at: now.toISOString() };
     await supabase.from("sync_state").upsert({
       user_id: claims.claims.sub,
       provider: "intervals",

@@ -71,7 +71,7 @@ export default async function PlanPage() {
                   <DayMark day={d} today={today} items={byDay(d)} />
                   <div className="min-w-0 flex-1 space-y-3">
                     {byDay(d).map((it) => (
-                      <PlanItemCard key={it.id} item={it} status={it.status} doneDay={it.doneDay} showDate={false} />
+                      <PlanItemCard key={it.id} item={it} status={it.status} doneDay={it.doneDay} showDate={false} today={today} />
                     ))}
                   </div>
                 </li>

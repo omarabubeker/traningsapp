@@ -82,6 +82,7 @@ export type PlanItem = {
   description: string | null;
   target: Record<string, unknown> | null;
   sort: number;
+  watch_event_id?: string | null;
 };
 
 export type Plan = {

@@ -63,6 +63,9 @@ function Steps({ brand }: { brand: Brand }) {
         <LinkButton href={LINKS.companion}>Öppna i App Store</LinkButton>
       </>,
       <>Öppna Companion, logga in med ditt intervals.icu-konto och tillåt åtkomst till Hälsa. Slå på automatisk synk av träningspass – välj gärna att synka bakåt så kommer äldre pass med.</>,
+      <>
+        För att få planens löppass på klockan: i Companion, <b>Settings → Workout Settings</b>, slå på automatisk synk till Apple Watch. Öppna Companion ibland – passen för de kommande 7 dagarna skickas när appen öppnas. På klockan öppnar du <b>Träning</b> och scrollar till <b>Intervals.icu</b> – där ligger passen. Tryck på ett pass och välj <b>Starta träning</b>.
+      </>,
     );
   } else if (brand === "other") {
     steps.push(
@@ -74,7 +77,7 @@ function Steps({ brand }: { brand: Brand }) {
   } else {
     steps.push(
       <>
-        På intervals.icu: <b>Settings → Connections</b> och koppla ditt {name}-konto. Nya pass synkas sedan automatiskt efter varje träning.
+        På intervals.icu: <b>Settings → Connections</b> och koppla ditt {name}-konto. Nya pass synkas sedan automatiskt efter varje träning – och planens löppass skickas till klockan om du slår på uppladdning av planerade pass där.
         <LinkButton href={LINKS.settings}>Öppna Settings</LinkButton>
       </>,
     );
