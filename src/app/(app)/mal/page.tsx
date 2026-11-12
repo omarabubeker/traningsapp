@@ -10,7 +10,7 @@ import { STREAK_SHARE, streakText, type RecordItem } from "@/lib/goals";
 import { WeekRings } from "@/components/goals/WeekRings";
 import { Badge } from "@/components/ui/badge";
 import { BigValue, CardHead, EmptyState, IconBadge, SectionHead } from "@/components/CardParts";
-import { Fire, FlagCheckered, PersonSimpleRun, Target, Trophy } from "@phosphor-icons/react/dist/ssr";
+import { Barbell, Fire, FlagCheckered, PersonSimpleRun, Target, Trophy } from "@phosphor-icons/react/dist/ssr";
 import { Medal } from "@/components/goals/Medal";
 import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 
@@ -41,12 +41,18 @@ export default async function MalPage() {
         {goal ? (
           <div className="card space-y-4">
             <div className="flex items-start gap-3">
-              <IconBadge icon={goal.kind === "race" ? PersonSimpleRun : Target} tone="brand" size="lg" />
+              <IconBadge icon={goal.kind === "race" ? PersonSimpleRun : goal.focus === "strength" ? Barbell : Target} tone="brand" size="lg" />
               <div className="min-w-0 flex-1">
                 <p className="text-[17px] leading-snug font-bold">{goal.title}</p>
                 <p className="text-sm text-muted-foreground">{goalSummary(goal)}</p>
               </div>
             </div>
+            {goal.focus === "strength" && goal.target_kg && (
+              <div className="grid grid-cols-2 gap-2">
+                <Fact value={`${Number(goal.target_kg).toLocaleString("sv-SE")} kg`} unit={`mål i ${goal.exercise?.toLowerCase() ?? "lyftet"}`} />
+                <Fact value={days !== null && days >= 0 ? days : "–"} unit={days !== null ? "dagar kvar" : "inget slutdatum"} />
+              </div>
+            )}
             {goal.kind === "race" && (
               <div className="grid grid-cols-3 gap-2">
                 <Fact value={days !== null && days >= 0 ? days : "–"} unit="dagar kvar" />
@@ -85,7 +91,7 @@ export default async function MalPage() {
       {/* Vägen mot målet */}
       {goal && g.milestones.length > 0 && (
         <section className="space-y-3">
-          <h2 className="h-section">{goal.kind === "race" ? `Vägen till ${goal.title}` : "Milstolpar"}</h2>
+          <h2 className="h-section">{goal.kind === "race" || goal.focus === "strength" ? `Vägen till ${goal.title}` : "Milstolpar"}</h2>
           <div className="card space-y-4">
             <div className="space-y-2">
               <CardHead icon={FlagCheckered} tone="brand" title="Milstolpar" right={days !== null && days > 0 ? `${days} dagar kvar` : undefined} />

@@ -55,6 +55,8 @@ export async function profileBlock(supabase: SupabaseClient) {
   } else if (age !== null) {
     lines.push(`- Maxpuls okänd (uppskattning 208 − 0,7 × ålder ≈ ${Math.round(208 - 0.7 * age)}, osäker)`);
   }
+  if (profile?.training_focus)
+    lines.push(`- Vill träna: ${{ run: "löpning (styrka bara som stöd för löpningen)", strength: "styrka – planera inga löppass om jag inte ber om det", both: "både löpning och styrka" }[profile.training_focus]}`);
   if (profile?.current_sessions || profile?.current_km)
     lines.push(`- Utgångsläge (enligt introduktionen): ${profile.current_sessions ?? "?"} pass/vecka, ${profile.current_km ?? "?"} km löpning/vecka`);
   if (profile?.gym_experience) lines.push(`- Gymvana: ${{ ny: "ny på gym", lite: "lite van", van: "van" }[profile.gym_experience]}`);
@@ -352,7 +354,17 @@ function goalLines(goals: Goal[], today: string): string[] {
       days !== null && days >= 0 ? `- Dagar kvar till loppet: ${days} (${Math.floor(days / 7)} veckor)` : "- Loppdatumet har passerat – fråga hur det gick och hjälp mig välja nästa mål.",
       `- Uppladdningen startade ${primary.start_date}.`,
     );
-  } else out.push(`- Huvudmål: ${primary.title}${primary.notes ? ` – ${primary.notes}` : ""} (sedan ${primary.start_date})`);
+  } else if (primary.focus === "strength" && primary.exercise && primary.target_kg) {
+    const days = daysTo(primary, today);
+    out.push(
+      `- Huvudmål (styrka): ${primary.exercise} ${Number(primary.target_kg)} kg som uppskattat 1RM${primary.race_date ? ` till ${primary.race_date}` : ""}`,
+      days !== null && days >= 0 ? `- Dagar kvar: ${days} (${Math.floor(days / 7)} veckor)` : "",
+      `- Startade ${primary.start_date}. Planera progression i ${primary.exercise.toLowerCase()} mot målvikten (se mina senaste set).`,
+    );
+  } else {
+    const days = daysTo(primary, today);
+    out.push(`- Huvudmål: ${primary.title}${primary.notes ? ` – ${primary.notes}` : ""} (sedan ${primary.start_date})${days !== null && days >= 0 ? `, ${days} dagar kvar` : ""}`);
+  }
   for (const g of goals.filter((x) => !x.is_primary && x.status === "active")) out.push(`- Delmål: ${g.title}${g.notes ? ` – ${g.notes}` : ""}`);
   const done = goals.filter((g) => g.status === "completed" && g.completed_at).sort((a, b) => b.completed_at!.localeCompare(a.completed_at!))[0];
   if (done) out.push(`- Senast avklarat: ${done.title} ${done.completed_at}${done.result_time_s ? `, tid ${raceTime(done.result_time_s)}` : ""}`);

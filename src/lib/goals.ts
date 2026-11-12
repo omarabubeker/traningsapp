@@ -130,7 +130,7 @@ export function personalRecords(runs: RunLike[], sets: GymSetLike[], today: stri
 
 export type Milestone = { key: string; label: string; detail: string; day: string | null; badge: string };
 
-type GoalLike = Pick<Goal, "kind" | "distance_km" | "target_time_s" | "start_date">;
+type GoalLike = Pick<Goal, "kind" | "distance_km" | "target_time_s" | "start_date"> & Partial<Pick<Goal, "focus" | "exercise" | "target_kg">>;
 
 const kmText = (km: number) => km.toLocaleString("sv-SE", { maximumFractionDigits: 1 });
 /** "1:55" för tider över en timme (avrundat nedåt till hel minut), annars "24:30". */
@@ -141,25 +141,34 @@ const shortTime = (sec: number) => (sec >= 3600 ? `${Math.floor(sec / 3600)}:${S
  * Lopp: långpass, veckovolym, ett testlopp (Riegel från måltiden) och ett pass i måltempo,
  * skalat efter distansen. Allmänt mål: antal pass och kilometer sedan start.
  */
-export function milestones(runs: RunLike[], goal: GoalLike, workoutDays: string[] = []): Milestone[] {
+export function milestones(runs: RunLike[], goal: GoalLike, workoutDays: string[] = [], gym: { days: string[]; sets: GymSetLike[] } = { days: [], sets: [] }): Milestone[] {
   const since = goal.start_date;
   const rs = runs.filter((r) => r.day >= since).sort((a, b) => a.day.localeCompare(b.day));
   const first = (f: (r: RunLike) => boolean) => rs.find(f)?.day ?? null;
 
+  if (goal.focus === "strength" && goal.exercise && goal.target_kg) return strengthMilestones(goal.exercise, Number(goal.target_kg), since, gym);
+
   if (goal.kind !== "race" || !goal.distance_km) {
-    const days = [...workoutDays].filter((d) => d >= since).sort();
+    // Allmänt mål: regelbundenhet – antal pass och veckor i rad med minst två pass.
+    const days = [...new Set(workoutDays)].filter((d) => d >= since).sort();
     const nth = (n: number) => days[n - 1] ?? null;
-    let total = 0;
-    const kmDay = (km: number) => rs.find((r) => (total += r.km) >= km)?.day ?? null;
-    const km100 = kmDay(100);
-    total = 0;
-    const km250 = kmDay(250);
+    const perWeek = new Map<string, number>();
+    for (const d of days) perWeek.set(mondayOfIso(d), (perWeek.get(mondayOfIso(d)) ?? 0) + 1);
+    const weeks = [...perWeek].filter(([, n]) => n >= 2).map(([w]) => w).sort();
+    const inRow = (n: number) => {
+      let run = 0;
+      for (let i = 0; i < weeks.length; i++) {
+        run = i > 0 && addDaysIso(weeks[i - 1], 7) === weeks[i] ? run + 1 : 1;
+        if (run >= n) return addDaysIso(weeks[i], 6);
+      }
+      return null;
+    };
     return [
       { key: "pass10", label: "10 pass", detail: "Tio träningspass sedan start", day: nth(10), badge: "10" },
+      { key: "row4", label: "Fyra veckor i rad", detail: "Minst två pass i veckan, fyra veckor efter varandra", day: inRow(4), badge: "4v" },
       { key: "pass25", label: "25 pass", detail: "25 träningspass sedan start", day: nth(25), badge: "25" },
-      { key: "km100", label: "100 km löpning", detail: "Sammanlagt sedan start", day: km100, badge: "100" },
+      { key: "row8", label: "Åtta veckor i rad", detail: "Minst två pass i veckan, åtta veckor efter varandra", day: inRow(8), badge: "8v" },
       { key: "pass50", label: "50 pass", detail: "50 träningspass sedan start", day: nth(50), badge: "50" },
-      { key: "km250", label: "250 km löpning", detail: "Sammanlagt sedan start", day: km250, badge: "250" },
       { key: "pass100", label: "100 pass", detail: "100 träningspass sedan start", day: nth(100), badge: "100" },
     ];
   }
@@ -208,5 +217,41 @@ export function milestones(runs: RunLike[], goal: GoalLike, workoutDays: string[
     out.push({ key: marathon ? `mp${gpKm}` : `gp${gpKm}`, label: `${gpKm} km i ${marathon ? "maratonfart" : "måltempo"}`, detail: `${gpKm} km i ${formatPace(pace)}/km eller snabbare`, day: first(fast(gpKm, pace)), badge: marathon ? "MP" : "MT" });
   }
   out.push(long(ladder[4], true));
+  return out;
+}
+
+/**
+ * Styrkemål: antal gympass och utvecklingen i övningen (uppskattat 1RM ur bästa set per dag),
+ * från utgångsläget vid start mot målvikten.
+ */
+function strengthMilestones(exercise: string, target: number, since: string, gym: { days: string[]; sets: GymSetLike[] }): Milestone[] {
+  const days = [...new Set(gym.days.filter((d) => d >= since))].sort();
+  const nth = (n: number) => days[n - 1] ?? null;
+  const name = exercise.trim().toLowerCase();
+  const sets = gym.sets
+    .filter((s) => !s.warmup && s.weight > 0 && s.reps > 0 && s.exercise.toLowerCase().includes(name))
+    .map((s) => ({ day: s.day, e: e1rm(s.weight, s.reps) }))
+    .sort((a, b) => a.day.localeCompare(b.day));
+  const before = sets.filter((s) => s.day < since).reduce((m, s) => Math.max(m, s.e), 0);
+  const after = sets.filter((s) => s.day >= since);
+  const reach = (kg: number) => after.find((s) => s.e >= kg)?.day ?? null;
+  const startLevel = before || after[0]?.e || 0;
+  const half = startLevel && startLevel < target ? startLevel + (target - startLevel) / 2 : null;
+  const kgText = (n: number) => n.toLocaleString("sv-SE", { maximumFractionDigits: 1 });
+  const out: Milestone[] = [
+    { key: "gym10", label: "10 gympass", detail: "Tio gympass sedan start", day: nth(10), badge: "10" },
+    {
+      key: "pr",
+      label: `Nytt rekord i ${exercise.toLowerCase()}`,
+      detail: before ? `Slå ${kgText(Math.round(before))} kg (uppskattat 1RM)` : "Första loggade setet räknas som utgångsläge",
+      day: before ? reach(before + 0.5) : (after[1] && after.slice(1).find((s) => s.e > after[0].e)?.day) ?? null,
+      badge: "PR",
+    },
+  ];
+  if (half) out.push({ key: "half", label: `Halvvägs: ${kgText(Math.round(half))} kg`, detail: `${exercise} – uppskattat 1RM`, day: reach(half), badge: "½" });
+  out.push(
+    { key: "gym25", label: "25 gympass", detail: "25 gympass sedan start", day: nth(25), badge: "25" },
+    { key: "target", label: `${exercise} ${kgText(target)} kg`, detail: "Målet (uppskattat 1RM ur dina set)", day: reach(target), badge: kgText(target) },
+  );
   return out;
 }

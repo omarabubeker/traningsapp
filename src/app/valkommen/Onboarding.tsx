@@ -47,6 +47,8 @@ export function Onboarding({ userId, profile, goal, watch, again }: Props) {
   const [busy, setBusy] = useState(false);
   const [p, setP] = useState({
     display_name: profile?.display_name ?? "",
+    training_focus: profile?.training_focus ?? (goal?.focus === "strength" ? "strength" : goal?.focus === "run" ? "run" : null),
+    current_sessions: profile?.current_sessions ?? null,
     current_km: profile?.current_km ?? null,
     sessions_per_week: profile?.sessions_per_week ?? 4,
     gym_access: profile?.gym_access ?? null,
@@ -79,8 +81,8 @@ export function Onboarding({ userId, profile, goal, watch, again }: Props) {
 
   const title = ["Välkommen!", "Vad vill du nå?", "Din träning", "Koppla klockan", "Allt är klart!"][step];
   const sub = [
-    "Den här appen är din tränare för löpning och gym. Tre snabba frågor, sedan gör coachen din första plan.",
-    "Ett lopp med datum och måltid, eller något annat. Du kan ändra målet när du vill.",
+    "Den här appen är din tränare – för styrka, löpning eller båda. Tre snabba frågor, sedan gör coachen din första plan.",
+    "Välj det som passar bäst – du kan ändra målet när du vill.",
     "Så att första planen hamnar på rätt nivå.",
     "Passen hämtas automatiskt från klockan via intervals.icu.",
     "Lägg gärna appen på hemskärmen, så öppnas den som en vanlig app.",
@@ -134,16 +136,40 @@ export function Onboarding({ userId, profile, goal, watch, again }: Props) {
 
       {step === 2 && (
         <section className="space-y-6">
-          <Field label="Hur mycket springer du per vecka i dag?">
-            <Choice options={[{ v: "0", label: "Inget" }, { v: "1-10", label: "1–10 km" }, { v: "10-25", label: "10–25 km" }, { v: "25-40", label: "25–40 km" }, { v: "40+", label: "Mer än 40 km" }]} value={p.current_km} onChange={(v) => set("current_km", v)} />
+          <Field label="Vad vill du träna?">
+            <Choice options={[{ v: "strength", label: "Styrka" }, { v: "run", label: "Löpning" }, { v: "both", label: "Båda" }]} value={p.training_focus} onChange={(v) => set("training_focus", v)} />
           </Field>
+          <Field label="Hur ofta tränar du i dag?">
+            <Choice options={[{ v: "0-1", label: "0–1 pass/vecka" }, { v: "2-3", label: "2–3 pass" }, { v: "4+", label: "4 eller fler" }]} value={p.current_sessions} onChange={(v) => set("current_sessions", v)} />
+          </Field>
+          {(p.training_focus === "run" || p.training_focus === "both") && (
+            <Field label="Hur mycket springer du per vecka?">
+              <Choice options={[{ v: "0", label: "Inget" }, { v: "1-10", label: "1–10 km" }, { v: "10-25", label: "10–25 km" }, { v: "25-40", label: "25–40 km" }, { v: "40+", label: "Mer än 40 km" }]} value={p.current_km} onChange={(v) => set("current_km", v)} />
+            </Field>
+          )}
+          {(p.training_focus === "strength" || p.training_focus === "both") && (
+            <Field label="Var tränar du styrka?">
+              <Choice options={[{ v: "fullt", label: "Gym" }, { v: "hemma", label: "Hemma (hantlar)" }, { v: "inget", label: "Kroppsvikt" }]} value={p.gym_access} onChange={(v) => set("gym_access", v)} />
+            </Field>
+          )}
           <Field label="Hur många pass vill du köra per vecka?">
             <Choice options={[2, 3, 4, 5, 6].map((n) => ({ v: n, label: String(n) }))} value={p.sessions_per_week} onChange={(v) => set("sessions_per_week", v)} />
           </Field>
-          <Field label="Har du tillgång till gym?">
-            <Choice options={[{ v: "fullt", label: "Fullt gym" }, { v: "hemma", label: "Hemma (hantlar)" }, { v: "inget", label: "Inget – kroppsvikt" }]} value={p.gym_access} onChange={(v) => set("gym_access", v)} />
-          </Field>
-          <Button className="w-full" disabled={busy} onClick={() => next({ current_km: p.current_km, sessions_per_week: p.sessions_per_week, gym_access: p.gym_access })}>Fortsätt</Button>
+          <Button
+            className="w-full"
+            disabled={busy || !p.training_focus}
+            onClick={() =>
+              next({
+                training_focus: p.training_focus,
+                current_sessions: p.current_sessions,
+                current_km: p.training_focus === "strength" ? null : p.current_km,
+                gym_access: p.training_focus === "run" ? null : p.gym_access,
+                sessions_per_week: p.sessions_per_week,
+              })
+            }
+          >
+            Fortsätt
+          </Button>
         </section>
       )}
 

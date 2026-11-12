@@ -14,6 +14,7 @@ export type Profile = {
   sessions_per_week?: number | null;
   available_days?: number[] | null;
   gym_access?: "fullt" | "hemma" | "inget" | null;
+  training_focus?: "run" | "strength" | "both" | null;
   updated_at: string;
 };
 
