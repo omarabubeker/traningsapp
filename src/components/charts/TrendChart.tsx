@@ -10,7 +10,7 @@ type Props = {
   color: string;
   name: string;
   /** Formatnamn (funktioner kan inte skickas från serverkomponenter). */
-  unit: "pace" | "bpm" | "kg" | "reps";
+  unit: "pace" | "bpm" | "kg" | "reps" | "time" | "num";
   /** true = lägre värde är bättre och ritas högre upp (t.ex. tempo). */
   invert?: boolean;
   height?: number;
@@ -25,6 +25,11 @@ const FORMATS: Record<Props["unit"], (v: number) => string> = {
   bpm: (v) => `${Math.round(v)}`,
   kg: (v) => `${Math.round(v)} kg`,
   reps: (v) => `${Math.round(v)} st`,
+  time: (v) => {
+    const s = Math.round(v), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return h ? `${h}:${String(m).padStart(2, "0")}` : `${m}:${String(s % 60).padStart(2, "0")}`;
+  },
+  num: (v) => `${Math.round(v)}`,
 };
 
 export function TrendChart({ data, color, name, unit, invert = false, height = 176 }: Props) {
@@ -36,7 +41,7 @@ export function TrendChart({ data, color, name, unit, invert = false, height = 1
   const min = Math.min(...values), max = Math.max(...values);
   const span = max - min || 1;
   const step =
-    unit === "pace" ? (span > 150 ? 60 : 30) : unit === "bpm" ? (span > 60 ? 20 : 10) : span > 80 ? 20 : span > 30 ? 10 : 5;
+    unit === "time" ? (span > 3600 ? 1800 : span > 1200 ? 600 : span > 300 ? 120 : 60) : unit === "pace" ? (span > 150 ? 60 : 30) : unit === "bpm" ? (span > 60 ? 20 : 10) : span > 80 ? 20 : span > 30 ? 10 : 5;
   const lo = Math.floor(min / step) * step;
   const hi = Math.ceil(max / step) * step + (Math.ceil(max / step) * step === max ? step : 0);
   // En etikett per månad (den 1:a), i stället för upprepade månadsnamn.
@@ -79,7 +84,7 @@ export function TrendChart({ data, color, name, unit, invert = false, height = 1
             domain={[lo, hi]}
             ticks={ticks.length > 6 ? ticks.filter((_, i) => i % 2 === 0) : ticks}
             tickFormatter={unit === "kg" || unit === "reps" ? (v: number) => `${Math.round(v)}` : format}
-            width={unit === "pace" ? 48 : 40}
+            width={unit === "pace" || unit === "time" ? 48 : 40}
           />
           <Tooltip
             cursor={{ stroke: "var(--color-muted-foreground)", strokeWidth: 1 }}

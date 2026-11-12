@@ -6,6 +6,7 @@ import { getIntervalsCreds, listWellness } from "../intervals";
 import { matchWeek } from "./plan";
 import { doneSessions } from "../sessions";
 import { daysTo, distanceLabel, formatTime as raceTime, goalPace, type Goal } from "../goalDef";
+import { loadPrognos, prognosText } from "../prognosData";
 import { MOVEMENTS } from "../movement/registry";
 import type { MovementKey } from "../movement/types";
 import { matchWatchToGym } from "../watchMerge";
@@ -150,6 +151,11 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
     })(),
   );
   lines.push(...goalLines((goalRows ?? []) as Goal[], today));
+  {
+    const primary = ((goalRows ?? []) as Goal[]).find((g) => g.is_primary && g.status === "active");
+    const text = prognosText(await loadPrognos(supabase, primary?.kind === "race" && primary.distance_km ? Number(primary.distance_km) : null), raceTime);
+    if (text) lines.push("", "## Prognos och form (uträknat av appen)", text);
+  }
 
   lines.push(
     "",

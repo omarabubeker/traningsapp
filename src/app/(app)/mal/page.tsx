@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
 import { loadGoals } from "@/lib/goalsData";
+import { loadPrognos } from "@/lib/prognosData";
+import { FormCard, PredictionCard } from "@/components/goals/PrognosCards";
 import { formatDate, weekNumber } from "@/lib/dates";
 import { daysTo, formatTime, goalPace, goalSummary, raceBadge } from "@/lib/goalDef";
 import { formatPace } from "@/lib/running";
@@ -21,6 +23,8 @@ const day = (d: string) => formatDate(d + "T12:00:00Z", { day: "numeric", month:
 export default async function MalPage() {
   const { supabase } = await requireUser();
   const g = await loadGoals(supabase);
+  const raceKm = g.goal?.kind === "race" && g.goal.distance_km ? Number(g.goal.distance_km) : null;
+  const prognos = await loadPrognos(supabase, raceKm);
   const doneCount = g.milestones.filter((m) => m.day).length;
   const nextKey = g.milestones.find((m) => !m.day)?.key;
   const recent = g.weeks.filter((w) => w.total > 0).slice(-8);
@@ -87,6 +91,26 @@ export default async function MalPage() {
         ))}
         <GoalEditor mode={{ type: "new-sub" }} trigger={<button className="w-full py-1 text-sm font-semibold text-brand">+ Lägg till delmål</button>} />
       </section>
+
+      {/* Prognos och form */}
+      {(prognos.prediction || prognos.form) && (
+        <section className="space-y-3">
+          <h2 className="h-section">Prognos och form</h2>
+          {prognos.prediction ? (
+            <PredictionCard p={prognos.prediction} targetTimeS={raceKm && prognos.prediction.km === raceKm ? goal?.target_time_s ?? null : null} />
+          ) : (
+            raceKm && (
+              <div className="card space-y-1.5">
+                <p className="font-semibold">Ingen loppprognos än</p>
+                <p className="text-sm text-muted-foreground">
+                  Prognosen behöver ett utomhuspass på minst 3 km de senaste 8 veckorna – eller ett löpbandspass där du rättat distansen.
+                </p>
+              </div>
+            )
+          )}
+          {prognos.form && <FormCard f={prognos.form} />}
+        </section>
+      )}
 
       {/* Vägen mot målet */}
       {goal && g.milestones.length > 0 && (
