@@ -42,8 +42,18 @@ describe("armhävningar", () => {
     const standing = path([170, 85, 170]).map((e) => pushupPose({ elbow: e }).map((p) => ({ x: p.x, y: -p.z, z: p.y })));
     expect(run(pushup, standing).reps).toHaveLength(0);
   });
+  it("räknar reps när armarna bara mäts till ~145° i toppen (som i verkliga inspelningar)", () => {
+    const { reps } = run(pushup, path([145, 145, 80, 145, 145, 80, 145, 145]).map((e) => pushupPose({ elbow: e })));
+    expect(reps).toHaveLength(2);
+    expect(reps.every((r) => r.good)).toBe(true);
+  });
+  it("räknar inte halva reps", () => {
+    const { reps } = run(pushup, path([145, 145, 125, 145, 145]).map((e) => pushupPose({ elbow: e })));
+    expect(reps).toHaveLength(0);
+  });
   it("känner igen startposition", () => {
     expect(pushup.ready(frame(0, pushupPose({ elbow: 170 })))).toBe(true);
+    expect(pushup.ready(frame(0, pushupPose({ elbow: 143 })))).toBe(true);
     expect(pushup.ready(frame(0, pushupPose({ elbow: 100 })))).toBe(false);
   });
 });

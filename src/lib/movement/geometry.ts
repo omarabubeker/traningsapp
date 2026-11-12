@@ -30,3 +30,15 @@ export function angleFromVertical(from: Vec3, to: Vec3) {
 export function horizontalDist(a: Vec3, b: Vec3) {
   return Math.hypot(a.x - b.x, a.z - b.z);
 }
+
+/**
+ * Kroppslinjen i planka/armhävning: vinkeln axel–höft–fotled (180° = helt rak) och åt vilket
+ * håll höften avviker (sag = höften under linjen, pike = över). Kalibrerat mot inspelningar:
+ * rak kropp mäts som 167–173° från sidan, uppskjuten höft 105–153°.
+ */
+export function bodyLine(sh: Vec3, hip: Vec3, ank: Vec3) {
+  const body = sub(ank, sh);
+  const t = Math.max(0, Math.min(1, ((hip.x - sh.x) * body.x + (hip.z - sh.z) * body.z) / (body.x ** 2 + body.z ** 2 || 1e-6)));
+  const below = hip.y - (sh.y + t * body.y) > 0; // y nedåt
+  return { hipAngle: angle(sh, hip, ank), dir: below ? ("sag" as const) : ("pike" as const) };
+}
