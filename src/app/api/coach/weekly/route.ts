@@ -37,7 +37,9 @@ const PlanSchema = z.object({
 const DAY = 864e5;
 const addDays = (d: string, n: number) => new Date(Date.parse(d + "T00:00:00Z") + n * DAY).toISOString().slice(0, 10);
 
-export async function POST() {
+export async function POST(req: Request) {
+  // Första planen (från introduktionen): täcker resten av denna vecka om minst tre dagar återstår.
+  const first = !!((await req.json().catch(() => ({}))) as { first?: boolean }).first;
   const supabase = await supabaseServer();
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims?.sub) return Response.json({ error: "Inte inloggad" }, { status: 401 });
@@ -51,13 +53,18 @@ export async function POST() {
     ]);
     // Planera kommande vecka; på måndagar den vecka som just börjat.
     const isMonday = training.today === training.weekStart;
-    const weekStart = isMonday ? training.weekStart : addDays(training.weekStart, 7);
-    const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+    const daysLeft = 7 - Math.round((Date.parse(training.today) - Date.parse(training.weekStart)) / DAY);
+    const thisWeek = isMonday || (first && daysLeft >= 3);
+    const weekStart = thisWeek ? training.weekStart : addDays(training.weekStart, 7);
+    const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)).filter((d) => !thisWeek || d >= training.today);
     const dayList = days.map((d) => `${d} (${formatDate(d + "T12:00:00Z", { weekday: "long" })})`).join(", ");
 
     const task = `## Uppgift: veckoavstämning
-1. review: gå igenom ${isMonday ? "förra veckan" : "veckan som gått"} – planerat mot genomfört, volym, intensitet,
-   puls, återhämtning och mina återkopplingar. 3–6 meningar, konkret. Nämn tydligt om du gör upplägget lättare och varför.
+${first
+  ? `1. review: det här är min första plan. Hälsa mig välkommen kort och beskriv hur du lägger upp träningen utifrån min profil,
+   mitt utgångsläge och mitt mål. 3–5 meningar. Börja försiktigt om jag är ny eller tränar lite i dag.`
+  : `1. review: gå igenom ${isMonday ? "förra veckan" : "veckan som gått"} – planerat mot genomfört, volym, intensitet,
+   puls, återhämtning och mina återkopplingar. 3–6 meningar, konkret. Nämn tydligt om du gör upplägget lättare och varför.`}
 2. focus: en mening om nästa veckas fokus och var vi är i uppbyggnaden mot huvudmålet.
 3. items: ett pass per rad för dagarna ${dayList}. Använd exakt dessa datum.
    Ta med vilodagar (kind "rest"). Löppass: distance_km och/eller duration_min, intensity (t.ex. "lugnt, Z2, ca 6:20/km"

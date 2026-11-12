@@ -105,6 +105,16 @@ describe("milstolpar för andra mål", () => {
     expect(ms.find((m) => m.key === "pass10")!.day).toBe("2026-12-10");
     expect(ms.find((m) => m.key === "pass25")!.day).toBeNull();
   });
+  it("styrkemål följer övningens uppskattade 1RM mot målvikten", () => {
+    const set = (day: string, weight: number, reps = 5) => ({ exercise: "Knäböj", day, weight, reps, warmup: false, bodyweight: false });
+    const sets = [set("2026-10-20", 80), set("2026-11-05", 85), set("2026-11-12", 95), set("2026-11-20", 100, 3)];
+    const ms = milestones([], { kind: "general", focus: "strength", exercise: "Knäböj", target_kg: 110, distance_km: null, target_time_s: null, start_date: "2026-11-01" }, [], { days: ["2026-11-05", "2026-11-12", "2026-11-20"], sets });
+    // utgångsläge 80×5 ≈ 93,3 kg → rekord 2026-11-05 (85×5 ≈ 99), halvvägs ≈ 101,7 kg → 95×5 ≈ 110,8 når både halvvägs och målet
+    expect(ms.find((m) => m.key === "pr")!.day).toBe("2026-11-05");
+    expect(ms.find((m) => m.key === "half")!.day).toBe("2026-11-12");
+    expect(ms.find((m) => m.key === "target")!).toMatchObject({ day: "2026-11-12", badge: "110" });
+    expect(ms.find((m) => m.key === "gym10")!.day).toBeNull();
+  });
 });
 
 import { daysTo, formatTime, parseTime, riegel } from "./goalDef";

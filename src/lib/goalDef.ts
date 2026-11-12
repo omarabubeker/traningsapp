@@ -3,6 +3,10 @@
 export type Goal = {
   id: string;
   kind: "race" | "general";
+  /** Vad målet handlar om: lopp, styrka (övning + målvikt) eller annat. */
+  focus?: "run" | "strength" | "general";
+  exercise?: string | null;
+  target_kg?: number | null;
   title: string;
   distance_km: number | null;
   race_date: string | null;
@@ -66,7 +70,9 @@ export function distanceLabel(km: number) {
 
 /** Kort beskrivning, t.ex. "Maraton 29 maj · under 3:59:59". */
 export function goalSummary(goal: Goal) {
-  if (goal.kind === "general") return goal.notes || goal.title;
+  const by = goal.race_date ? `till ${new Date(goal.race_date + "T12:00:00Z").toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" })}` : null;
+  if (goal.focus === "strength") return ["Uppskattat 1RM ur dina set", by].filter(Boolean).join(" · ");
+  if (goal.kind === "general") return [goal.notes, by].filter(Boolean).join(" · ") || goal.title;
   const date = goal.race_date ? new Date(goal.race_date + "T12:00:00Z").toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" }) : "";
   return [distanceLabel(goal.distance_km!), date, goal.target_time_s ? `mål ${formatTime(goal.target_time_s)}` : null].filter(Boolean).join(" · ");
 }

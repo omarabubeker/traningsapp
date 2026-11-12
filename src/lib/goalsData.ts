@@ -99,7 +99,12 @@ export async function loadGoals(supabase: SupabaseClient) {
     goal: userGoals.primary,
     subGoals: userGoals.sub,
     history: userGoals.history,
-    milestones: userGoals.primary ? milestones(runs, userGoals.primary, [...new Set(sessions.map((x) => x.day))]) : [],
+    milestones: userGoals.primary
+      ? milestones(runs, userGoals.primary, [...new Set(sessions.map((x) => x.day))], {
+          days: sessions.filter((x) => x.kind === "gym").map((x) => x.day),
+          sets: gymSets,
+        })
+      : [],
   };
 }
 
