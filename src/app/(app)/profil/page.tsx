@@ -31,7 +31,7 @@ export default async function ProfilPage() {
       {isOwner(user.email) && (
         <Link href="/admin" className="card flex items-center gap-3 active:bg-secondary">
           <IconBadge icon={UsersThree} tone="brand" />
-          <span className="min-w-0 flex-1 font-semibold">Medlemmar och inbjudningar</span>
+          <span className="min-w-0 flex-1 font-semibold">Medlemmar och challenger</span>
           <CaretRight size={14} weight="bold" className="text-muted-foreground" />
         </Link>
       )}

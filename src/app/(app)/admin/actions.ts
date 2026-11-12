@@ -51,3 +51,30 @@ export async function removeMember(id: string) {
   await admin.from("members").delete().eq("id", id);
   revalidatePath("/admin");
 }
+
+/** Skapar en gruppchallenge (bara ägaren). */
+export async function createChallenge(_prev: ActionResult, form: FormData): Promise<ActionResult> {
+  const { admin } = await ownerOnly();
+  const metric = String(form.get("metric") ?? "");
+  const title = String(form.get("title") ?? "").trim().slice(0, 60);
+  const target = Number(String(form.get("target") ?? "").replace(",", "."));
+  const theme = String(form.get("theme") ?? "").trim() || null;
+  const start = String(form.get("start") ?? "");
+  const end = String(form.get("end") ?? "");
+  if (!["km", "sessions", "kg"].includes(metric)) return { ok: false, error: "Välj typ av challenge." };
+  if (!title) return { ok: false, error: "Ge challengen ett namn." };
+  if (!(target > 0)) return { ok: false, error: "Skriv ett mål större än noll." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || end < start) return { ok: false, error: "Kolla datumen – slutet måste vara efter starten." };
+  const { error } = await admin.from("challenges").insert({ metric, title, target, theme, start_date: start, end_date: end });
+  if (error) return { ok: false, error: "Kunde inte skapa challengen." };
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteChallenge(id: string) {
+  const { admin } = await ownerOnly();
+  await admin.from("challenges").delete().eq("id", id);
+  revalidatePath("/admin");
+  revalidatePath("/");
+}
