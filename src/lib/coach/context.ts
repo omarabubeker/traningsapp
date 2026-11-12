@@ -5,7 +5,7 @@ import { applyOverride, formatDuration, formatPace, isRun, SPORT_LABEL } from ".
 import { intervalsConfigured, listWellness } from "../intervals";
 import { matchWeek } from "./plan";
 import { doneSessions } from "../sessions";
-import { daysToRace } from "../race";
+import { daysTo, distanceLabel, formatTime as raceTime, goalPace, type Goal } from "../goalDef";
 import { MOVEMENTS } from "../movement/registry";
 import type { MovementKey } from "../movement/types";
 import { matchWatchToGym } from "../watchMerge";
@@ -69,7 +69,7 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
   const from = addDays(thisMonday, -7 * 6);
   const fromIso = new Date(Date.parse(from + "T00:00:00Z") - DAY).toISOString();
 
-  const [{ data: acts }, { data: gyms }, { data: plans }, { data: mems }] = await Promise.all([
+  const [{ data: acts }, { data: gyms }, { data: plans }, { data: mems }, { data: goalRows }] = await Promise.all([
     supabase
       .from("activities")
       .select("id, sport_type, start_time, distance_m, distance_override_m, moving_time_s, elapsed_time_s, avg_hr, max_hr, avg_pace_s_per_km, elevation_gain_m, training_load, indoor, name")
@@ -94,6 +94,7 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
       .order("importance", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(40),
+    supabase.from("goals").select("*").in("status", ["active", "completed"]).order("created_at"),
   ]);
 
   const gymSessions = ((gyms ?? []) as unknown as GymRow[]).map((g) => ({ ...g, day: isoDay(new Date(g.started_at)) }));
@@ -129,7 +130,6 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
   });
 
   const lines: string[] = [];
-  const raceDays = daysToRace(today);
   lines.push(
     `## Läget idag`,
     `- Idag: ${formatDate(today + "T12:00:00Z", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} (vecka ${weekNumber(today)})`,
@@ -139,8 +139,8 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
         ? "- Idag är sista dagen i veckan (söndag). Planering gäller nästa vecka."
         : `- Dagar kvar av veckan efter idag: ${left}`;
     })(),
-    raceDays > 0 ? `- Dagar kvar till maraton 29 maj 2027: ${raceDays} (${Math.floor(raceDays / 7)} veckor)` : "",
   );
+  lines.push(...goalLines((goalRows ?? []) as Goal[], today));
 
   lines.push(
     "",
@@ -326,4 +326,26 @@ export async function trainingBlock(supabase: SupabaseClient): Promise<TrainingC
   }
 
   return { text: lines.filter((l) => l !== "").join("\n").replace(/\n## /g, "\n\n## "), today, weekStart: thisMonday };
+}
+
+/** Målen i klartext för coachen: huvudmål (med dagar kvar och måltempo), delmål och senaste resultat. */
+function goalLines(goals: Goal[], today: string): string[] {
+  const out: string[] = ["", "## Mål (från appen – detta gäller före instruktionsfilen)"];
+  const primary = goals.find((g) => g.is_primary && g.status === "active");
+  if (!primary) out.push("- Inget huvudmål är satt. Föreslå gärna att jag sätter ett under Mål i appen.");
+  else if (primary.kind === "race" && primary.distance_km) {
+    const km = Number(primary.distance_km);
+    const days = daysTo(primary, today);
+    const pace = goalPace({ distance_km: km, target_time_s: primary.target_time_s });
+    out.push(
+      `- Huvudmål: ${primary.title} (${distanceLabel(km)}, ${km.toLocaleString("sv-SE")} km) den ${primary.race_date}` +
+        (primary.target_time_s ? `, måltid ${raceTime(primary.target_time_s)} (${Math.floor(pace! / 60)}:${String(Math.round(pace! % 60)).padStart(2, "0")}/km)` : ", ingen måltid satt"),
+      days !== null && days >= 0 ? `- Dagar kvar till loppet: ${days} (${Math.floor(days / 7)} veckor)` : "- Loppdatumet har passerat – fråga hur det gick och hjälp mig välja nästa mål.",
+      `- Uppladdningen startade ${primary.start_date}.`,
+    );
+  } else out.push(`- Huvudmål: ${primary.title}${primary.notes ? ` – ${primary.notes}` : ""} (sedan ${primary.start_date})`);
+  for (const g of goals.filter((x) => !x.is_primary && x.status === "active")) out.push(`- Delmål: ${g.title}${g.notes ? ` – ${g.notes}` : ""}`);
+  const done = goals.filter((g) => g.status === "completed" && g.completed_at).sort((a, b) => b.completed_at!.localeCompare(a.completed_at!))[0];
+  if (done) out.push(`- Senast avklarat: ${done.title} ${done.completed_at}${done.result_time_s ? `, tid ${raceTime(done.result_time_s)}` : ""}`);
+  return out;
 }

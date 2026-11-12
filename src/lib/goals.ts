@@ -1,10 +1,10 @@
-// Spelifiering: veckoringar, veckosvit, personliga rekord och vägen till maran.
+// Spelifiering: veckoringar, veckosvit, personliga rekord och vägen mot målet.
 // Rena funktioner (testas i goals.test.ts); all data hämtas i goalsData.ts.
 import type { DoneSession, ItemResult } from "./coach/plan";
 import { addDaysIso } from "./coach/plan";
 import { e1rm } from "./gym";
 import { formatPace } from "./running";
-import { HALF_PACE, MARATHON_PACE } from "./race";
+import { formatTime, riegel, type Goal } from "./goalDef";
 import type { PlanItem } from "./types";
 
 export const STREAK_SHARE = 0.8;
@@ -126,14 +126,51 @@ export function personalRecords(runs: RunLike[], sets: GymSetLike[], today: stri
   return out;
 }
 
-// --- Vägen till maran ----------------------------------------------------------------
+// --- Vägen mot målet ------------------------------------------------------------------
 
-export type Milestone = { key: string; label: string; detail: string; day: string | null };
+export type Milestone = { key: string; label: string; detail: string; day: string | null; badge: string };
 
-/** Milstolpar mot maran, i ungefärlig svårighetsordning. day = när den nåddes först. */
-export function milestones(runs: RunLike[], since: string): Milestone[] {
+type GoalLike = Pick<Goal, "kind" | "distance_km" | "target_time_s" | "start_date">;
+
+const kmText = (km: number) => km.toLocaleString("sv-SE", { maximumFractionDigits: 1 });
+/** "1:55" för tider över en timme (avrundat nedåt till hel minut), annars "24:30". */
+const shortTime = (sec: number) => (sec >= 3600 ? `${Math.floor(sec / 3600)}:${String(Math.floor((sec % 3600) / 60)).padStart(2, "0")}` : formatTime(Math.floor(sec)));
+
+/**
+ * Milstolpar mot huvudmålet, i ungefärlig svårighetsordning. day = när den nåddes först.
+ * Lopp: långpass, veckovolym, ett testlopp (Riegel från måltiden) och ett pass i måltempo,
+ * skalat efter distansen. Allmänt mål: antal pass och kilometer sedan start.
+ */
+export function milestones(runs: RunLike[], goal: GoalLike, workoutDays: string[] = []): Milestone[] {
+  const since = goal.start_date;
   const rs = runs.filter((r) => r.day >= since).sort((a, b) => a.day.localeCompare(b.day));
   const first = (f: (r: RunLike) => boolean) => rs.find(f)?.day ?? null;
+
+  if (goal.kind !== "race" || !goal.distance_km) {
+    const days = [...workoutDays].filter((d) => d >= since).sort();
+    const nth = (n: number) => days[n - 1] ?? null;
+    let total = 0;
+    const kmDay = (km: number) => rs.find((r) => (total += r.km) >= km)?.day ?? null;
+    const km100 = kmDay(100);
+    total = 0;
+    const km250 = kmDay(250);
+    return [
+      { key: "pass10", label: "10 pass", detail: "Tio träningspass sedan start", day: nth(10), badge: "10" },
+      { key: "pass25", label: "25 pass", detail: "25 träningspass sedan start", day: nth(25), badge: "25" },
+      { key: "km100", label: "100 km löpning", detail: "Sammanlagt sedan start", day: km100, badge: "100" },
+      { key: "pass50", label: "50 pass", detail: "50 träningspass sedan start", day: nth(50), badge: "50" },
+      { key: "km250", label: "250 km löpning", detail: "Sammanlagt sedan start", day: km250, badge: "250" },
+      { key: "pass100", label: "100 pass", detail: "100 träningspass sedan start", day: nth(100), badge: "100" },
+    ];
+  }
+
+  const D = goal.distance_km;
+  const marathon = D >= 40;
+  const ladder = marathon ? [15, 20, 25, 30, 32] : D >= 20 ? [10, 12, 15, 18, 21] : D >= 10 ? [5, 8, 10, 12, 14] : [3, 5, 6, 8, 10];
+  const [w1, w2] = marathon ? [40, 50] : D >= 20 ? [25, 35] : D >= 10 ? [20, 30] : [15, 25];
+  const test = marathon ? { km: 21.0975, name: "Halvmara", badge: "½", key: "half" } : D >= 20 ? { km: 10, name: "10 km", badge: "10K", key: "test" } : D >= 10 ? { km: 5, name: "5 km", badge: "5K", key: "test" } : { km: 3, name: "3 km", badge: "3K", key: "test" };
+  const gpKm = marathon ? 30 : D >= 20 ? 15 : D >= 10 ? 8 : 4;
+
   const weeks = new Map<string, number>();
   for (const r of rs) weeks.set(mondayOfIso(r.day), (weeks.get(mondayOfIso(r.day)) ?? 0) + r.km);
   const weekList = [...weeks].sort((a, b) => a[0].localeCompare(b[0]));
@@ -141,25 +178,35 @@ export function milestones(runs: RunLike[], since: string): Milestone[] {
     const w = weekList.find(([, k]) => k >= km);
     return w ? addDaysIso(w[0], 6) : null;
   };
-  const threeInRow = () => {
+  const threeInRow = (km: number) => {
     for (let i = 2; i < weekList.length; i++) {
       const [a, b, c] = [weekList[i - 2], weekList[i - 1], weekList[i]];
       const consecutive = addDaysIso(a[0], 7) === b[0] && addDaysIso(b[0], 7) === c[0];
-      if (consecutive && a[1] >= 40 && b[1] >= 40 && c[1] >= 40) return addDaysIso(c[0], 6);
+      if (consecutive && a[1] >= km && b[1] >= km && c[1] >= km) return addDaysIso(c[0], 6);
     }
     return null;
   };
-  const fast = (km: number, pace: number) => (r: RunLike) => r.km >= km && r.reliable && !!r.pace && r.pace <= pace;
-  return [
-    { key: "long15", label: "Långpass 15 km", detail: "Första passet på minst 15 km", day: first((r) => r.km >= 15) },
-    { key: "week40", label: "Vecka med 40 km", detail: "Minst 40 km löpning på en vecka", day: firstWeek(40) },
-    { key: "long20", label: "Långpass 20 km", detail: "Första passet på minst 20 km", day: first((r) => r.km >= 20) },
-    { key: "half", label: "Halvmara under 1:55", detail: `21,1 km i ${formatPace(HALF_PACE)}/km eller snabbare`, day: first(fast(21.1, HALF_PACE)) },
-    { key: "long25", label: "Långpass 25 km", detail: "Första passet på minst 25 km", day: first((r) => r.km >= 25) },
-    { key: "week50", label: "Vecka med 50 km", detail: "Minst 50 km löpning på en vecka", day: firstWeek(50) },
-    { key: "three40", label: "Tre veckor i rad med 40 km", detail: "Tre veckor efter varandra med minst 40 km", day: threeInRow() },
-    { key: "long30", label: "Långpass 30 km", detail: "Första passet på minst 30 km", day: first((r) => r.km >= 30) },
-    { key: "mp30", label: "30 km i maratonfart", detail: `30 km i ${formatPace(MARATHON_PACE)}/km eller snabbare`, day: first(fast(30, MARATHON_PACE)) },
-    { key: "long32", label: "Långpass 32 km", detail: "Det längsta passet före maran", day: first((r) => r.km >= 32) },
-  ];
+  const fast = (km: number, pace: number) => (r: RunLike) => r.km >= km - 0.05 && r.reliable && !!r.pace && r.pace <= pace;
+  const long = (km: number, last = false) => ({
+    key: `long${km}`,
+    label: `Långpass ${kmText(km)} km`,
+    detail: last ? "Det längsta passet före loppet" : `Första passet på minst ${kmText(km)} km`,
+    day: first((r) => r.km >= km - 0.05),
+    badge: kmText(km),
+  });
+  const week = (km: number) => ({ key: `week${km}`, label: `Vecka med ${km} km`, detail: `Minst ${km} km löpning på en vecka`, day: firstWeek(km), badge: String(km) });
+
+  const out: Milestone[] = [long(ladder[0]), week(w1), long(ladder[1])];
+  const target = goal.target_time_s;
+  if (target) {
+    const t = riegel(target, D, test.km);
+    out.push({ key: test.key, label: `${test.name} under ${shortTime(t)}`, detail: `${kmText(test.km)} km i ${formatPace(t / test.km)}/km eller snabbare`, day: first(fast(test.km, t / test.km)), badge: test.badge });
+  }
+  out.push(long(ladder[2]), week(w2), { key: `three${w1}`, label: `Tre veckor i rad med ${w1} km`, detail: `Tre veckor efter varandra med minst ${w1} km`, day: threeInRow(w1), badge: "3×" }, long(ladder[3]));
+  if (target) {
+    const pace = target / D;
+    out.push({ key: marathon ? `mp${gpKm}` : `gp${gpKm}`, label: `${gpKm} km i ${marathon ? "maratonfart" : "måltempo"}`, detail: `${gpKm} km i ${formatPace(pace)}/km eller snabbare`, day: first(fast(gpKm, pace)), badge: marathon ? "MP" : "MT" });
+  }
+  out.push(long(ladder[4], true));
+  return out;
 }
