@@ -6,7 +6,8 @@ import { signOut } from "@/app/login/actions";
 import Link from "next/link";
 import { CardHead, IconBadge } from "@/components/CardParts";
 import { ThemeSelect } from "@/components/ThemeSelect";
-import { CaretRight, CircleHalf, Gear, HandWaving } from "@phosphor-icons/react/dist/ssr";
+import { CaretRight, CircleHalf, Gear, HandWaving, UsersThree } from "@phosphor-icons/react/dist/ssr";
+import { isOwner } from "@/lib/owner";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,13 @@ export default async function ProfilPage() {
         <ThemeSelect />
         <p className="text-xs text-muted-foreground">Auto följer telefonens ljusa eller mörka läge.</p>
       </section>
+      {isOwner(user.email) && (
+        <Link href="/admin" className="card flex items-center gap-3 active:bg-secondary">
+          <IconBadge icon={UsersThree} tone="brand" />
+          <span className="min-w-0 flex-1 font-semibold">Medlemmar och inbjudningar</span>
+          <CaretRight size={14} weight="bold" className="text-muted-foreground" />
+        </Link>
+      )}
       <Link href="/valkommen" className="card flex items-center gap-3 active:bg-secondary">
         <IconBadge icon={HandWaving} tone="brand" />
         <span className="min-w-0 flex-1 font-semibold">Visa introduktionen igen</span>
