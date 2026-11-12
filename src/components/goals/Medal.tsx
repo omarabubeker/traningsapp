@@ -1,11 +1,5 @@
 import { PersonSimpleRun } from "@phosphor-icons/react/dist/ssr";
 
-// Kort text på medaljen per milstolpe (som "5K" på klockans utmärkelser).
-export const MEDAL_TEXT: Record<string, string> = {
-  long15: "15", week40: "40", long20: "20", half: "½", long25: "25",
-  week50: "50", three40: "3×", long30: "30", mp30: "MP", long32: "32",
-};
-
 /**
  * Medalj för en milstolpe. Tagen: lime-gradient med text eller löparikon.
  * Inte tagen: streckad grå kontur (nästa milstolpe får grön kontur).

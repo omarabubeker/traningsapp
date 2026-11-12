@@ -5,7 +5,7 @@ import { Target, Trophy } from "@phosphor-icons/react/dist/ssr";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Medal } from "./Medal";
 
-export type CelebrationEvent = { key: string; kind: "milestone" | "record" | "rings"; title: string; text: string; medalText?: string };
+export type CelebrationEvent = { key: string; kind: "milestone" | "record" | "rings" | "race"; title: string; text: string; medalText?: string };
 
 const STORE = "firat";
 const EVT = "firat";
@@ -58,7 +58,7 @@ export function Celebrate({ events }: { events: CelebrationEvent[] }) {
     <AlertDialog open onOpenChange={(o) => !o && markSeen(current.key)}>
       <AlertDialogContent size="sm" className="items-center text-center">
         <div className="celebrate-pop mx-auto flex justify-center pt-2">
-          {current.kind === "milestone" ? (
+          {current.kind === "milestone" || current.kind === "race" ? (
             <Medal id="celebrate-medal" size={96} text={current.medalText} />
           ) : (
             <span className={`flex size-24 items-center justify-center rounded-full ${current.kind === "record" ? "bg-gym/15 text-gym" : "bg-brand/15 text-brand"}`}>

@@ -4,14 +4,14 @@ import { ActivityRow } from "@/components/ActivityRow";
 import { applyOverride, isRun } from "@/lib/running";
 import type { Activity } from "@/lib/types";
 import { loadPlans } from "@/lib/coach/planData";
-import { daysToRace } from "@/lib/race";
+import { daysTo, formatTime as raceTime, raceBadge } from "@/lib/goalDef";
+import { RaceResult } from "@/components/goals/RaceResult";
 import { matchWatchToGym } from "@/lib/watchMerge";
 import { TodayHero } from "@/components/TodayHero";
 import { WeekRings } from "@/components/goals/WeekRings";
 import { MiniBars } from "@/components/goals/MiniBars";
 import { streakText } from "@/lib/goals";
 import { Celebrate, type CelebrationEvent } from "@/components/goals/Celebrate";
-import { MEDAL_TEXT } from "@/components/goals/Medal";
 import { CardHead, EmptyState, IconBadge, SectionHead, StatCard } from "@/components/CardParts";
 import { Barbell, CalendarCheck, Fire, Medal as MedalIcon, PersonSimpleRun, Target, Trophy } from "@phosphor-icons/react/dist/ssr";
 import { loadGoals } from "@/lib/goalsData";
@@ -30,7 +30,6 @@ type Row = {
 export default async function Overview() {
   const { supabase, user } = await requireUser();
   const { days, today, from, to } = weekRange();
-  const raceDays = daysToRace(today);
 
   // Alla hämtningar startar samtidigt.
   const [{ data }, { data: actData }, { plans }, goals, { data: prof }] = await Promise.all([
@@ -82,6 +81,8 @@ export default async function Overview() {
   const fresh = goals.records.filter((r) => r.isNew).slice(0, 3);
   const doneMs = goals.milestones.filter((m) => m.day).length;
   const nextMs = goals.milestones.find((m) => !m.day);
+  const goal = goals.goal;
+  const raceDays = goal ? daysTo(goal, today) : null;
 
   // Händelser att fira (visas en gång var): nya milstolpar, nya rekord och stängda ringar.
   const weekAgo = new Date(Date.parse(today + "T12:00:00Z") - 6 * 864e5).toISOString().slice(0, 10);
@@ -89,8 +90,12 @@ export default async function Overview() {
   const ringsClosed = !!r && r.km.target > 0 && r.km.done >= r.km.target && r.gym.done >= r.gym.target && r.plan.total > 0 && r.plan.done >= r.plan.total;
   const events: CelebrationEvent[] = [
     ...goals.milestones
-      .filter((m) => m.day && m.day >= weekAgo)
-      .map((m) => ({ key: `milstolpe:${m.key}`, kind: "milestone" as const, title: "Ny milstolpe!", text: `${m.label} – ${doneMs} av ${goals.milestones.length} på vägen till maran.`, medalText: MEDAL_TEXT[m.key] })),
+      // bara sådant som nåtts efter att målet sattes (annars firas gamla pass när man byter mål)
+      .filter((m) => m.day && m.day >= weekAgo && (!goal?.created_at || m.day >= goal.created_at.slice(0, 10)))
+      .map((m) => ({ key: `milstolpe:${m.key}`, kind: "milestone" as const, title: "Ny milstolpe!", text: `${m.label} – ${doneMs} av ${goals.milestones.length} på vägen mot ${goal?.title ?? "målet"}.`, medalText: m.badge })),
+    ...goals.history
+      .filter((h) => h.completed_at && h.completed_at >= weekAgo)
+      .map((h) => ({ key: `mal:${h.id}`, kind: "race" as const, title: `${h.title} klart!`, text: h.result_time_s ? `Din tid: ${raceTime(h.result_time_s)}${h.target_time_s ? ` (mål ${raceTime(h.target_time_s)})` : ""}. Grattis!` : "Grattis till ett avklarat mål!", medalText: h.distance_km ? raceBadge(h.distance_km) : undefined })),
     ...fresh.map((rec) => ({ key: `rekord:${rec.key}:${rec.day}`, kind: "record" as const, title: "Nytt rekord!", text: `${rec.label}: ${rec.value}${rec.previous ? ` (tidigare ${rec.previous})` : ""}` })),
     ...(ringsClosed ? [{ key: `ringar:${days[0]}`, kind: "rings" as const, title: "Alla ringar stängda!", text: "Du har gjort hela veckans plan. Starkt jobbat." }] : []),
   ];
@@ -101,7 +106,7 @@ export default async function Overview() {
       <header>
         <p className="inline-block text-sm text-muted-foreground first-letter:uppercase">
           {formatDate(today + "T12:00:00Z", { weekday: "long", day: "numeric", month: "long" })}
-          {raceDays > 0 && <> · <span className="text-foreground tabular-nums">{raceDays}</span> dagar till maran</>}
+          {goal && raceDays !== null && raceDays > 0 && <> · <span className="text-foreground tabular-nums">{raceDays}</span> dagar till {goal.title}</>}
         </p>
         <h1 className="h-page">{greeting()}{name ? `, ${name}` : ""}</h1>
       </header>
@@ -114,6 +119,17 @@ export default async function Overview() {
             <span className="block text-sm text-muted-foreground">Startat {formatTime(active.started_at)}</span>
           </span>
           <span className="text-sm font-semibold text-brand">Fortsätt</span>
+        </Link>
+      )}
+
+      {goal && goal.kind === "race" && raceDays !== null && raceDays < 0 && <RaceResult goal={goal} />}
+      {!goal && (
+        <Link href="/mal" className="card flex items-center gap-3 border-brand/50 py-4 active:bg-secondary">
+          <IconBadge icon={Target} tone="brand" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{goals.history.length ? "Dags för nästa mål?" : "Sätt ett mål"}</span>
+            <span className="block text-sm text-muted-foreground">Ett lopp eller något annat du vill nå</span>
+          </span>
         </Link>
       )}
 

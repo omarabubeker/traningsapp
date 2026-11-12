@@ -2,13 +2,16 @@ import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
 import { loadGoals } from "@/lib/goalsData";
 import { formatDate, weekNumber } from "@/lib/dates";
-import { daysToRace, TRAINING_START } from "@/lib/race";
+import { daysTo, formatTime, goalPace, goalSummary, raceBadge } from "@/lib/goalDef";
+import { formatPace } from "@/lib/running";
+import { GoalEditor } from "@/components/goals/GoalEditor";
+import { Button } from "@/components/ui/button";
 import { STREAK_SHARE, streakText, type RecordItem } from "@/lib/goals";
 import { WeekRings } from "@/components/goals/WeekRings";
 import { Badge } from "@/components/ui/badge";
-import { BigValue, CardHead } from "@/components/CardParts";
-import { Fire, FlagCheckered } from "@phosphor-icons/react/dist/ssr";
-import { MEDAL_TEXT, Medal } from "@/components/goals/Medal";
+import { BigValue, CardHead, EmptyState, IconBadge, SectionHead } from "@/components/CardParts";
+import { Fire, FlagCheckered, PersonSimpleRun, Target, Trophy } from "@phosphor-icons/react/dist/ssr";
+import { Medal } from "@/components/goals/Medal";
 import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +24,9 @@ export default async function MalPage() {
   const doneCount = g.milestones.filter((m) => m.day).length;
   const nextKey = g.milestones.find((m) => !m.day)?.key;
   const recent = g.weeks.filter((w) => w.total > 0).slice(-8);
-  const raceDays = daysToRace(g.today);
+  const goal = g.goal;
+  const days = goal ? daysTo(goal, g.today) : null;
+  const pace = goal ? goalPace(goal) : null;
 
   return (
     <main className="space-y-7 pt-3">
@@ -30,33 +35,84 @@ export default async function MalPage() {
         <h1 className="h-detail">Mål och rekord</h1>
       </header>
 
-      {/* Vägen till maran */}
+      {/* Målet */}
       <section className="space-y-3">
-        <h2 className="h-section">Vägen till maran</h2>
-        <div className="card space-y-4">
-          <div className="space-y-2">
-            <CardHead icon={FlagCheckered} tone="brand" title="Milstolpar" right={raceDays > 0 ? `${raceDays} dagar kvar` : undefined} />
-            <BigValue value={doneCount} unit={`av ${g.milestones.length}`} />
-            <div className="h-2 overflow-hidden rounded-full bg-secondary">
-              <div className="h-full rounded-full bg-primary" style={{ width: `${(doneCount / g.milestones.length) * 100}%` }} />
+        <SectionHead title="Ditt mål" />
+        {goal ? (
+          <div className="card space-y-4">
+            <div className="flex items-start gap-3">
+              <IconBadge icon={goal.kind === "race" ? PersonSimpleRun : Target} tone="brand" size="lg" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[17px] leading-snug font-bold">{goal.title}</p>
+                <p className="text-sm text-muted-foreground">{goalSummary(goal)}</p>
+              </div>
+            </div>
+            {goal.kind === "race" && (
+              <div className="grid grid-cols-3 gap-2">
+                <Fact value={days !== null && days >= 0 ? days : "–"} unit="dagar kvar" />
+                <Fact value={goal.target_time_s ? formatTime(goal.target_time_s) : "–"} unit="måltid" />
+                <Fact value={pace ? formatPace(pace) : "–"} unit="min/km" />
+              </div>
+            )}
+            <div className="flex gap-2">
+              <GoalEditor mode={{ type: "edit", goal }} trigger={<Button variant="secondary" size="sm" className="flex-1">Ändra mål</Button>} />
+              <GoalEditor mode={{ type: "new-primary", replaces: goal }} trigger={<Button variant="secondary" size="sm" className="flex-1">Byt till nytt mål</Button>} />
             </div>
           </div>
-          <ol className="space-y-2.5">
-            {g.milestones.map((m) => (
-              <li key={m.key} className="flex items-center gap-3">
-                <Medal id={`m-${m.key}`} size={44} earned={!!m.day} next={m.key === nextKey} text={MEDAL_TEXT[m.key]} />
-                <span className="min-w-0 flex-1">
-                  <span className={`block ${m.day ? "" : m.key === nextKey ? "font-medium" : "text-muted-foreground"}`}>{m.label}</span>
-                  <span className="block text-xs text-muted-foreground">{m.detail}</span>
-                </span>
-                {m.day && <span className="shrink-0 text-xs text-muted-foreground">{day(m.day)}</span>}
-                {m.key === nextKey && <Badge variant="secondary" className="shrink-0">Nästa</Badge>}
-              </li>
-            ))}
-          </ol>
-          <p className="text-xs text-muted-foreground">Räknas från {formatDate(TRAINING_START + "T12:00:00Z", { day: "numeric", month: "long" })}. Tempomålen gäller utomhuspass och rättade löpbandspass.</p>
-        </div>
+        ) : (
+          <div className="space-y-3">
+            <EmptyState icon={Target} tone="brand" title={g.history.length ? "Dags för nästa mål?" : "Inget mål än"}>
+              Sätt ett mål, till exempel ett lopp med datum och måltid. Milstolparna och coachen utgår från det.
+            </EmptyState>
+            <GoalEditor mode={{ type: "new-primary" }} trigger={<Button className="w-full">Sätt ett mål</Button>} />
+          </div>
+        )}
+
+        {/* Delmål */}
+        {g.subGoals.map((sg) => (
+          <div key={sg.id} className="card flex items-center gap-3 py-4">
+            <IconBadge icon={Target} tone="muted" />
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">{sg.title}</span>
+              {sg.notes && <span className="block truncate text-sm text-muted-foreground">{sg.notes}</span>}
+            </span>
+            <GoalEditor mode={{ type: "edit", goal: sg }} trigger={<Button variant="ghost" size="sm">Ändra</Button>} />
+          </div>
+        ))}
+        <GoalEditor mode={{ type: "new-sub" }} trigger={<button className="w-full py-1 text-sm font-semibold text-brand">+ Lägg till delmål</button>} />
       </section>
+
+      {/* Vägen mot målet */}
+      {goal && g.milestones.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="h-section">{goal.kind === "race" ? `Vägen till ${goal.title}` : "Milstolpar"}</h2>
+          <div className="card space-y-4">
+            <div className="space-y-2">
+              <CardHead icon={FlagCheckered} tone="brand" title="Milstolpar" right={days !== null && days > 0 ? `${days} dagar kvar` : undefined} />
+              <BigValue value={doneCount} unit={`av ${g.milestones.length}`} />
+              <div className="h-2 overflow-hidden rounded-full bg-secondary">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${(doneCount / g.milestones.length) * 100}%` }} />
+              </div>
+            </div>
+            <ol className="space-y-2.5">
+              {g.milestones.map((m) => (
+                <li key={m.key} className="flex items-center gap-3">
+                  <Medal id={`m-${m.key}`} size={44} earned={!!m.day} next={m.key === nextKey} text={m.badge} />
+                  <span className="min-w-0 flex-1">
+                    <span className={`block ${m.day ? "" : m.key === nextKey ? "font-medium" : "text-muted-foreground"}`}>{m.label}</span>
+                    <span className="block text-xs text-muted-foreground">{m.detail}</span>
+                  </span>
+                  {m.day && <span className="shrink-0 text-xs text-muted-foreground">{day(m.day)}</span>}
+                  {m.key === nextKey && <Badge variant="secondary" className="shrink-0">Nästa</Badge>}
+                </li>
+              ))}
+            </ol>
+            <p className="text-xs text-muted-foreground">
+              Räknas från {formatDate(goal.start_date + "T12:00:00Z", { day: "numeric", month: "long" })}.{goal.kind === "race" ? " Tempomålen gäller utomhuspass och rättade löpbandspass." : ""}
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* Veckan och sviten */}
       <section className="space-y-3">
@@ -91,6 +147,28 @@ export default async function MalPage() {
           </p>
         </div>
       </section>
+
+      {g.history.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="h-section">Avklarade mål</h2>
+          <ul className="card divide-y divide-border p-0">
+            {g.history.map((h) => (
+              <li key={h.id} className="flex items-center gap-3 px-4 py-3">
+                {h.kind === "race" && h.distance_km ? (
+                  <Medal id={`h-${h.id}`} size={44} text={raceBadge(h.distance_km)} />
+                ) : (
+                  <IconBadge icon={Trophy} tone="gym" />
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">{h.title}</span>
+                  <span className="block text-xs text-muted-foreground">{h.completed_at ? day(h.completed_at) : ""}{h.target_time_s ? ` · mål ${formatTime(h.target_time_s)}` : ""}</span>
+                </span>
+                {h.result_time_s && <span className="num-lg shrink-0">{formatTime(h.result_time_s)}</span>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <Records title="Personliga rekord – löpning" items={g.records.filter((r) => r.group === "run")} />
       <Records title="Personliga rekord – gym" items={g.records.filter((r) => r.group === "gym")} />
@@ -132,5 +210,14 @@ function Records({ title, items }: { title: string; items: RecordItem[] }) {
         })}
       </ul>
     </section>
+  );
+}
+
+function Fact({ value, unit }: { value: number | string; unit: string }) {
+  return (
+    <div className="rounded-2xl bg-secondary/60 px-3 py-2.5">
+      <p className="num-lg">{value}</p>
+      <p className="text-xs font-semibold text-muted-foreground">{unit}</p>
+    </div>
   );
 }

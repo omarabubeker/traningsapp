@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isoDay } from "./dates";
 import { applyOverride } from "./running";
-import { TRAINING_START } from "./race";
+import type { Goal } from "./goalDef";
 import { loadDoneSessions, mondayOf, withStatus } from "./coach/planData";
 import { addDaysIso } from "./coach/plan";
 import { milestones, personalRecords, streak, weekRings, weekScore, type GymSetLike, type RunLike } from "./goals";
@@ -22,11 +22,25 @@ async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ dat
 
 type GymRow = { reps: number; weight_kg: number | string; is_warmup: boolean; exercises: { name: string; is_bodyweight: boolean } | null; gym_sessions: { started_at: string } | null };
 
+/** Personens mål: aktivt huvudmål, delmål och avklarade mål (historik). */
+export async function loadUserGoals(supabase: SupabaseClient) {
+  const { data } = await supabase.from("goals").select("*").order("created_at");
+  const all = ((data ?? []) as Goal[]).map((g) => ({
+    ...g,
+    distance_km: g.distance_km === null ? null : Number(g.distance_km),
+  }));
+  return {
+    primary: all.find((g) => g.is_primary && g.status === "active") ?? null,
+    sub: all.filter((g) => !g.is_primary && g.status === "active"),
+    history: all.filter((g) => g.status === "completed").sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? "")),
+  };
+}
+
 /** All data för mål och spel: veckoringar, svit, rekord och milstolpar. */
 export async function loadGoals(supabase: SupabaseClient) {
   const today = isoDay();
   const monday = mondayOf(today);
-  const [{ data: planRows }, acts, sets, sessions] = await Promise.all([
+  const [{ data: planRows }, acts, sets, sessions, userGoals] = await Promise.all([
     supabase.from("plans").select("*, plan_items(*)").eq("status", "active").order("week_start"),
     fetchAll((a, b) =>
       supabase
@@ -46,6 +60,7 @@ export async function loadGoals(supabase: SupabaseClient) {
         .range(a, b),
     ),
     loadDoneSessions(supabase, addDaysIso(monday, -26 * 7)),
+    loadUserGoals(supabase),
   ]);
   const rows = ((planRows ?? []) as (Plan & { plan_items: PlanItem[] })[]).filter((p) => p.week_start >= addDaysIso(monday, -26 * 7));
   const plans = withStatus(rows, sessions, today);
@@ -81,7 +96,10 @@ export async function loadGoals(supabase: SupabaseClient) {
     streak: streak(weeks, monday),
     weeks,
     records: personalRecords(runs, gymSets, today),
-    milestones: milestones(runs, TRAINING_START),
+    goal: userGoals.primary,
+    subGoals: userGoals.sub,
+    history: userGoals.history,
+    milestones: userGoals.primary ? milestones(runs, userGoals.primary, [...new Set(sessions.map((x) => x.day))]) : [],
   };
 }
 

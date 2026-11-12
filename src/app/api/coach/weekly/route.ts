@@ -58,7 +58,7 @@ export async function POST() {
     const task = `## Uppgift: veckoavstämning
 1. review: gå igenom ${isMonday ? "förra veckan" : "veckan som gått"} – planerat mot genomfört, volym, intensitet,
    puls, återhämtning och mina återkopplingar. 3–6 meningar, konkret. Nämn tydligt om du gör upplägget lättare och varför.
-2. focus: en mening om nästa veckas fokus och var vi är i uppbyggnaden mot maraton.
+2. focus: en mening om nästa veckas fokus och var vi är i uppbyggnaden mot huvudmålet.
 3. items: ett pass per rad för dagarna ${dayList}. Använd exakt dessa datum.
    Ta med vilodagar (kind "rest"). Löppass: distance_km och/eller duration_min, intensity (t.ex. "lugnt, Z2, ca 6:20/km"
    eller "6 × 3 min i Z4, 2 min vila"). Gym: exercises med set, reps och vikt utifrån mina senaste siffror

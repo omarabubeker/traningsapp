@@ -81,9 +81,43 @@ describe("rekord och milstolpar", () => {
     expect(recs[0]).toMatchObject({ label: "Knäböj", value: "100 kg × 5", isNew: false });
   });
   it("milstolpar räknas från startdatum", () => {
-    const ms = milestones([run("2026-10-01", 21.5, 300), run("2026-11-15", 16, 340), run("2026-11-22", 21.2, 320)], "2026-11-02");
+    const mara = { kind: "race" as const, distance_km: 42.195, target_time_s: 14399, start_date: "2026-11-02" };
+    const ms = milestones([run("2026-10-01", 21.5, 300), run("2026-11-15", 16, 340), run("2026-11-22", 21.2, 320)], mara);
+    // samma milstolpar som tidigare för maran (nycklarna används för firanden)
+    expect(ms.map((m) => m.key)).toEqual(["long15", "week40", "long20", "half", "long25", "week50", "three40", "long30", "mp30", "long32"]);
+    expect(ms.find((m) => m.key === "half")!.label).toBe("Halvmara under 1:55");
     expect(ms.find((m) => m.key === "long15")!.day).toBe("2026-11-15");
     expect(ms.find((m) => m.key === "half")!.day).toBe("2026-11-22");
     expect(ms.find((m) => m.key === "long25")!.day).toBeNull();
+  });
+});
+
+describe("milstolpar för andra mål", () => {
+  it("skalar efter distansen (10 km under 50 min)", () => {
+    const ms = milestones([run("2026-12-01", 5, 290)], { kind: "race", distance_km: 10, target_time_s: 3000, start_date: "2026-11-30" });
+    expect(ms.map((m) => m.label)).toContain("5 km under 23:58");
+    expect(ms.map((m) => m.label)).toContain("8 km i måltempo");
+    expect(ms[0]).toMatchObject({ key: "long5", day: "2026-12-01" });
+  });
+  it("allmänt mål räknar pass och kilometer", () => {
+    const days = Array.from({ length: 12 }, (_, i) => `2026-12-${String(i + 1).padStart(2, "0")}`);
+    const ms = milestones([], { kind: "general", distance_km: null, target_time_s: null, start_date: "2026-12-01" }, days);
+    expect(ms.find((m) => m.key === "pass10")!.day).toBe("2026-12-10");
+    expect(ms.find((m) => m.key === "pass25")!.day).toBeNull();
+  });
+});
+
+import { daysTo, formatTime, parseTime, riegel } from "./goalDef";
+describe("målhjälp", () => {
+  it("tolkar och formaterar tider", () => {
+    expect(parseTime("3:59:59")).toBe(14399);
+    expect(parseTime("3:45")).toBe(13500);
+    expect(parseTime("52:30")).toBe(3150);
+    expect(formatTime(14399)).toBe("3:59:59");
+    expect(formatTime(1445)).toBe("24:05");
+  });
+  it("Riegel och dagar kvar", () => {
+    expect(Math.round(riegel(14399, 42.195, 21.0975) / 60)).toBe(115);
+    expect(daysTo({ race_date: "2027-05-29" }, "2027-05-27")).toBe(2);
   });
 });
