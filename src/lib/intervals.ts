@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { TrackPoint } from "./running";
+import { isOwner } from "./owner";
 
 // Klient för intervals.icu (personlig API-nyckel, Basic auth "API_KEY:<nyckel>").
 // Fälten tolkas tolerant eftersom API:et kan ändras över tid.
@@ -24,8 +25,7 @@ export async function getIntervalsCreds(supabase: SupabaseClient, email?: string
   const { data } = await supabase.rpc("intervals_credentials");
   const row = (data as { athlete_id: string; api_key: string }[] | null)?.[0];
   if (row?.api_key) return { athleteId: row.athlete_id, apiKey: row.api_key };
-  const owner = process.env.ALLOWED_EMAIL?.split(",")[0]?.trim().toLowerCase();
-  if (email && owner && email.toLowerCase() === owner && process.env.INTERVALS_API_KEY && process.env.INTERVALS_ATHLETE_ID) {
+  if (isOwner(email) && process.env.INTERVALS_API_KEY && process.env.INTERVALS_ATHLETE_ID) {
     return { athleteId: normalizeAthleteId(process.env.INTERVALS_ATHLETE_ID), apiKey: process.env.INTERVALS_API_KEY.trim() };
   }
   return null;

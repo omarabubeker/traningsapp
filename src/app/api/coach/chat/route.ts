@@ -15,6 +15,7 @@ import {
 } from "@/lib/coach/claude";
 import { extractMemories } from "@/lib/coach/memory";
 import { currentConversation, pruneOldMessages } from "@/lib/coach/conversation";
+import { coachQuota, nextMonthStart } from "@/lib/coach/quota";
 
 export const maxDuration = 60;
 
@@ -31,6 +32,13 @@ export async function POST(req: Request) {
   const { message, newConversation } = (await req.json()) as { message?: string; newConversation?: boolean };
   const text = (message ?? "").trim().slice(0, 4000);
   if (!text) return Response.json({ error: "Tomt meddelande" }, { status: 400 });
+
+  // Månadens tak nått: coachen svarar vänligt i stället för att anropa Claude.
+  const quota = await coachQuota(supabase, claims.claims.email as string | undefined);
+  if (quota === "out") {
+    const note = `Jag har haft fullt upp med dig den här månaden, så chatten pausar till ${nextMonthStart()}. Veckoavstämningen fungerar som vanligt, och allt du tränar loggas precis som förut. Vi hörs snart!`;
+    return new Response(note, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
+  }
 
   const conversationId = await currentConversation(supabase, !!newConversation);
   const { data: userMsg, error: saveError } = await supabase
@@ -77,9 +85,9 @@ export async function POST(req: Request) {
 
   const stream = anthropic().messages.stream({
     model: CHAT_MODEL,
-    max_tokens: CHAT_MAX_TOKENS,
+    max_tokens: quota === "low" ? 800 : CHAT_MAX_TOKENS,
     output_config: { effort: "low" },
-    system: buildSystem(instructions, profile, training.text, STYLE),
+    system: buildSystem(instructions, profile, training.text, quota === "low" ? STYLE + "\nSvara extra kort just nu: högst cirka 80 ord." : STYLE),
     messages: merged,
   });
 

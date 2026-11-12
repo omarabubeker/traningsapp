@@ -15,9 +15,9 @@ export type ChatMessage = { id: string; role: "user" | "assistant"; kind: "chat"
 
 const QUICK = ["Trött i dag", "Kändes bra", "Har ont någonstans", "Vad ska jag köra idag?", "Hinner inte dagens pass"];
 
-type Props = { current: ChatMessage[]; previous: Conversation[]; configured: boolean };
+type Props = { current: ChatMessage[]; previous: Conversation[]; configured: boolean; quotaNote?: string | null };
 
-export function CoachChat({ current, previous: prevInitial, configured }: Props) {
+export function CoachChat({ current, previous: prevInitial, configured, quotaNote }: Props) {
   const router = useRouter();
   const [messages, setMessages] = useState(current);
   const [previous, setPrevious] = useState(prevInitial);
@@ -112,6 +112,8 @@ export function CoachChat({ current, previous: prevInitial, configured }: Props)
       <Button onClick={weekly} disabled={!!busy || !configured} className="mb-4 w-full">
         {busy === "weekly" ? "Coachen går igenom veckan…" : "Veckoavstämning"}
       </Button>
+
+      {quotaNote && <p className="-mt-2 mb-4 text-center text-sm text-muted-foreground">{quotaNote}</p>}
 
       {previous.length > 0 && (
         <section className="mb-4">
