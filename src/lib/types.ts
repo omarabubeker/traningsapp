@@ -15,6 +15,9 @@ export type Profile = {
   available_days?: number[] | null;
   gym_access?: "fullt" | "hemma" | "inget" | null;
   training_focus?: "run" | "strength" | "both" | null;
+  weather_place?: string | null;
+  weather_lat?: number | null;
+  weather_lon?: number | null;
   updated_at: string;
 };
 

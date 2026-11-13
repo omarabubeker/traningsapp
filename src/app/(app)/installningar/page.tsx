@@ -6,14 +6,16 @@ import { formatDate, formatTime } from "@/lib/dates";
 import { SyncButton } from "@/components/SyncButton";
 import { Button } from "@/components/ui/button";
 import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
+import { WeatherPlace } from "@/components/weather/WeatherPlace";
 
 export const dynamic = "force-dynamic";
 
 export default async function Installningar() {
   const { supabase, user } = await requireUser();
-  const [{ data: state }, { count }] = await Promise.all([
+  const [{ data: state }, { count }, { data: prof }] = await Promise.all([
     supabase.from("sync_state").select("*").eq("provider", "intervals").maybeSingle(),
     supabase.from("activities").select("id", { count: "exact", head: true }).is("deleted_at", null),
+    supabase.from("profile").select("weather_place").maybeSingle(),
   ]);
   const [{ data: conn }, creds] = await Promise.all([
     supabase.from("watch_connections").select("athlete_id, athlete_name, brand").maybeSingle(),
@@ -52,6 +54,13 @@ export default async function Installningar() {
         </p>
       </section>
 
+      <section id="vader" className="card scroll-mt-4 space-y-3">
+        <div>
+          <h2 className="h-card">Väder och klädtips</h2>
+          <p className="text-sm text-muted-foreground">Visas under dagens löppass på översikten.</p>
+        </div>
+        <WeatherPlace userId={user.id} place={prof?.weather_place ?? null} />
+      </section>
 
       <section className="card space-y-2">
         <h2 className="h-card">Historik från Apple Hälsa</h2>
