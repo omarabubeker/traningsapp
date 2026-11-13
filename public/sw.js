@@ -1,6 +1,6 @@
 // Enkel service worker: nätverk först, cache som reserv.
 // Gör att appen går att öppna i gymmet med dålig täckning.
-const CACHE = "traning-v2";
+const CACHE = "traning-v3";
 const OFFLINE_URL = "/offline";
 
 self.addEventListener("install", (event) => {
@@ -52,4 +52,33 @@ self.addEventListener("fetch", (event) => {
         .catch(async () => (await caches.match(req)) || (await caches.match(OFFLINE_URL))),
     );
   }
+});
+
+// Pushnotiser (veckoavstämning, gruppmedaljer).
+self.addEventListener("push", (event) => {
+  let msg = { title: "Träning", body: "" };
+  try {
+    msg = event.data ? event.data.json() : msg;
+  } catch {}
+  event.waitUntil(
+    self.registration.showNotification(msg.title, {
+      body: msg.body,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      tag: msg.tag,
+      data: { url: msg.url || "/" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url || "/", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => c.url.startsWith(self.location.origin));
+      if (open) return open.navigate(url).then((c) => (c || open).focus());
+      return self.clients.openWindow(url);
+    }),
+  );
 });
