@@ -224,10 +224,14 @@ export default async function Overview() {
       <section className="space-y-3">
         <h2 className="h-section">Veckans pass</h2>
         {sessions.length === 0 && shownActivities.length === 0 && <EmptyState icon={CalendarCheck} title="Inga pass än den här veckan" />}
-        {shownActivities.map((a) => (
-          <ActivityRow key={a.id} a={a} />
-        ))}
-        {sessions.map((s) => (
+        {/* Alla pass i dagsordning (måndag först), oavsett om de kommer från klockan eller gymloggen. */}
+        {[...shownActivities.map((a) => ({ at: a.start_time, a, s: null })), ...sessions.map((s) => ({ at: s.started_at, a: null, s }))]
+          .sort((x, y) => Date.parse(x.at) - Date.parse(y.at))
+          .map(({ a, s }) =>
+            a ? (
+              <ActivityRow key={a.id} a={a} />
+            ) : (
+              s && (
           <Link key={s.id} href={`/gym/${s.id}`} className="card flex items-center gap-3 py-4 active:bg-secondary">
             <IconBadge icon={Barbell} tone="gym" />
             <span className="min-w-0 flex-1">
@@ -243,7 +247,9 @@ export default async function Overview() {
               </span>
             </span>
           </Link>
-        ))}
+              )
+            ),
+          )}
       </section>
 
       {!active && <StartSessionButton />}
