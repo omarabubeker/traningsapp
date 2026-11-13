@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { RunWeather } from "@/components/weather/RunWeather";
 import { StartSessionButton } from "@/components/StartSessionButton";
 import { ActivityRow } from "@/components/ActivityRow";
 import { applyOverride, isRun } from "@/lib/running";
@@ -62,6 +64,7 @@ export default async function Overview() {
 
   const name = (prof as { display_name: string | null } | null)?.display_name?.trim();
   const todayItems = plans.flatMap((p) => p.items).filter((i) => i.date === today);
+  const todayRun = todayItems.find((i) => i.kind === "run" && i.status !== "done");
   const nextItem = plans.flatMap((p) => p.items).find((i) => i.date > today && i.kind !== "rest");
 
   const sessions = ((data ?? []) as Row[])
@@ -147,7 +150,14 @@ export default async function Overview() {
       <section className="space-y-3">
         <SectionHead title="Idag" href="/plan" link="Hela veckan" />
         {todayItems.length > 0 ? (
-          <TodayHero items={todayItems} order={order} />
+          <>
+            <TodayHero items={todayItems} order={order} />
+            {todayRun && (
+              <Suspense fallback={null}>
+                <RunWeather supabase={supabase} km={Number((todayRun.target as { distance_km?: number } | null)?.distance_km) || null} />
+              </Suspense>
+            )}
+          </>
         ) : plans.length ? (
           <EmptyState icon={CalendarCheck} title="Inget planerat idag">
             {nextItem ? `Nästa: ${nextItem.title}.` : "Veckans plan är klar."}
