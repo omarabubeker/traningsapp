@@ -7,6 +7,7 @@ import { SyncButton } from "@/components/SyncButton";
 import { Button } from "@/components/ui/button";
 import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 import { WeatherPlace } from "@/components/weather/WeatherPlace";
+import { NotificationSettings } from "@/components/NotificationSettings";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export default async function Installningar() {
   const [{ data: state }, { count }, { data: prof }] = await Promise.all([
     supabase.from("sync_state").select("*").eq("provider", "intervals").maybeSingle(),
     supabase.from("activities").select("id", { count: "exact", head: true }).is("deleted_at", null),
-    supabase.from("profile").select("weather_place").maybeSingle(),
+    supabase.from("profile").select("weather_place, notify_weekly, notify_medals").maybeSingle(),
   ]);
   const [{ data: conn }, creds] = await Promise.all([
     supabase.from("watch_connections").select("athlete_id, athlete_name, brand").maybeSingle(),
@@ -52,6 +53,14 @@ export default async function Installningar() {
         <p className="text-xs text-muted-foreground">
           Synkar automatiskt när du öppnar appen (högst var 10:e minut). Passen går från klockan till intervals.icu och sedan hit.
         </p>
+      </section>
+
+      <section id="notiser" className="card scroll-mt-4 space-y-3">
+        <div>
+          <h2 className="h-card">Notiser</h2>
+          <p className="text-sm text-muted-foreground">Påminnelse om veckoavstämningen och gruppmedaljer.</p>
+        </div>
+        <NotificationSettings userId={user.id} weekly={prof?.notify_weekly ?? true} medals={prof?.notify_medals ?? true} />
       </section>
 
       <section id="vader" className="card scroll-mt-4 space-y-3">

@@ -4,6 +4,8 @@ import { IntervalsError, getIntervalsCreds, getTrack, listActivities } from "@/l
 import { computeSplits, elevationGain, isRun, simplifyRoute, withDistance } from "@/lib/running";
 import { isoDay } from "@/lib/dates";
 import { syncPlanToWatch } from "@/lib/watchPlanSync";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { notifyChallengeMedals } from "@/lib/push";
 
 export const maxDuration = 60;
 
@@ -115,6 +117,8 @@ export async function POST() {
         console.error("Planen till klockan", e);
         plan = { error: e instanceof Error ? e.message : "okänt fel" };
       }
+      // Nya pass kan ha gjort att en challenge nått målet → gruppmedalj direkt.
+      if (process.env.SUPABASE_SECRET_KEY) await notifyChallengeMedals(supabaseAdmin()).catch((e) => console.error("Medaljnotis", e));
     }
 
     const result = { fetched: remote.length, created, removed: removed.length, pending, plan, at: now.toISOString() };
