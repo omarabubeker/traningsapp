@@ -1,0 +1,191 @@
+<!doctype html><meta charset="utf-8"><title>Portfolio film</title>
+<style>
+:root{--bg:#f2f3ef;--fg:#121410;--card:#fff;--primary:#c8ec3c;--primary2:#9fd23a;--pfg:#141a05;--brand:#1d7f33;--muted:#646a60;--secondary:#eceee8;--border:#e2e5dd;--run:#1c86d0;--gym:#dd760f;--streak:#e5541b}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1080px;overflow:hidden;background:var(--bg);color:var(--fg);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+#stage{position:relative;width:1080px;height:1080px;overflow:hidden}
+.scene{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:0 100px;gap:36px;will-change:transform,opacity}
+.card{background:var(--card);border:2px solid var(--border);border-radius:48px;box-shadow:0 3px 6px rgb(18 20 16/.05),0 2px 3px rgb(18 20 16/.03)}
+.avatar{display:flex;align-items:center;justify-content:center;border-radius:999px;background:linear-gradient(135deg,var(--primary),var(--primary2));color:var(--pfg);flex:none}
+.who{display:flex;align-items:center;gap:22px}
+.who b{font-size:42px;font-weight:800;letter-spacing:-.02em;display:block}
+.who small{font-size:28px;color:var(--muted);font-weight:500}
+.user{align-self:flex-end;background:var(--primary);color:var(--pfg);font-size:38px;font-weight:600;padding:28px 40px;border-radius:44px 44px 12px 44px;transform-origin:100% 100%}
+.bubble{align-self:flex-start;width:820px;overflow:hidden;border-radius:44px 44px 44px 12px;transform-origin:0 100%}
+.bubble p{padding:40px 44px;font-size:42px;line-height:58px;font-weight:500}
+.bubble b{font-weight:800}
+.w{opacity:0;white-space:nowrap}
+.chip{display:flex;align-items:center;gap:16px;font-size:30px;font-weight:600;color:var(--muted)}
+.hero{border-radius:50px;padding:52px;color:var(--pfg);background:radial-gradient(120% 140% at 100% 0%,var(--primary2) 0%,transparent 55%),linear-gradient(135deg,var(--primary),var(--primary2))}
+.hero .row{display:flex;justify-content:space-between;align-items:center;font-size:29px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.82;height:44px}
+.hero .row span{display:flex;align-items:center;gap:12px}
+.status{position:relative;width:340px;height:44px}
+.status span{position:absolute;right:0;top:0;height:44px;white-space:nowrap;transform-origin:100% 50%}
+.hero h1{margin-top:30px;font-size:70px;line-height:1.08;font-weight:800;letter-spacing:-.03em}
+.hero .stats{margin-top:34px;display:flex;align-items:flex-end;gap:52px}
+.num{font-size:54px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.num i{font-style:normal;font-size:26px;font-weight:800;letter-spacing:.02em;margin-left:8px;opacity:.7}
+.int{font-size:32px;font-weight:650;opacity:.82;padding-bottom:5px}
+.sync{display:flex;align-items:center;gap:28px;padding:34px 40px}
+.badge{position:relative;width:92px;height:92px;border-radius:999px;background:rgb(28 134 208/.14);color:var(--run);display:flex;align-items:center;justify-content:center;flex:none}
+.badge em{position:absolute;inset:0;border-radius:999px;border:5px solid var(--run)}
+.sync b{display:block;font-size:38px;font-weight:750;letter-spacing:-.01em}
+.sync small{font-size:30px;color:var(--muted);font-weight:500}
+.sync .ok{margin-left:auto;color:var(--brand);display:flex}
+#rings{position:absolute;left:100px;width:880px;padding:52px 44px 48px;transform-origin:50% 50%}
+#rings h2{display:flex;align-items:center;gap:14px;font-size:36px;font-weight:650;color:var(--brand);padding:0 8px}
+#rings ul{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+#rings li{display:flex;flex-direction:column;align-items:center;text-align:center;gap:20px}
+.ring{position:relative;width:220px;height:220px}
+.ring>svg{width:220px;height:220px;display:block}
+.ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.ico svg{width:92px;height:92px}
+.val{font-size:52px;font-weight:800;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+.val i{font-style:normal;font-size:26px;font-weight:800;text-transform:uppercase;color:var(--muted);margin-left:8px}
+.lab{font-size:31px;font-weight:650;margin-top:4px}
+#medal{position:absolute;left:445px;top:70px;width:190px;height:190px}
+#title{position:absolute;left:0;right:0;top:284px;text-align:center;font-size:62px;font-weight:800;letter-spacing:-.03em}
+#last{position:absolute;left:100px;right:100px;top:828px;display:flex;align-items:flex-end;gap:22px}
+#last .bubble{width:auto;flex:1}
+#last .bubble p{font-size:38px;line-height:52px;padding:32px 40px}
+#confetti{position:absolute;inset:0;pointer-events:none}
+#confetti i{position:absolute;left:0;top:0;width:18px;height:11px;border-radius:3px;opacity:0}
+</style>
+<div id="stage">
+  <div class="scene" id="sA">
+    <div class="who" id="who"><div class="avatar" style="width:84px;height:84px"><svg xmlns="http://www.w3.org/2000/svg" width="46" height="46" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,0,0,36.18,176.88L24.83,210.93a16,16,0,0,0,20.24,20.24l34.05-11.35A104,104,0,1,0,128,24Zm32,128H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm0-32H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Z"></path></svg></div><div><b>Coach</b><small>Weekly check-in</small></div></div>
+    <div class="user" id="user">What's the plan this week?</div>
+    <div class="card bubble" id="b1"><p><span class="w">This</span> <span class="w">week</span> <span class="w">we</span> <span class="w">build</span> <span class="w">speed.</span> <b><span class="w">Today:</span> <span class="w">intervals,</span> <span class="w">6</span> <span class="w">×</span> <span class="w">800</span> <span class="w">m</span></b> <span class="w">at</span> <span class="w">4:50–5:00/km.</span> <span class="w">Easy</span> <span class="w">warm-up</span> <span class="w">first.</span></p></div>
+  </div>
+
+  <div class="scene" id="sB">
+    <div class="chip" id="chip"><div class="avatar" style="width:52px;height:52px"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,0,0,36.18,176.88L24.83,210.93a16,16,0,0,0,20.24,20.24l34.05-11.35A104,104,0,1,0,128,24Zm32,128H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm0-32H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Z"></path></svg></div>Planned by your coach</div>
+    <div class="hero" id="hero">
+      <div class="row"><span><svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" fill="currentColor" viewBox="0 0 256 256"><path d="M152,92a36,36,0,1,0-36-36A36,36,0,0,0,152,92Zm0-48a12,12,0,1,1-12,12A12,12,0,0,1,152,44Zm76,93.4a12,12,0,0,1-7,10.91,66,66,0,0,1-21.47,3.78c-14,0-34.25-3.82-59.77-19a177,177,0,0,1-10.27,21C153.12,162.83,188,183.8,188,232a12,12,0,0,1-24,0c0-18.69-6.95-33.06-21.26-43.94-9.16-7-19.55-11-27.43-13.34-.81,1-1.64,2-2.5,2.95-20,22.87-44.82,34.76-72.25,34.76a97.33,97.33,0,0,1-9.75-.49,12,12,0,1,1,2.39-23.88c52.3,5.22,77.48-45.92,85.79-67.75C84.8,102.46,63.74,118.78,63.51,119a12,12,0,0,1-15-18.72C50.08,99,88,69.44,142.75,106.62c43.1,29.31,68.1,19.92,68.5,19.76a12,12,0,0,1,16.75,11Z"></path></svg>Today</span>
+        <div class="status"><span id="st1">Session 5 of 5</span><span id="st2"><svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,85.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"></path></svg>Done</span></div></div>
+      <h1>Intervals<br>6 × 800 m</h1>
+      <div class="stats"><div class="num">8<i>KM</i></div><div class="num">48<i>MIN</i></div><div class="int">4:50–5:00/km</div></div>
+    </div>
+    <div class="card sync" id="sync">
+      <div class="badge"><em id="pulse"></em><svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="currentColor" viewBox="0 0 256 256"><path d="M200,128a72,72,0,1,1-72-72A72,72,0,0,1,200,128Z" opacity="0.2"></path><path d="M208,128a79.94,79.94,0,0,0-32.7-64.47l-6.24-34.38A16,16,0,0,0,153.32,16H102.68A16,16,0,0,0,86.94,29.15L80.7,63.53a79.9,79.9,0,0,0,0,128.94l6.24,34.38A16,16,0,0,0,102.68,240h50.64a16,16,0,0,0,15.74-13.15l6.24-34.38A79.94,79.94,0,0,0,208,128ZM102.68,32h50.64l3.91,21.55a79.75,79.75,0,0,0-58.46,0ZM64,128a64,64,0,1,1,64,64A64.07,64.07,0,0,1,64,128Zm89.32,96H102.68l-3.91-21.55a79.75,79.75,0,0,0,58.46,0ZM120,128V88a8,8,0,0,1,16,0v32h32a8,8,0,0,1,0,16H128A8,8,0,0,1,120,128Z"></path></svg></div>
+      <div><b>Synced from watch</b><small>8.1 km · 4:54/km · 162 bpm</small></div>
+      <span class="ok" id="ok"><svg xmlns="http://www.w3.org/2000/svg" width="58" height="58" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,85.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"></path></svg></span>
+    </div>
+  </div>
+
+  <div class="card" id="rings">
+    <h2><svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" fill="currentColor" viewBox="0 0 256 256"><path d="M176,128a48,48,0,1,1-48-48A48,48,0,0,1,176,128Z" opacity="0.2"></path><path d="M221.87,83.16A104.1,104.1,0,1,1,195.67,49l22.67-22.68a8,8,0,0,1,11.32,11.32l-96,96a8,8,0,0,1-11.32-11.32l27.72-27.72a40,40,0,1,0,17.87,31.09,8,8,0,1,1,16-.9,56,56,0,1,1-22.38-41.65L184.3,60.39a87.88,87.88,0,1,0,23.13,29.67,8,8,0,0,1,14.44-6.9Z"></path></svg>This week's rings</h2>
+    <ul>
+      
+  <li><div class="ring" id="rRun">
+    <svg viewBox="0 0 84 84"><circle cx="42" cy="42" r="38" fill="none" stroke="var(--run)" stroke-opacity=".18" stroke-width="8"/><circle id="runArc" cx="42" cy="42" r="38" fill="none" stroke="var(--run)" stroke-width="8" stroke-linecap="round" transform="rotate(-90 42 42)"/></svg>
+    <span class="ico duo" style="color:var(--run)"><svg xmlns="http://www.w3.org/2000/svg" width="68" height="68" fill="currentColor" viewBox="0 0 256 256"><path d="M176,56a24,24,0,1,1-24-24A24,24,0,0,1,176,56Z" opacity="0.2"></path><path d="M152,88a32,32,0,1,0-32-32A32,32,0,0,0,152,88Zm0-48a16,16,0,1,1-16,16A16,16,0,0,1,152,40Zm67.31,100.68c-.61.28-7.49,3.28-19.67,3.28-13.85,0-34.55-3.88-60.69-20a169.31,169.31,0,0,1-15.41,32.34,104.29,104.29,0,0,1,31.31,15.81C173.92,186.65,184,207.35,184,232a8,8,0,0,1-16,0c0-41.7-34.69-56.71-54.14-61.85-.55.7-1.12,1.41-1.69,2.1-19.64,23.8-44.25,36.18-71.63,36.18A92.29,92.29,0,0,1,31.2,208,8,8,0,0,1,32.8,192c25.92,2.59,48.47-7.49,67-30,12.49-15.14,21-33.61,25.25-47C86.13,92.34,61.27,111.63,61,111.84A8,8,0,1,1,51,99.36c1.5-1.2,37.22-29,89.51,6.57,45.47,30.91,71.93,20.31,72.18,20.19a8,8,0,1,1,6.63,14.56Z"></path></svg></span>
+    <span class="ico fill" style="color:var(--run)"><svg xmlns="http://www.w3.org/2000/svg" width="68" height="68" fill="currentColor" viewBox="0 0 256 256"><path d="M120,56a32,32,0,1,1,32,32A32,32,0,0,1,120,56Zm103.28,74.08a8,8,0,0,0-10.6-4c-.25.12-26.71,10.72-72.18-20.19-52.29-35.54-88-7.77-89.51-6.57a8,8,0,1,0,10,12.48c.26-.21,25.12-19.5,64.07,3.27-4.25,13.35-12.76,31.82-25.25,47-18.56,22.48-41.11,32.56-67,30A8,8,0,0,0,31.2,208a92.29,92.29,0,0,0,9.34.47c27.38,0,52-12.38,71.63-36.18.57-.69,1.14-1.4,1.69-2.1C133.31,175.29,168,190.3,168,232a8,8,0,0,0,16,0c0-24.65-10.08-45.35-29.15-59.86a104.29,104.29,0,0,0-31.31-15.81A169.31,169.31,0,0,0,139,124c26.14,16.09,46.84,20,60.69,20,12.18,0,19.06-3,19.67-3.28A8,8,0,0,0,223.28,130.08Z"></path></svg></span>
+  </div>
+        <div><div class="val"><span id="km">24</span>/32<i>km</i></div><div class="lab" style="color:var(--run)">Running</div></div></li>
+      
+  <li><div class="ring" id="rGym">
+    <svg viewBox="0 0 84 84"><path id="g0" d="M49.92,4.83 A38,38 0 0 1 49.92,79.17" fill="none" stroke="var(--gym)" stroke-width="8" stroke-linecap="round"/><path id="g1" d="M34.08,79.17 A38,38 0 0 1 34.08,4.83" fill="none" stroke="var(--gym)" stroke-width="8" stroke-linecap="round"/></svg>
+    <span class="ico duo" style="color:var(--gym)"><svg xmlns="http://www.w3.org/2000/svg" width="68" height="68" fill="currentColor" viewBox="0 0 256 256"><path d="M96,64V192a8,8,0,0,1-8,8H64a8,8,0,0,1-8-8V64a8,8,0,0,1,8-8H88A8,8,0,0,1,96,64Zm96-8H168a8,8,0,0,0-8,8V192a8,8,0,0,0,8,8h24a8,8,0,0,0,8-8V64A8,8,0,0,0,192,56Z" opacity="0.2"></path><path d="M248,120h-8V88a16,16,0,0,0-16-16H208V64a16,16,0,0,0-16-16H168a16,16,0,0,0-16,16v56H104V64A16,16,0,0,0,88,48H64A16,16,0,0,0,48,64v8H32A16,16,0,0,0,16,88v32H8a8,8,0,0,0,0,16h8v32a16,16,0,0,0,16,16H48v8a16,16,0,0,0,16,16H88a16,16,0,0,0,16-16V136h48v56a16,16,0,0,0,16,16h24a16,16,0,0,0,16-16v-8h16a16,16,0,0,0,16-16V136h8a8,8,0,0,0,0-16ZM32,168V88H48v80Zm56,24H64V64H88V192Zm104,0H168V64h24V175.83c0,.06,0,.11,0,.17s0,.12,0,.17V192Zm32-24H208V88h16Z"></path></svg></span>
+    <span class="ico fill" style="color:var(--gym)"><svg xmlns="http://www.w3.org/2000/svg" width="68" height="68" fill="currentColor" viewBox="0 0 256 256"><path d="M200,64V192a16,16,0,0,1-16,16H168a16,16,0,0,1-16-16V136H104v56a16,16,0,0,1-16,16H72a16,16,0,0,1-16-16V64A16,16,0,0,1,72,48H88a16,16,0,0,1,16,16v56h48V64a16,16,0,0,1,16-16h16A16,16,0,0,1,200,64ZM36,72H32A16,16,0,0,0,16,88v32H8.27A8.18,8.18,0,0,0,0,127.47,8,8,0,0,0,8,136h8v32a16,16,0,0,0,16,16h4a4,4,0,0,0,4-4V76A4,4,0,0,0,36,72Zm220,55.47a8.18,8.18,0,0,0-8.25-7.47H240V88a16,16,0,0,0-16-16h-4a4,4,0,0,0-4,4V180a4,4,0,0,0,4,4h4a16,16,0,0,0,16-16V136h8A8,8,0,0,0,256,127.47Z"></path></svg></span>
+  </div>
+        <div><div class="val">2/2<i>gym</i></div><div class="lab" style="color:var(--gym)">Strength</div></div></li>
+      
+  <li><div class="ring" id="rPlan">
+    <svg viewBox="0 0 84 84"><path id="p0" d="M49.92,4.83 A38,38 0 0 1 74.90,22.98" fill="none" stroke="var(--brand)" stroke-width="8" stroke-linecap="round"/><path id="p1" d="M79.79,38.05 A38,38 0 0 1 70.25,67.41" fill="none" stroke="var(--brand)" stroke-width="8" stroke-linecap="round"/><path id="p2" d="M57.44,76.72 A38,38 0 0 1 26.56,76.72" fill="none" stroke="var(--brand)" stroke-width="8" stroke-linecap="round"/><path id="p3" d="M13.75,67.41 A38,38 0 0 1 4.21,38.05" fill="none" stroke="var(--brand)" stroke-width="8" stroke-linecap="round"/><path id="p4" d="M9.10,22.98 A38,38 0 0 1 34.08,4.83" fill="none" stroke="var(--brand)" stroke-width="8" stroke-linecap="round"/></svg>
+    <span class="ico duo" style="color:var(--brand)"><svg xmlns="http://www.w3.org/2000/svg" width="68" height="68" fill="currentColor" viewBox="0 0 256 256"><path d="M216,64V192H128V64Z" opacity="0.2"></path><path d="M224,128a8,8,0,0,1-8,8H128a8,8,0,0,1,0-16h88A8,8,0,0,1,224,128ZM128,72h88a8,8,0,0,0,0-16H128a8,8,0,0,0,0,16Zm88,112H128a8,8,0,0,0,0,16h88a8,8,0,0,0,0-16ZM82.34,42.34,56,68.69,45.66,58.34A8,8,0,0,0,34.34,69.66l16,16a8,8,0,0,0,11.32,0l32-32A8,8,0,0,0,82.34,42.34Zm0,64L56,132.69,45.66,122.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32,0l32-32a8,8,0,0,0-11.32-11.32Zm0,64L56,196.69,45.66,186.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32,0l32-32a8,8,0,0,0-11.32-11.32Z"></path></svg></span>
+    <span class="ico fill" style="color:var(--brand)"><svg xmlns="http://www.w3.org/2000/svg" width="68" height="68" fill="currentColor" viewBox="0 0 256 256"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM117.66,149.66l-32,32a8,8,0,0,1-11.32,0l-16-16a8,8,0,0,1,11.32-11.32L80,164.69l26.34-26.35a8,8,0,0,1,11.32,11.32Zm0-64-32,32a8,8,0,0,1-11.32,0l-16-16A8,8,0,0,1,69.66,90.34L80,100.69l26.34-26.35a8,8,0,0,1,11.32,11.32ZM192,168H144a8,8,0,0,1,0-16h48a8,8,0,0,1,0,16Zm0-64H144a8,8,0,0,1,0-16h48a8,8,0,0,1,0,16Z"></path></svg></span>
+  </div>
+        <div><div class="val"><span id="pl">4</span>/5<i>done</i></div><div class="lab" style="color:var(--brand)">The plan</div></div></li>
+    </ul>
+  </div>
+
+  <svg id="medal" viewBox="0 0 64 64"><defs><linearGradient id="mg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#c8ec3c"/><stop offset="100%" stop-color="#9fd23a"/></linearGradient></defs>
+    <circle cx="32" cy="32" r="30" fill="url(#mg)"/><circle cx="32" cy="32" r="24.5" fill="none" stroke="#141a05" stroke-opacity=".28" stroke-width="1.5"/>
+    <path d="M14 22 A21 21 0 0 1 30 11" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/>
+    <text x="32" y="33" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="800" fill="#141a05" style="letter-spacing:-.03em">5/5</text></svg>
+  <div id="title">All rings closed!</div>
+  <div id="last"><div class="avatar" style="width:76px;height:76px"><svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,0,0,36.18,176.88L24.83,210.93a16,16,0,0,0,20.24,20.24l34.05-11.35A104,104,0,1,0,128,24Zm32,128H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm0-32H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Z"></path></svg></div>
+    <div class="card bubble" id="b2"><p><span class="w">Strong</span> <span class="w">work.</span> <span class="w">Next</span> <span class="w">week</span> <span class="w">we</span> <span class="w">stretch</span> <span class="w">the</span> <span class="w">long</span> <span class="w">run.</span></p></div></div>
+  <div id="confetti"></div>
+</div>
+<script>
+const $=(id)=>document.getElementById(id);
+const cl=(x)=>Math.max(0,Math.min(1,x)), p=(t,a,b)=>cl((t-a)/(b-a));
+const out=(x)=>1-Math.pow(1-x,3), io=(x)=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const back=(x)=>{const c=1.70158+1;return 1+c*Math.pow(x-1,3)+1.70158*Math.pow(x-1,2)};
+const lerp=(a,b,x)=>a+(b-a)*x;
+const C=238.76104167282426;
+
+// Ord som skrivs fram; bubblan växer rad för rad.
+function typer(id,t0,t1){
+  const el=$(id), ws=[...el.querySelectorAll(".w")], pEl=el.querySelector("p");
+  const cs=getComputedStyle(pEl), pad=parseFloat(cs.paddingTop), lh=parseFloat(cs.lineHeight);
+  const tops=[...new Set(ws.map(w=>w.offsetTop))].sort((a,b)=>a-b);
+  const time=(i)=>lerp(t0,t1,i/ws.length);
+  const lineStart=tops.map(tp=>time(ws.findIndex(w=>w.offsetTop===tp)));
+  return (t)=>{
+    ws.forEach((w,i)=>w.style.opacity=p(t,time(i),time(i)+.14));
+    let lines=0; lineStart.forEach((ts,i)=>lines+=i===0?1:io(p(t,ts-.08,ts+.2)));
+    el.style.height=(pad*2+lines*lh+4)+"px";
+  };
+}
+let type1,type2;
+
+// Konfetti: fasta partiklar med enkel kastbana, så att varje bildruta blir densamma.
+let seed=7; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const COLORS=["#c8ec3c","#9fd23a","#1c86d0","#dd760f","#e5541b"];
+const parts=Array.from({length:110},(_,i)=>{
+  const side=i%3; const el=document.createElement("i"); el.style.background=COLORS[i%5]; $("confetti").appendChild(el);
+  const ang=(side===0?lerp(-80,-40,rnd()):side===1?lerp(-140,-100,rnd()):lerp(-150,-30,rnd()))*Math.PI/180, sp=lerp(700,1500,rnd());
+  return {el,x:side===0?60:side===1?1020:540,y:side===2?170:800,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,rot:rnd()*360,vr:lerp(-500,500,rnd()),d:side===2?.25:rnd()*.12,s:lerp(.7,1.3,rnd())};
+});
+
+const RH=()=>$("rings").offsetHeight;
+window.seek=(t)=>{
+  // A: coachen svarar
+  let o=1-io(p(t,4.2,4.8));
+  $("sA").style.opacity=o; $("sA").style.transform="translateY("+(-90*io(p(t,4.2,4.8)))+"px)";
+  $("who").style.opacity=out(p(t,.1,.6)); $("who").style.transform="translateY("+lerp(24,0,out(p(t,.1,.6)))+"px)";
+  $("user").style.opacity=p(t,.5,.75); $("user").style.transform="scale("+lerp(.7,1,back(p(t,.5,1)))+")";
+  $("b1").style.opacity=p(t,1.25,1.5); $("b1").style.transform="scale("+lerp(.85,1,out(p(t,1.25,1.6)))+")";
+  type1(t);
+
+  // B + C: dagens pass, klockan synkar, klart
+  const inB=io(p(t,4.6,5.4)), outB=io(p(t,10.2,10.8));
+  $("sB").style.opacity=inB*(1-outB);
+  $("sB").style.transform="translateY("+(lerp(110,0,inB)-110*outB)+"px) scale("+(lerp(.94,1,inB)+.02*p(t,5.4,10.2))+")";
+  $("chip").style.opacity=out(p(t,5.3,5.8));
+  $("hero").style.transform="scale("+(1+.03*Math.sin(Math.PI*p(t,9.0,9.55)))+")";
+  $("st1").style.opacity=1-p(t,8.9,9.15);
+  $("st2").style.opacity=p(t,9.05,9.3); $("st2").style.transform="scale("+lerp(.6,1,back(p(t,9.05,9.5)))+")";
+  const sy=out(p(t,7.5,8.1)); $("sync").style.opacity=p(t,7.5,7.9); $("sync").style.transform="translateY("+lerp(50,0,sy)+"px)";
+  const ph=t>7.7&&t<9.1?((t-7.7)%.7)/.7:1; $("pulse").style.opacity=.55*(1-ph); $("pulse").style.transform="scale("+lerp(1,1.75,out(ph))+")";
+  $("ok").style.opacity=p(t,8.55,8.75); $("ok").style.transform="scale("+lerp(.3,1,back(p(t,8.55,8.95)))+")";
+
+  // D: ringarna stängs
+  const inR=io(p(t,10.6,11.3)), toEnd=io(p(t,14.3,15.1)), sc=lerp(1,.8,toEnd);
+  const cy=lerp(540,578,toEnd)+lerp(90,0,inR);
+  $("rings").style.opacity=p(t,10.6,11.1); $("rings").style.top=(cy-RH()/2)+"px"; $("rings").style.transform="scale("+sc+")";
+  const run=lerp(.75,1,io(p(t,11.5,12.6)));
+  $("runArc").setAttribute("stroke-dasharray",(C*run)+" "+C); $("km").textContent=Math.round(32*run);
+  for(let i=0;i<2;i++)$("g"+i).setAttribute("stroke-opacity",1);
+  for(let i=0;i<5;i++)$("p"+i).setAttribute("stroke-opacity",i<4?1:lerp(.18,1,p(t,12.9,13.2)));
+  $("pl").textContent=t>=13.05?5:4;
+  const pulse=(a)=>1+.09*Math.sin(Math.PI*p(t,a,a+.45));
+  const fill=(id,a,done)=>{const r=$(id);r.style.transform="scale("+pulse(a)*pulse(13.7)+")";r.querySelector(".fill").style.opacity=done?1:p(t,a,a+.2);r.querySelector(".duo").style.opacity=done?0:1-p(t,a,a+.2)};
+  fill("rRun",12.6); fill("rGym",0,true); fill("rPlan",13.2);
+
+  // E: medalj och konfetti
+  const m=p(t,14.8,15.4); $("medal").style.opacity=p(t,14.8,14.95); $("medal").style.transform="scale("+back(m)+") rotate("+lerp(-25,0,out(m))+"deg)";
+  $("title").style.opacity=p(t,15.2,15.6); $("title").style.transform="translateY("+lerp(26,0,out(p(t,15.2,15.7)))+"px)";
+  for(const c of parts){const u=t-14.95-c.d; if(u<=0){c.el.style.opacity=0;continue}
+    const x=c.x+c.vx*u*Math.exp(-.35*u), y=c.y+c.vy*u+.5*1250*u*u;
+    c.el.style.opacity=1-p(u,1.9,2.7); c.el.style.transform="translate("+x+"px,"+y+"px) rotate("+(c.rot+c.vr*u)+"deg) scale("+c.s+")";}
+
+  // F: coachen får sista ordet
+  const l=out(p(t,17.2,17.8)); $("last").style.opacity=p(t,17.2,17.6); $("last").style.transform="translateY("+lerp(60,0,l)+"px)";
+  type2(t);
+};
+document.fonts.ready.then(()=>{type1=typer("b1",1.5,3.7);type2=typer("b2",17.6,18.5);window.seek(+(new URLSearchParams(location.search).get("t")||0));window.ready=true});
+</script>
