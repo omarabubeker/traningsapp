@@ -3,9 +3,10 @@ import type { PlanItem } from "../types";
 export type ItemStatus = "done" | "missed" | "today" | "upcoming" | "rest" | "pending";
 
 /** Ett genomfört pass, förenklat för matchning mot planen. */
-export type DoneSession = { kind: "run" | "gym" | "other"; day: string; km?: number | null };
+export type DoneSession = { kind: "run" | "gym" | "other"; day: string; km?: number | null; timeS?: number | null };
 
-export type ItemResult = { status: ItemStatus; doneDay?: string };
+/** doneKm/doneTimeS: det pass som faktiskt gjordes (för löppass), så att kortet kan visa utfallet. */
+export type ItemResult = { status: ItemStatus; doneDay?: string; doneKm?: number | null; doneTimeS?: number | null };
 
 const DAY = 864e5;
 export const addDaysIso = (iso: string, n: number) => new Date(Date.parse(iso + "T00:00:00Z") + n * DAY).toISOString().slice(0, 10);
@@ -31,7 +32,7 @@ export function matchWeek(
   const fits = (kind: PlanItem["kind"], s: DoneSession) => kind === "other" || s.kind === kind;
   const take = (it: (typeof items)[number], s: (typeof pool)[number]) => {
     s.used = true;
-    res.set(it.id, { status: "done", doneDay: s.day });
+    res.set(it.id, { status: "done", doneDay: s.day, doneKm: s.km ?? null, doneTimeS: s.timeS ?? null });
   };
   const work = items.filter((i) => i.kind !== "rest");
   for (const group of [work.filter((i) => i.kind !== "other"), work.filter((i) => i.kind === "other")]) {

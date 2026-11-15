@@ -39,7 +39,23 @@ function StatusPill({ status, moved }: { status: ItemStatus; moved?: string }) {
 
 const sv = (n: number) => n.toLocaleString("sv-SE");
 
-export function PlanItemCard({ item, status, doneDay, showDate = true, today }: { item: PlanItem; status: ItemStatus; doneDay?: string; showDate?: boolean; today?: string }) {
+export function PlanItemCard({
+  item,
+  status,
+  doneDay,
+  doneKm,
+  doneTimeS,
+  showDate = true,
+  today,
+}: {
+  item: PlanItem;
+  status: ItemStatus;
+  doneDay?: string;
+  doneKm?: number | null;
+  doneTimeS?: number | null;
+  showDate?: boolean;
+  today?: string;
+}) {
   const t = (item.target ?? {}) as Target;
   if (item.kind === "rest") {
     return (
@@ -83,6 +99,14 @@ export function PlanItemCard({ item, status, doneDay, showDate = true, today }: 
           ))}
         </div>
       )}
+
+      {status === "done" && doneKm ? (
+        <p className="flex items-center gap-2 rounded-2xl bg-brand/10 px-3 py-2 text-sm font-semibold text-brand">
+          <Check size={16} weight="bold" className="shrink-0" />
+          Gjort: {sv(Math.round(doneKm * 100) / 100)} km
+          {doneTimeS ? ` · ${Math.floor(Math.round(doneTimeS / doneKm) / 60)}:${String(Math.round(doneTimeS / doneKm) % 60).padStart(2, "0")}/km` : ""}
+        </p>
+      ) : null}
 
       {t.intensity && (
         <p className="flex items-start gap-2 text-sm">

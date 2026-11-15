@@ -10,8 +10,8 @@ describe("matchWeek (flexibla dagar)", () => {
     const items = [item("a", "2026-11-10", "run", 8), item("b", "2026-11-12", "gym")];
     const sessions: DoneSession[] = [{ kind: "run", day: "2026-11-11", km: 8 }, { kind: "gym", day: "2026-11-13" }];
     const m = matchWeek(items, sessions, W, "2026-11-14");
-    expect(m.get("a")).toEqual({ status: "done", doneDay: "2026-11-11" });
-    expect(m.get("b")).toEqual({ status: "done", doneDay: "2026-11-13" });
+    expect(m.get("a")).toEqual({ status: "done", doneDay: "2026-11-11", doneKm: 8, doneTimeS: null });
+    expect(m.get("b")).toEqual({ status: "done", doneDay: "2026-11-13", doneKm: null, doneTimeS: null });
   });
   it("långpasset matchas mot det längsta passet oavsett dag", () => {
     const items = [item("lugn", "2026-11-14", "run", 6), item("lang", "2026-11-15", "run", 20)];

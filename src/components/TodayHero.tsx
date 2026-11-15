@@ -9,8 +9,21 @@ import { Button } from "@/components/ui/button";
 
 type Target = { distance_km?: number | null; duration_min?: number | null; intensity?: string | null; exercises?: unknown[] };
 
+const pace = (s: number, km: number) => {
+  const p = Math.round(s / km);
+  return `${Math.floor(p / 60)}:${String(p % 60).padStart(2, "0")}`;
+};
+
+/** Gjort löppass: det som faktiskt sprangs. Annars det planerade. */
 function facts(it: PlanItemWithStatus) {
   const t = (it.target ?? {}) as Target;
+  if (it.status === "done" && it.doneKm) {
+    const km = Math.round(it.doneKm * 100) / 100;
+    return [
+      { v: km.toLocaleString("sv-SE"), u: "km" },
+      ...(it.doneTimeS ? [{ v: pace(it.doneTimeS, it.doneKm), u: "min/km" }] : []),
+    ];
+  }
   return [
     t.distance_km ? { v: t.distance_km.toLocaleString("sv-SE"), u: "km" } : null,
     t.duration_min ? { v: String(t.duration_min), u: "min" } : null,
@@ -63,7 +76,11 @@ export function TodayHero({ items, order }: { items: PlanItemWithStatus[]; order
                       <span className="ml-1 text-xs font-bold uppercase opacity-70">{f.u}</span>
                     </span>
                   ))}
-                  {t.intensity && <span className="min-w-0 truncate text-sm font-semibold opacity-80">{t.intensity}</span>}
+                  {done && it.doneKm ? (
+                    t.distance_km ? <span className="min-w-0 truncate text-sm font-semibold opacity-80">Planerat {t.distance_km.toLocaleString("sv-SE")} km</span> : null
+                  ) : (
+                    t.intensity && <span className="min-w-0 truncate text-sm font-semibold opacity-80">{t.intensity}</span>
+                  )}
                 </span>
               )}
               {rest && it.description && <span className="mt-1 block text-sm text-muted-foreground">{it.description}</span>}
@@ -80,7 +97,7 @@ export function TodayHero({ items, order }: { items: PlanItemWithStatus[]; order
           </DrawerHeader>
           {open && (
             <div className="pb-safe mx-auto w-full max-w-md space-y-4 overflow-y-auto px-4">
-              <PlanItemCard item={open} status={open.status} doneDay={open.doneDay} showDate={false} today={open.date} />
+              <PlanItemCard item={open} status={open.status} doneDay={open.doneDay} doneKm={open.doneKm} doneTimeS={open.doneTimeS} showDate={false} today={open.date} />
               <Button asChild variant="secondary" className="w-full">
                 <Link href="/plan" onClick={() => setOpen(null)}>Hela veckans plan</Link>
               </Button>
