@@ -20,7 +20,7 @@ export function mondayOf(dayIso: string) {
 export async function loadDoneSessions(supabase: SupabaseClient, fromDay: string): Promise<DoneSession[]> {
   const since = new Date(Date.parse(fromDay) - DAY).toISOString();
   const [{ data: acts }, { data: gyms }] = await Promise.all([
-    supabase.from("activities").select("sport_type, start_time, distance_m, distance_override_m").is("deleted_at", null).gte("start_time", since),
+    supabase.from("activities").select("sport_type, start_time, distance_m, distance_override_m, moving_time_s").is("deleted_at", null).gte("start_time", since),
     supabase.from("gym_sessions").select("started_at").gte("started_at", since),
   ]);
   return doneSessions(acts ?? [], (gyms ?? []).map((g) => g.started_at)).filter((s) => s.day >= fromDay);
